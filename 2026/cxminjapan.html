@@ -136,36 +136,36 @@
        ========================================= */
     .artplayer-watermark {
         position: absolute;
-        top: 15px; /* Default margin pag hindi fullscreen */
-        right: 15px; /* Default margin pag hindi fullscreen (Sagad ng konti) */
+        top: 25px; /* Desktop: Ibinaba ng kaunti */
+        right: 15px; /* Desktop: Ibinalik sa original na gilid */
         width: 55px; /* SIZE FOR DESKTOP */
         opacity: 0.4;
         pointer-events: none;
         z-index: 99;
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-        transition: all 0.3s ease; /* Smooth transition kapag nagbago ang size/margin */
+        transition: all 0.3s ease;
     }
 
-    /* SIZE FOR MOBILE - Liliit lang sa mobile screen, desktop stays 55px */
+    /* SIZE FOR MOBILE */
     @media (max-width: 768px) {
         .artplayer-watermark {
             width: 30px; 
-            top: 10px;
-            right: 10px;
+            top: 5px; /* Mobile: Itinaas ng kaunti */
+            right: 25px; /* Mobile: Nilagyan ng margin sa right para umusog pa-left */
         }
     }
 
     /* MARGIN ADJUSTMENT WHEN FULLSCREEN IS ACTIVE */
     .artplayer-watermark.is-fullscreen {
         top: 30px;
-        right: 80px; /* Mas malaking right margin para tumawid sa black bars ng video */
+        right: 80px; /* Right margin para pumasok sa loob at tumawid sa black bars */
     }
 
     /* Extra safe margin for Mobile Landscape Fullscreen (iPhones with notches) */
     @media (max-width: 900px) and (orientation: landscape) {
         .artplayer-watermark.is-fullscreen {
-            right: max(80px, env(safe-area-inset-right) + 40px);
-            top: max(25px, env(safe-area-inset-top) + 20px);
+            right: max(85px, env(safe-area-inset-right) + 40px);
+            top: max(15px, env(safe-area-inset-top) + 15px);
         }
     }
 
@@ -683,14 +683,12 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
       });
 
       // --- PERMANENT WATERMARK LAYER (PURE CSS CONTROLLED) ---
-      // We removed the inline styles here so the <style> block above takes full control.
       art.layers.add({
           name: 'watermarkLayer',
           html: '<img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" class="artplayer-watermark">'
       });
 
       // Automatically add/remove '.is-fullscreen' class when entering/exiting Fullscreen
-      // This forces the CSS to push the margin inside to bypass the black bars.
       art.on('fullscreen', (state) => {
           const watermarkObj = document.querySelector('.artplayer-watermark');
           if (watermarkObj) {

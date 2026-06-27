@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Profile | Zone Vault</title>
+   
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+  <style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE (MODERN SOLID)
+       ========================================= */
+    :root {
+        /* SOLID DARK THEME (MATTE) */
+        --bg-color: #09090b; 
+        --card-bg: #18181b;  
+        --border-color: #27272a; 
+        --hover-bg: #27272a;
+        --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.6);
+
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        
+        --accent: #ffffff;
+        --status-online: #22c55e;
+        --admin-color: #ef4444; 
+        --youtube-red: #ff0000;
+        
+        --sidebar-width-collapsed: 64px; 
+        --sidebar-width-expanded: 220px; 
+        
+        --input-bg: #27272a;
+        --banner-gradient: linear-gradient(135deg, #27272a, #18181b);
+    }
+
+    body.light-mode {
+        /* SOLID LIGHT THEME (MATTE) */
+        --bg-color: #f4f4f5;
+        --card-bg: #ffffff;
+        --border-color: #e4e4e7;
+        --hover-bg: #f4f4f5;
+        --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+        --text-main: #18181b;
+        --text-muted: #71717a;
+        --input-bg: #f4f4f5;
+        --banner-gradient: linear-gradient(135deg, #e4e4e7, #ffffff);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
+
+    /* =========================================
+       2. AMBIENT BACKGROUND
+       ========================================= */
+    body { 
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        overflow-x: hidden;
+        padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
+        position: relative;
+    }
+
+    .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================
+       3. SOLID SIDEBAR & MENUS 
+       ========================================= */
+    .sidebar-desktop {
+        position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
+        border-radius: 16px; width: var(--sidebar-width-collapsed);
+        background: var(--card-bg);
+        border: 1px solid var(--border-color); 
+        box-shadow: var(--shadow-subtle);
+        z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden; display: flex; flex-direction: column;
+        will-change: width; -webkit-transform: translateZ(0);
+    }
+    .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
+    .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
+
+    .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; }
+    .sidebar-brand img { width: 24px; height: 24px; object-fit: contain; z-index: 2; }
+    .sidebar-brand span { position: absolute; left: 50px; opacity: 0; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; color: var(--text-main); transition: opacity 0.2s ease; pointer-events: none; text-transform: uppercase; }
+    .sidebar-desktop:hover .sidebar-brand { justify-content: flex-start; padding-left: 20px; }
+    .sidebar-desktop:hover .sidebar-brand span { opacity: 1; pointer-events: auto; }
+
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
+    .nav-link { display: flex; align-items: center; height: 40px; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; font-size: 13px; font-weight: 500; width: 100%; justify-content: center; position: relative; cursor: pointer; border-radius: 8px; }
+    .nav-link i { font-size: 16px; min-width: 20px; text-align: center; transition: color 0.3s; }
+    .nav-text { display: none; white-space: nowrap; margin-left: 12px; opacity: 0; transition: opacity 0.2s; }
+    .sidebar-desktop:hover .nav-link { justify-content: flex-start; padding-left: 12px; }
+    .sidebar-desktop:hover .nav-text { display: block; opacity: 1; transition-delay: 0.1s; }
+    
+    .nav-link:hover { background: var(--hover-bg); color: var(--text-main); }
+    .nav-link.active { color: var(--text-main); background: var(--hover-bg); font-weight: 600; }
+    
+    .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
+    .text-danger { color: var(--admin-color) !important; font-weight: 600; }
+    .text-danger i { color: var(--admin-color) !important; }
+
+    .sidebar-user { display: flex; align-items: center; justify-content: center; padding: 10px; cursor: pointer; transition: 0.2s; margin-top: 5px; border-top: 1px solid var(--border-color); border-radius: 8px; }
+    .sidebar-user:hover { background: var(--hover-bg); }
+    .sidebar-user img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
+    .sidebar-user-info { display: none; margin-left: 10px; }
+    .sidebar-desktop:hover .sidebar-user { justify-content: flex-start; padding-left: 10px; border-top: none; }
+    .sidebar-desktop:hover .sidebar-user-info { display: block; }
+    .sidebar-username { font-size: 13px; font-weight: 600; color: var(--text-main); }
+    .sidebar-useremail { font-size: 10px; color: var(--text-muted); }
+
+    /* =========================================
+       4. MODERN BUTTONS & MODAL (NO BLUR)
+       ========================================= */
+    .hero-notif-btn, .header-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-subtle); 
+        color: var(--text-main);
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
+    }
+    
+    .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
+    .header-btn { width: 40px; height: 40px; border-radius: 50%; font-size: 16px; pointer-events: auto; position: relative; }
+    
+    .hero-notif-btn:hover, .header-btn:hover { background: var(--hover-bg); transform: translateY(-2px); box-shadow: var(--shadow-float); }
+    
+    .hero-notif-btn .badge, .header-btn .badge { 
+        position: absolute; top: 0px; right: 0px; width: 12px; height: 12px; 
+        background: var(--admin-color); border-radius: 50%; border: 2px solid var(--card-bg); display: none; 
+    }
+    .hero-notif-btn .badge.active, .header-btn .badge.active { display: block; }
+
+    .notif-modal { 
+        position: absolute !important; top: 85px; right: 40px; width: 340px; max-height: 400px; 
+        background: var(--card-bg); border: 1px solid var(--border-color); 
+        box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
+    }
+    .notif-modal.active { display: flex; animation: dropDown 0.2s ease; }
+    @keyframes dropDown { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
+    
+    .notif-header { padding: 16px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
+    .notif-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 14px; align-items: flex-start; transition: 0.2s; }
+    .notif-item:hover { background: var(--hover-bg); }
+    .notif-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-main); flex-shrink: 0; }
+    .notif-content h5 { font-size: 14px; color: var(--text-main); margin-bottom: 4px; }
+    .notif-content p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+    .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+    /* =========================================
+       5. PROFILE CONTENT (SOLID MATTE)
+       ========================================= */
+    .main-wrapper { 
+        max-width: 1000px; margin: 0 auto; width: 100%; padding-top: 40px; padding-bottom: 40px; padding-left: 20px; padding-right: 20px; position: relative;
+    }
+    
+    .glass-card {
+        background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow-subtle);
+    }
+
+    /* --- RESPONSIVE BANNER --- */
+    .banner { 
+        width: 100%; height: 180px; background: var(--banner-gradient); position: relative; transition: background 0.3s ease;
+    }
+
+    .banner.has-image {
+        background-size: cover; background-position: center;
+    }
+    
+    .cropper-container-wrapper { 
+        width: 100%; max-height: 400px; margin-top: 15px; background: #000; display: none; border-radius: 10px; overflow: hidden;
+    }
+
+    /* --- CENTER-ALIGNED LAYOUT --- */
+    .profile-body { 
+        padding: 0 30px 35px; position: relative; display: flex; 
+        flex-direction: column; align-items: center; text-align: center; gap: 0; 
+    }
+    
+    .avatar-wrapper { margin-top: -65px; position: relative; cursor: pointer; display: inline-block; }
+    .profile-img {
+        width: 130px; height: 130px; border-radius: 50%; border: 4px solid var(--card-bg); object-fit: cover; background: var(--bg-color); transition: transform 0.2s;
+    }
+    .avatar-wrapper:hover .profile-img { transform: scale(1.02); filter: brightness(0.9); }
+    .avatar-icon {
+        position: absolute; bottom: 5px; right: 5px; background: var(--text-main); color: var(--bg-color);
+        width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid var(--card-bg);
+    }
+
+    .user-info { width: 100%; padding-top: 0; }
+    .user-info h1 { font-size: 24px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; color: var(--text-main); }
+    .user-info p.email { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
+    .user-info p.role { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-main); margin-bottom: 20px; text-transform: uppercase;}
+    .user-info p.bio { color: var(--text-main); font-size: 14px; max-width: 500px; margin: 0 auto 20px auto; line-height: 1.5; opacity: 0.9; }
+    
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; }
+    .btn-primary { background: var(--text-main); color: var(--bg-color); }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-secondary:hover { background: var(--hover-bg); }
+
+    /* Edit Mode Alignment */
+    .input-group { margin-bottom: 15px; text-align: left; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto; }
+    .input-group label { display: block; font-size: 12px; margin-bottom: 6px; color: var(--text-muted); font-weight: 600; }
+    .styled-input { width: 100%; padding: 12px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); outline: none; font-family: inherit; font-size: 13px; transition: border-color 0.2s; }
+    .styled-input:focus { border-color: var(--text-muted); }
+    input[type="color"].styled-input { padding: 2px 4px; height: 42px; cursor: pointer; }
+    .edit-action-btns { justify-content: center !important; }
+
+    .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 24px; }
+    .card-header { padding: 18px 25px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+    .card-content { padding: 25px; font-size: 14px; color: var(--text-main); min-height: 100px; flex: 1;}
+
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+    .info-row:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+    .info-label { color: var(--text-muted); font-weight: 500; font-size: 13px; }
+    .info-value { font-weight: 600; font-size: 13px; }
+    .uid-badge { font-family: 'Monaco', 'Consolas', monospace; font-size: 11px; background: var(--input-bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); user-select: all; color: var(--text-muted); letter-spacing: 0.5px;}
+
+    .history-item { display: flex; gap: 12px; margin-bottom: 15px; cursor: pointer; padding: 10px; border-radius: 12px; transition: all 0.2s; border: 1px solid transparent; }
+    .history-item:hover { background: var(--input-bg); border-color: var(--border-color); transform: translateX(2px); }
+    .history-thumb-wrapper { width: 120px; min-width: 120px; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid var(--border-color); }
+    .history-thumb-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; }
+    .history-item:hover .history-thumb-img { opacity: 1; }
+    .progress-bar-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.2); }
+    .progress-bar-fill { height: 100%; background: var(--youtube-red); }
+    .time-badge { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.8); color: white; font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: 600; }
+    .history-info { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+    .history-title { font-weight: 600; font-size: 14px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .history-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+
+    #edit-mode { display: none; width: 100%; }
+    
+    /* MODALS */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; align-items: center; justify-content: center; }
+    .modal-box-avatar { background: var(--card-bg); border: 1px solid var(--border-color); padding: 25px; border-radius: 16px; width: 90%; max-width: 450px; color: var(--text-main); max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-float); }
+
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); color: var(--text-main); padding: 14px 28px; border-radius: 50px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.4s ease; }
+    .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
+    
+    .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+    .access-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 50px; border-radius: 16px; text-align: center; color: var(--text-main); max-width: 420px; width: 90%; box-shadow: var(--shadow-float); }
+    .access-icon-box { width: 70px; height: 70px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 28px; border-top: 1px solid rgba(239, 68, 68, 0.2); }
+    .access-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .access-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
+    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+    /* =========================================
+       6. MOBILE RESPONSIVENESS
+       ========================================= */
+    /* CLEAR/TRANSPARENT HEADER */
+    .mobile-header { 
+        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
+        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; 
+        background: transparent; /* No solid background */
+        border: none; pointer-events: none; /* Lets clicks pass through the center */
+    }
+    
+    .mobile-logo-container { 
+        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 16px; pointer-events: auto; 
+        background: transparent; border: none; box-shadow: none; padding: 0; /* Clean, clear logo */
+        letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Adds readability if placed over an image */
+    }
+    .mobile-logo-img { height: 26px; width: auto; }
+
+    .mobile-sidebar-menu { 
+        position: fixed; top: 0; left: 0; width: 280px; height: 100vh; height: 100dvh; 
+        background: var(--card-bg); border-right: 1px solid var(--border-color);
+        box-shadow: var(--shadow-float);
+        z-index: 10000; transform: translateX(-100%); -webkit-transform: translateX(-100%) translateZ(0);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+        will-change: transform; display: flex; flex-direction: column; overflow: hidden; 
+    }
+    .mobile-sidebar-menu.open { transform: translateX(0); -webkit-transform: translateX(0) translateZ(0); }
+    .mobile-sidebar-menu .sidebar-container { overflow-y: auto; padding: 20px 15px; }
+    .mobile-sidebar-menu .sidebar-container::-webkit-scrollbar { display: none; }
+
+    @media (max-width: 900px) {
+        .sidebar-desktop { display: none; }
+        .hero-notif-btn { display: none !important; } /* <--- THIS HIDES THE EXTRA BELL ON MOBILE */
+        .mobile-header { display: flex; } /* Shows the transparent header */
+        body { padding-left: 0; }
+        
+        .main-wrapper { padding-top: 80px; } 
+        .notif-modal { position: fixed !important; top: 75px !important; right: 15px !important; width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; }
+        .grid-container { grid-template-columns: 1fr; gap: 20px; }
+        
+        /* --- MOBILE BANNER FIX --- */
+        .banner { height: 130px; }
+        .banner.has-image { background-size: cover; }
+        
+        /* SAKTONG PROFILE PIC */
+        .avatar-wrapper { margin-top: -50px; } 
+        .profile-img { width: 95px; height: 95px; border-width: 4px; } 
+    }
+  </style>
+</head>
+<body>
+
+<div id="toast" class="toast">
+    <i class="fas fa-check-circle" style="color:var(--status-online);"></i>
+    <span>Welcome to Profile</span>
+</div>
+
+<!-- CLEAR MOBILE HEADER -->
+<div class="mobile-header">
+    <div class="mobile-logo-container">
+         <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
+         <span>ZONE VAULT</span>
+    </div>
+    <div style="display: flex; gap: 10px; pointer-events: auto;">
+        <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">
+            <i class="fas fa-bell"></i>
+            <span id="notif-badge-mobile" class="badge"></span>
+        </a>
+        <button class="header-btn" onclick="toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+</div>
+
+<div id="mobileSidebar" class="mobile-sidebar-menu">
+    <div class="sidebar-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px 20px 5px;">
+            <div class="sidebar-brand" style="justify-content: flex-start; margin-bottom: 0; height: auto;">
+                <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo" style="width:24px; height:24px;">
+                <span style="opacity:1; position:static; margin-left:12px; transform:none; font-size:15px; color:var(--text-main);">ZONE VAULT</span>
+            </div>
+            <button onclick="toggleMobileSidebar()" style="background:none; border:none; color:var(--text-main); font-size:28px; cursor:pointer; margin-top: -2px;">&times;</button>
+        </div>
+        <ul class="nav-list" style="padding: 10px 0;">
+            <li class="nav-item"> <a href="profile" class="nav-link active" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-user" style="margin-right:15px;"></i> Profile</a> </li>
+            <li class="nav-item"> <a href="home" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-home" style="margin-right:15px;"></i> Home</a> </li>
+            <li class="nav-item"> <a href="videos" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-play-circle" style="margin-right:15px;"></i> Videos</a> </li>
+            <li class="nav-item"> <a href="collection" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-images" style="margin-right:15px;"></i> Collection</a> </li>
+            <li class="nav-item"> <a href="live" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-broadcast-tower" style="margin-right:15px;"></i> Live</a> </li>
+        </ul>
+        <div class="sidebar-bottom" style="margin-top: auto; padding-bottom: 0;">
+             <div class="nav-link" onclick="toggleTheme()" style="justify-content: flex-start; padding-left: 15px; cursor: pointer;">
+                <i class="fas fa-cog" style="margin-right:15px;"></i> 
+                <span>Switch Theme</span>
+            </div>
+            <div class="nav-link text-danger" style="cursor:default; justify-content: flex-start; padding-left: 15px;">
+                 <i class="fas fa-shield-alt" style="margin-right:15px;"></i>
+                 <span id="status-text-mobile">ADMIN ACCESS</span>
+            </div>
+            <a href="javascript:void(0)" onclick="logout()" class="nav-link text-danger" style="justify-content: flex-start; padding-left: 15px;">
+                <i class="fas fa-sign-out-alt" style="margin-right:15px;"></i> Log Out
+            </a>
+            <div class="sidebar-user" onclick="window.location.href='profile'" style="justify-content: flex-start; padding-left: 10px; margin-top: 15px;">
+                <img id="mobile-sidebar-pic" src="https://via.placeholder.com/150" alt="Profile" style="width:36px; height:36px;">
+                <div class="sidebar-user-info" style="display:block; margin-left:12px;">
+                    <div id="mobile-sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="mobile-sidebar-email" class="sidebar-useremail">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<aside class="sidebar-desktop">
+    <div class="sidebar-container">
+        <div class="sidebar-brand">
+            <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
+            <span>ZONE VAULT</span>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item"> <a href="profile" class="nav-link active"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
+            <li class="nav-item"> <a href="home" class="nav-link"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
+            <li class="nav-item"> <a href="videos" class="nav-link"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
+            <li class="nav-item"> <a href="collection" class="nav-link"><i class="fas fa-images"></i> <span class="nav-text">Collection</span></a> </li>
+            <li class="nav-item"> <a href="live" class="nav-link"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
+        </ul>
+        <div class="sidebar-bottom">
+            <div class="nav-link" onclick="toggleTheme()">
+                <i class="fas fa-cog"></i> 
+                <span class="nav-text">Switch Theme</span>
+            </div>
+             <div class="nav-link text-danger" style="cursor:default;">
+                 <i class="fas fa-shield-alt"></i>
+                 <span class="nav-text" id="status-text-pc">ADMIN ACCESS</span>
+            </div>
+            <a href="javascript:void(0)" onclick="logout()" class="nav-link text-danger">
+                <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Log Out</span>
+            </a>
+            <div class="sidebar-user" onclick="window.location.href='profile'">
+                <img id="sidebar-pic" src="https://via.placeholder.com/150" alt="Profile">
+                <div class="sidebar-user-info">
+                    <div id="sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="sidebar-email" class="sidebar-useremail">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">
+    <i class="fas fa-bell"></i>
+    <span id="notif-badge" class="badge"></span>
+</a>
+
+<div id="notifModal" class="notif-modal">
+    <div class="notif-header">
+        <span>Notifications</span>
+        <i class="fas fa-check-double" style="cursor:pointer;" title="Mark all read"></i>
+    </div>
+    <div id="notif-list">
+        <div class="notif-empty">Loading notifications...</div>
+    </div>
+</div>
+
+<div class="main-wrapper fade-in">
+    <div class="glass-card">
+        
+        <div class="banner" id="profile-banner"></div>
+        
+        <div class="profile-body">
+            <div class="avatar-wrapper" onclick="openAvatarModal()">
+                <img id="profile-pic" src="https://via.placeholder.com/150" class="profile-img">
+                <div class="avatar-icon"><i class="fas fa-camera" style="font-size:12px;"></i></div>
+            </div>
+
+            <div class="user-info">
+                <div id="display-mode">
+                    <h1 id="display-name">Loading User...</h1>
+                    <p class="email" id="display-email">...</p>
+                    <p class="role" id="display-role">MEMBER</p>
+                    <p class="bio" id="display-bio">Loading bio...</p>
+                    <button class="btn btn-secondary" onclick="toggleEditMode()">
+                        <i class="fas fa-pencil-alt"></i> Edit Profile
+                    </button>
+                </div>
+
+                <div id="edit-mode">
+                    <div class="input-group">
+                        <label>Cover Photo</label>
+                        <button class="btn btn-secondary" onclick="openBannerModal()" style="width: 100%; justify-content: center; padding: 12px; border: 1px dashed var(--border-color); background: var(--input-bg);">
+                            <i class="fas fa-camera"></i> Change Cover Photo
+                        </button>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Display Name</label>
+                        <input type="text" id="nameInput" class="styled-input" placeholder="Name">
+                    </div>
+                    <div class="input-group">
+                        <label>Bio</label>
+                        <textarea id="bioInput" class="styled-input" rows="3" placeholder="Tell us about yourself"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Banner Theme Color (Fallback)</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                             <input type="color" id="bannerColorInput" class="styled-input" style="width: 80px;" value="#27272a">
+                             <span style="font-size:12px; color:var(--text-muted);">Pick a color for when no image is set.</span>
+                        </div>
+                    </div>
+
+                    <div class="edit-action-btns" style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                        <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+                        <button class="btn btn-secondary" onclick="toggleEditMode()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="glass-card">
+            <div class="card-header"><i class="fas fa-id-card"></i> Account Status</div>
+            <div class="card-content">
+                <div class="info-row">
+                    <span class="info-label">Access Level</span>
+                    <span id="user-role" class="info-value">Member</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Request Status</span>
+                    <span id="req-status" class="info-value">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">User ID</span>
+                    <span id="user-uid" class="uid-badge">...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div class="card-header"><i class="fas fa-bell"></i>Notifications</div>
+            <div class="card-content" id="notice-container">
+                <div style="color:var(--text-muted); font-style:italic;">Checking for updates...</div>
+            </div>
+        </div>
+        
+        <div class="glass-card" style="grid-column: 1 / -1;">
+            <div class="card-header"><i class="fas fa-history"></i> Continue Watching</div>
+            <div class="card-content" id="watched-list">
+                <div style="color:var(--text-muted); font-style:italic;">Loading history...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="imageChangeModal" class="modal-overlay">
+    <div class="modal-box-avatar">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size: 16px;">Change Profile Picture</h3>
+            <button onclick="closeImageChangeModal()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+        
+        <div class="modal-content" style="padding-top: 25px;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <img id="current-photo-preview" src="https://via.placeholder.com/150" alt="Current Photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--text-main); box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+            </div>
+
+            <div style="font-size: 13px; color: var(--text-main); margin-bottom: 25px; line-height: 1.6; padding: 15px; background: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                <p><i class="fas fa-file-image"></i> <strong>Accepted Formats:</strong> JPEG, PNG only.</p>
+                <p><i class="fas fa-expand-arrows-alt"></i> <strong>Max File Size:</strong> 10MB.</p>
+                <p style="margin-top: 15px; color: #ff6b6b; font-weight: 600;"><i class="fas fa-exclamation-triangle"></i> Important: Explicit or inappropriate content is strictly prohibited.</p>
+            </div>
+
+            <div style="text-align: center;">
+                <input type="file" id="fileInput" accept="image/jpeg, image/png" style="display: none;">
+                <button class="btn btn-primary" id="chooseFromGalleryBtn" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;">
+                    <i class="fas fa-images"></i> Choose from Gallery
+                </button>
+                <div id="uploadStatus" style="font-size: 13px; color: var(--text-muted); margin-top: 15px; display: none;">Ready for upload...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="bannerChangeModal" class="modal-overlay">
+    <div class="modal-box-avatar" style="max-width: 650px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size: 16px;">Update Cover Photo</h3>
+            <button onclick="closeBannerModal()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+        
+        <div class="modal-content" style="padding-top: 25px; text-align: center;">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                Choose an image. You can reposition and crop it to fit the banner dimensions.
+            </div>
+
+            <input type="file" id="bannerFileInput" accept="image/jpeg, image/png" style="display: none;">
+            
+            <button class="btn btn-secondary" onclick="document.getElementById('bannerFileInput').click()" id="chooseBannerBtn" style="padding: 12px 25px;">
+                <i class="fas fa-images"></i> Select Image
+            </button>
+            
+            <div class="cropper-container-wrapper" id="cropperWrapper">
+                <img id="bannerCropperImg" src="" style="max-width: 100%; display: block;">
+            </div>
+
+            <div id="bannerUploadStatus" style="font-size: 13px; color: var(--text-muted); margin-top: 15px; display: none;"></div>
+            
+            <div style="margin-top: 20px; display: none; justify-content: center; gap: 10px;" id="bannerCropActionBtns">
+                <button class="btn btn-primary" onclick="uploadCroppedBanner()"><i class="fas fa-check"></i> Save Cover</button>
+                <button class="btn btn-secondary" onclick="resetBannerModal()"><i class="fas fa-times"></i> Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/js/profile.js"></script>
+
+</body>
+</html>

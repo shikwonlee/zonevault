@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+  <title>BDAY MESSAGE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link rel="icon" href="favicon-new.png" type="image/png" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2196f3">
+
+  <meta name="apple-mobile-web-app-title" content="Zone Vault">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="apple-touch-icon" sizes="192x192" href="favicon-new.png">
+<link rel="apple-touch-icon" sizes="512x512" href="favicon-new.png">
+<link rel="apple-touch-startup-image" href="splash.png">
+
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1B2RJ659GL');
+</script>
+  <!-- Plyr CSS -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 20px;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #1f1c2c, #928dab);
+      overflow-x: hidden;
+    }
+
+    /* Glassmorphism card */
+    .video-wrapper {
+      width: 85%;
+      max-width: 350px;
+      aspect-ratio: 9 / 16;
+      border-radius: 20px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      transform: scale(0.9);
+      opacity: 0;
+      animation: fadeIn 0.9s ease forwards;
+      position: relative;
+    }
+
+    /* Loading shimmer */
+    .loading {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      z-index: 1;
+    }
+
+    @keyframes shimmer {
+      100% { background-position: -200% 0; }
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Plyr theme */
+    :root {
+      --plyr-color-main: #ff4b2b;
+      --plyr-video-control-background-hover: rgba(0,0,0,0.6);
+    }
+
+    .plyr__controls {
+      padding: 8px;
+    }
+
+    .video-title {
+      margin-top: 18px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #fff;
+      text-align: center;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Video Container -->
+  <div class="video-wrapper">
+    <div class="loading" id="loading"></div>
+    <video id="player" playsinline muted autoplay controls>
+      <source src="https://stream.mux.com/tUBpyfKYbtpaaHjoFSJDU3Ap502EgeZMCcTL02L0274M008.m3u8" type="application/x-mpegURL" />
+    </video>
+  </div>
+
+  <!-- Video Title -->
+  <div class="video-title">[H.B.D] MESSAGE FOR OCTOBER CARAT 💎</div>
+
+  <!-- Plyr JS -->
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <script>
+    const video = document.getElementById('player');
+    const source = video.querySelector('source').src;
+    const loader = document.getElementById('loading');
+
+    // HLS setup
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(source);
+      hls.attachMedia(video);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = source;
+    }
+
+    // Plyr init
+    const player = new Plyr(video, {
+      ratio: '9:16',
+      autoplay: true,
+      muted: true, // safer for autoplay
+      clickToPlay: true,
+      controls: ['play', 'current-time', 'mute']
+    });
+
+    // Autoplay fallback
+    player.play().catch(() => {
+      console.warn("Autoplay blocked. Waiting for user interaction.");
+    });
+
+    // Remove loading shimmer once video starts
+    video.addEventListener('playing', () => loader.style.display = 'none');
+  </script>
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        reg.onupdatefound = () => {
+          const newSW = reg.installing;
+          newSW.onstatechange = () => {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          };
+        };
+      }).catch(err => console.error('SW failed:', err));
+    }
+  </script>
+  
+
+</body>
+</html>

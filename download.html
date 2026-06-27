@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Download App | Zone Vault</title>
+  
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+        --bg-color: #09090b;
+        --card-bg: #18181b;
+        --card-hover: #27272a;
+        --text-main: #f4f4f5;
+        --text-muted: #a1a1aa;
+        --border-color: rgba(255, 255, 255, 0.08);
+        --accent-blue: #3b82f6;
+        --warning-bg: rgba(234, 179, 8, 0.1);
+        --warning-text: #facc15;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: 'Inter', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-bottom: 60px;
+    }
+
+    /* Navbar */
+    .nav-wrapper {
+        width: 100%;
+        max-width: 1200px;
+        padding: 30px 20px;
+    }
+    .back-link {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: var(--card-bg);
+        border-radius: 30px;
+        border: 1px solid var(--border-color);
+        transition: 0.2s;
+    }
+    .back-link:hover { color: var(--text-main); background: var(--card-hover); }
+
+    /* Header */
+    .header-content {
+        text-align: center;
+        margin: 20px 0 40px 0;
+        padding: 0 20px;
+    }
+    .header-content h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 12px; }
+    .header-content p { color: var(--text-muted); font-size: 1.1rem; }
+
+    /* Grid Layout */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        width: 100%;
+        max-width: 1200px;
+        padding: 0 20px;
+    }
+
+    .dl-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 25px;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dl-card:hover {
+        transform: translateY(-4px);
+        background: var(--card-hover);
+        border-color: rgba(255,255,255,0.2);
+    }
+
+    /* Top Section of Card */
+    .card-top {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .icon-wrapper {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        background: rgba(255,255,255,0.05);
+    }
+    .card-titles h2 { font-size: 1.2rem; font-weight: 700; }
+    .card-titles span { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Info Lists */
+    .specs-list { list-style: none; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+    .specs-list li {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .highlight { color: var(--text-main); font-weight: 600; }
+
+    /* Instruction Box (New Professional Section) */
+    .instruction-box {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        flex-grow: 1;
+    }
+    .instruction-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .step-list {
+        list-style: none;
+        counter-reset: step-counter;
+    }
+    .step-list li {
+        position: relative;
+        padding-left: 20px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+    .step-list li::before {
+        content: "•";
+        position: absolute;
+        left: 5px;
+        color: var(--accent-blue);
+    }
+    .warning-text {
+        color: #fbbf24;
+        font-weight: 600;
+    }
+
+    /* Buttons */
+    .action-btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: 0.2s;
+        text-decoration: none;
+    }
+    
+    .btn-win { background: var(--text-main); color: #000; }
+    .btn-win:hover { background: #e4e4e7; }
+
+    .btn-android { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+    .btn-android:hover { border-color: var(--text-main); background: rgba(255,255,255,0.05); }
+
+    .btn-pwa { background: var(--accent-blue); color: #fff; }
+    .btn-pwa:hover { background: #2563eb; }
+
+    /* Tags */
+    .tag {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+    .tag-rec { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+    @media (max-width: 900px) {
+        .grid-container { grid-template-columns: 1fr; max-width: 500px; }
+        .header-content h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+    <div class="nav-wrapper">
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    </div>
+
+    <div class="header-content">
+        <h1>Get Zone Vault</h1>
+        <p>Select your platform below for installation instructions.</p>
+    </div>
+
+    <div class="grid-container">
+
+        <div class="dl-card">
+            <span class="tag tag-rec">Recommended</span>
+            <div class="card-top">
+                <div class="icon-wrapper"><i class="fab fa-windows"></i></div>
+                <div class="card-titles">
+                    <h2>Windows PC</h2>
+                    <span>Version 2.0.1 (Stable) • 15.8 MB</span>
+                </div>
+            </div>
+
+            <ul class="specs-list">
+                <li><i class="fas fa-microchip"></i> <span>Optimized for performance</span></li>
+                <li><i class="fas fa-shield-alt"></i> <span>Virus Scanned & Safe</span></li>
+            </ul>
+
+            <div class="instruction-box">
+                <div class="instruction-title"><i class="fas fa-exclamation-circle" style="color:#fbbf24;"></i> Installation Notice</div>
+                <ul class="step-list">
+                    <li>After clicking download, your browser may say <strong>"File isn't commonly downloaded."</strong></li>
+                    <li><strong>Step 1:</strong> Click the <span class="highlight">3 dots (⋯)</span> on the download item.</li>
+                    <li><strong>Step 2:</strong> Select <span class="highlight">"Keep"</span>.</li>
+                    <li><strong>Step 3:</strong> Click <span class="highlight">"Show more"</span> or "Expand", then select <span class="highlight">"Keep anyway"</span>.</li>
+                    <li><strong>Step 4:</strong> If Windows SmartScreen appears, click "More Info" then "Run Anyway".</li>
+                    <li style="margin-top:8px;"><em>Note: The app may take 2-3 mins to load resources on first launch.</em></li>
+                </ul>
+            </div>
+
+            <a href="https://raw.githubusercontent.com/svtzoneph/NANAbnb/refs/heads/main/apps/Zone%20Vault%20v.2.0_desktop.exe" class="action-btn btn-win">
+                <i class="fas fa-download"></i> Download .exe
+            </a>
+        </div>
+
+        <div class="dl-card">
+            <div class="card-top">
+                <div class="icon-wrapper"><i class="fab fa-android"></i></div>
+                <div class="card-titles">
+                    <h2>Android APK</h2>
+                    <span>Manual Install • 6.27 MB</span>
+                </div>
+            </div>
+
+            <ul class="specs-list">
+                <li><i class="fas fa-bolt"></i> <span>Lightweight & Fast</span></li>
+                <li><i class="fas fa-chart-line"></i> <span>Size increases with cache</span></li>
+            </ul>
+
+            <div class="instruction-box">
+                <div class="instruction-title"><i class="fas fa-cog"></i> Setup Guide</div>
+                <ul class="step-list">
+                    <li>Download the file below. If prompted, allow browser to download unknown files.</li>
+                    <li><strong>Google Play Protect:</strong> If a warning appears saying "Unsafe App" or "Unknown Developer", click <span class="highlight">"More Details"</span> then <span class="highlight">"Install Anyway"</span>.</li>
+                    <li>Ensure <strong>"Install from Unknown Sources"</strong> is enabled in your phone settings.</li>
+                </ul>
+            </div>
+
+            <a href="https://raw.githubusercontent.com/svtzoneph/NANAbnb/refs/heads/main/apps/Zone%20Vault.apk" class="action-btn btn-android">
+                <i class="fas fa-download"></i> Download .apk
+            </a>
+        </div>
+
+        <div class="dl-card">
+            <div class="card-top">
+                <div class="icon-wrapper"><i class="fas fa-globe"></i></div>
+                <div class="card-titles">
+                    <h2>Web App</h2>
+                    <span>Universal • iOS & Android</span>
+                </div>
+            </div>
+
+            <ul class="specs-list">
+                <li><i class="fas fa-sync"></i> <span>Updates automatically</span></li>
+                <li><i class="fas fa-mobile-alt"></i> <span>Looks like a native app</span></li>
+            </ul>
+
+            <div class="instruction-box">
+                <div class="instruction-title"><i class="fas fa-info-circle"></i> How to Add</div>
+                <ul class="step-list">
+                    <li><strong>Android (Chrome):</strong> Click the "Install App" button below, or tap the <span class="highlight">3 dots (⋮)</span> top-right > "Add to Home Screen".</li>
+                    <li><strong>iOS (Safari):</strong> Tap the <span class="highlight">Share Icon</span> at the bottom > Scroll down and tap <span class="highlight">"Add to Home Screen"</span>.</li>
+                    <li><em>No downloads required. Saves storage space.</em></li>
+                </ul>
+            </div>
+
+            <button id="pwa-install-btn" class="action-btn btn-pwa">
+                <i class="fas fa-plus-circle"></i> Install App
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // PWA INSTALL LOGIC
+        let deferredPrompt;
+        const pwaBtn = document.getElementById('pwa-install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log("PWA Ready");
+        });
+
+        pwaBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('User choice:', outcome);
+                deferredPrompt = null;
+            } else {
+                alert("To install:\n\nChrome (Android): Tap 3 dots > Add to Home Screen\nSafari (iOS): Tap Share > Add to Home Screen\nPC: Click the install icon in the browser address bar.");
+            }
+        });
+    </script>
+
+</body>
+</html>

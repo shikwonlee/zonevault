@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Videos | Zone Vault</title>
+   
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#121212">
+   
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1B2RJ659GL');
+  </script>
+
+  <style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE
+       ========================================= */
+    :root {
+        --bg-color: #121212;
+        --text-main: #e0e0e0;
+        --text-muted: #a0a0a0;
+        
+        --sidebar-bg: #18181b; 
+        --sidebar-hover-bg: #27272a;
+        
+        --card-bg: #1e1e1e;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+        
+        --accent: #ffffff;
+        --input-bg: rgba(255, 255, 255, 0.05);
+        --banner-gradient: linear-gradient(to right, #18181b, #27272a);
+        
+        --status-pending: #fbbf24;
+        --status-approved: #4ade80;
+        --status-rejected: #f87171;
+        --youtube-red: #ff0000;
+        --admin-color: #ef4444;
+        --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+        
+        /* Sidebar Dimensions */
+        --sidebar-width-collapsed: 72px;
+        --sidebar-width-expanded: 260px;
+    }
+
+    body.light-mode {
+        --bg-color: #f3f4f6;
+        --text-main: #111827;
+        --text-muted: #6b7280;
+        --card-bg: #ffffff;
+        --sidebar-bg: #ffffff;
+        --sidebar-hover-bg: #f9fafb;
+        --glass-border: 1px solid rgba(0, 0, 0, 0.08);
+        --accent: #000000;
+        --input-bg: #f3f4f6;
+        --banner-gradient: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+        --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { 
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: 'Inter', sans-serif;
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        overflow-x: hidden;
+        padding-left: var(--sidebar-width-collapsed);
+        background-attachment: fixed;
+    }
+
+    /* SCROLL LOCK CLASS */
+    body.no-scroll { overflow: hidden; }
+
+    /* Noise Texture */
+    .noise-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none; z-index: -1;
+    }
+
+    /* =========================================
+       2. SIDEBAR STYLES
+       ========================================= */
+    .sidebar-container {
+        display: flex; flex-direction: column; justify-content: space-between;
+        height: 100%; padding-top: 20px;
+    }
+
+    .sidebar-brand {
+        display: flex; align-items: center; padding: 0 20px;
+        height: 50px; margin-bottom: 30px; white-space: nowrap;
+    }
+    .sidebar-brand img { width: 32px; height: auto; min-width: 32px; }
+    .sidebar-brand span {
+        margin-left: 15px; font-weight: 700; font-size: 18px; letter-spacing: -0.5px;
+        color: var(--text-main);
+    }
+
+    /* Navigation */
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0 10px; width: 100%; }
+    
+    .nav-link {
+        display: flex; align-items: center;
+        padding: 12px 14px;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.2s;
+        white-space: nowrap;
+        font-size: 14px;
+        font-weight: 500;
+        height: 48px; 
+        cursor: pointer;
+    }
+    
+    .nav-link i {
+        font-size: 18px; min-width: 24px; text-align: center;
+        margin-right: 15px; 
+        transition: margin-right 0.3s;
+    }
+    
+    .nav-link:hover { background: var(--sidebar-hover-bg); color: var(--text-main); }
+    .nav-link.active { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--glass-border); }
+
+    /* Bottom Section */
+    .sidebar-bottom {
+        padding: 15px 10px;
+        border-top: var(--glass-border);
+        display: flex; flex-direction: column; gap: 5px;
+        width: 100%;
+        margin-top: auto; 
+    }
+
+    /* User Profile Widget */
+    .sidebar-user {
+        display: flex; align-items: center;
+        padding: 10px; border-radius: 12px;
+        cursor: pointer; transition: 0.2s;
+        overflow: hidden; margin-top: 5px;
+    }
+    .sidebar-user:hover { background: var(--sidebar-hover-bg); }
+
+    .sidebar-user img {
+        width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
+        min-width: 32px; border: 2px solid var(--accent);
+    }
+    
+    .sidebar-user-info {
+        margin-left: 12px; display: flex; flex-direction: column;
+        white-space: nowrap;
+    }
+    .sidebar-username { font-size: 13px; font-weight: 600; color: var(--text-main); }
+    .sidebar-useremail { font-size: 11px; color: var(--text-muted); }
+
+    /* DESKTOP SIDEBAR */
+    .sidebar-desktop {
+        position: fixed; top: 0; left: 0; height: 100vh;
+        width: var(--sidebar-width-collapsed);
+        background: var(--sidebar-bg);
+        border-right: var(--glass-border);
+        z-index: 1000;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden; 
+    }
+    .sidebar-desktop:hover {
+        width: var(--sidebar-width-expanded);
+        box-shadow: 10px 0 40px rgba(0,0,0,0.1);
+    }
+    /* Animations for Desktop Collapse */
+    .sidebar-desktop .sidebar-brand span, 
+    .sidebar-desktop .nav-text, 
+    .sidebar-desktop .sidebar-user-info,
+    .sidebar-desktop .theme-text {
+        opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .sidebar-desktop .nav-link i { margin-right: 0; }
+    
+    .sidebar-desktop:hover .sidebar-brand span, 
+    .sidebar-desktop:hover .nav-text, 
+    .sidebar-desktop:hover .sidebar-user-info,
+    .sidebar-desktop:hover .theme-text {
+        opacity: 1; transition-delay: 0.1s;
+    }
+    .sidebar-desktop:hover .nav-link i { margin-right: 15px; }
+
+    /* MOBILE SIDEBAR & HEADER */
+    .mobile-header {
+        display: none; padding: 15px 20px;
+        align-items: center; justify-content: space-between; 
+        position: sticky; top: 0; z-index: 90;
+        backdrop-filter: blur(20px); border-bottom: var(--glass-border);
+        background: var(--bg-color); width: 100%;
+    }
+    .mobile-logo-container { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.5px; }
+    .mobile-logo-img { height: 30px; width: auto; }
+    .hamburger { background: transparent; border: none; color: var(--text-main); font-size: 24px; cursor: pointer; }
+
+    .mobile-sidebar-menu {
+        position: fixed; top: 0; left: -100%; width: 280px; height: 100%;
+        background: var(--sidebar-bg);
+        z-index: 9999; transition: left 0.3s ease; border-right: var(--glass-border);
+    }
+    .mobile-sidebar-menu.open { left: 0; }
+    .mobile-close-btn { 
+        position: absolute; top: 25px; right: 20px; 
+        background: none; border: none; color: var(--text-main); 
+        font-size: 24px; cursor: pointer; z-index: 10;
+    }
+
+    /* Switch */
+    .switch { display: block; --width-of-switch: 3.5em; --height-of-switch: 2em; --size-of-icon: 1.4em; --slider-offset: 0.3em; position: relative; width: var(--width-of-switch); height: var(--height-of-switch); }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e5e7eb; transition: .4s; border-radius: 30px; }
+    .slider:before { position: absolute; content: ""; height: var(--size-of-icon,1.4em); width: var(--size-of-icon,1.4em); border-radius: 20px; left: var(--slider-offset,0.3em); top: 50%; transform: translateY(-50%); background: linear-gradient(40deg,#ff0080,#ff8c00 70%); transition: .4s; }
+    input:checked + .slider { background-color: #3f3f46; }
+    input:checked + .slider:before { left: calc(100% - (var(--size-of-icon,1.4em) + var(--slider-offset,0.3em))); background: #ffffff; }
+
+    /* =========================================
+       3. SEARCH & GRID
+       ========================================= */
+    .main-wrapper { max-width: 1200px; margin: 40px auto; width: 92%; }
+
+    .search-wrapper {
+        position: relative; margin: 0 auto 30px auto; width: 100%; max-width: 600px; z-index: 50;
+    }
+    .search-input {
+        width: 100%; padding: 14px 20px 14px 50px;
+        background: var(--card-bg); border: var(--glass-border);
+        border-radius: 50px; font-size: 15px; color: var(--text-main);
+        outline: none; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.3s ease;
+        font-family: 'Inter', sans-serif;
+    }
+    .search-input::placeholder { color: var(--text-muted); opacity: 0.7; }
+    .search-input:focus { border-color: var(--text-main); box-shadow: 0 8px 25px rgba(0,0,0,0.25); background: rgba(255,255,255,0.08); }
+    
+    .search-icon {
+        position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+        color: var(--text-muted); font-size: 16px; pointer-events: none; transition: color 0.3s;
+    }
+    .search-input:focus + .search-icon { color: var(--text-main); }
+
+    .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    @media (max-width: 1100px) { .grid-container { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 800px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .grid-container { grid-template-columns: 1fr; } }
+
+    /* Video Cards */
+    .video-card {
+        background: var(--card-bg); border: var(--glass-border);
+        border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+        transition: transform 0.2s, box-shadow 0.2s; position: relative;
+    }
+
+    .thumb-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .thumb-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+
+    .card-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+    
+    .video-meta { 
+        font-size: 10px; 
+        color: var(--bg-color); 
+        background-color: var(--text-main); /* High contrast pill */
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        margin-bottom: 8px; 
+        align-self: flex-start;
+        padding: 4px 12px;
+        border-radius: 50px; /* Highly rounded corners */
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .video-title { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; line-height: 1.4; flex-grow: 1; }
+    .video-hashtags { font-size: 11px; color: var(--text-muted); margin-bottom: 15px; }
+
+    .card-actions { display: flex; align-items: center; justify-content: flex-end; margin-top: auto; }
+    
+    .btn-watch {
+        background: var(--text-main); color: var(--bg-color); border: none; padding: 8px 16px; border-radius: 50px;
+        font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%;
+    }
+    .btn-watch:hover { opacity: 0.9; transform: scale(1.02); }
+
+    .countdown-badge {
+        position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+        color: white; font-size: 10px; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #pagination { text-align: center; margin-top: 30px; display: flex; justify-content: center; gap: 5px; }
+    #pagination button {
+        background: var(--card-bg); border: var(--glass-border); color: var(--text-muted);
+        width: 35px; height: 35px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+    }
+    #pagination button.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+    #pagination button:hover:not(.active) { background: rgba(255,255,255,0.1); }
+
+    /* =========================================
+       4. MODAL STYLES (GENERAL)
+       ========================================= */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+        z-index: 10000; display: none; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.3s;
+    }
+    .modal-overlay.active { opacity: 1; display: flex; }
+    
+    .modal-box {
+        background: var(--card-bg);
+        border: var(--glass-border);
+        padding: 0; 
+        border-radius: 20px; 
+        width: 92%; max-width: 550px; 
+        color: var(--text-main); 
+        max-height: 85vh; 
+        display: flex; flex-direction: column;
+        box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+        overflow: hidden; 
+        position: relative;
+    }
+
+    .close-modal { 
+        position: absolute; top: 15px; right: 15px;
+        background: transparent; border: none; color: var(--text-muted); 
+        width: 30px; height: 30px; border-radius: 50%;
+        font-size: 18px; cursor: pointer; transition: 0.2s; 
+        display: flex; align-items: center; justify-content: center;
+    }
+    .close-modal:hover { background: var(--sidebar-hover-bg); color: var(--text-main); }
+
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; color: var(--text-main); letter-spacing: -0.5px; }
+    .info-text p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
+    .info-text b { color: var(--text-main); }
+    .info-modal-content { padding: 30px; text-align: left; }
+
+    /* =========================================
+       5. MOBILE SPECIFIC STYLES
+       ========================================= */
+    @media (max-width: 900px) {
+        .sidebar-desktop { display: none; }
+        .mobile-header { display: flex; }
+        body { padding-left: 0; }
+        .search-wrapper { max-width: 90%; }
+    }
+
+    /* SPECIFIC FIX FOR MODAL ON PHONES */
+    @media (max-width: 600px) {
+        .modal-box {
+            width: 85%; /* Smaller width for phone feels */
+            max-width: 100%;
+            border-radius: 16px; 
+        }
+        .info-modal-content {
+            padding: 20px; /* Reduced padding */
+        }
+        .modal-title {
+            font-size: 18px; /* Slightly smaller title */
+            margin-bottom: 12px;
+        }
+        .info-text p {
+            font-size: 13px; /* Slightly smaller text */
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .close-modal {
+            top: 10px;
+            right: 10px;
+            width: 25px; 
+            height: 25px;
+        }
+    }
+
+    /* Access Denied Modal */
+    .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 10, 10, 0.95); color: #fff; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; z-index: 99999; opacity: 0; animation: fadeIn 0.4s forwards; backdrop-filter: blur(15px); }
+    .access-card { background: #18181b; border: 1px solid rgba(255,255,255,0.1); padding: 40px; border-radius: 24px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); transform: translateY(20px); animation: slideUp 0.4s forwards 0.1s; }
+    .access-icon-box { width: 60px; height: 60px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 24px; }
+    .access-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: #fff; }
+    .access-desc { font-size: 14px; color: #a1a1aa; line-height: 1.5; margin-bottom: 25px; }
+    .access-btn { background: #fff; color: #000; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: all 0.2s; width: 100%; }
+    .access-btn:hover { background: #e5e5e5; transform: translateY(-1px); }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes slideUp { to { transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<div class="noise-overlay"></div>
+
+<div class="mobile-header">
+    <div class="mobile-logo-container">
+         <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
+         <span>ZONE VAULT</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <button class="hamburger" onclick="toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+</div>
+
+<div id="mobileSidebar" class="mobile-sidebar-menu">
+    <div class="sidebar-container">
+        <button class="mobile-close-btn" onclick="toggleMobileSidebar()">&times;</button>
+
+        <div class="sidebar-top">
+            <div class="sidebar-brand">
+                <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault">
+                <span>ZONE VAULT</span>
+            </div>
+
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="profile.html" class="nav-link">
+                        <i class="fas fa-user"></i> <span>Profile</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="home.html" class="nav-link">
+                        <i class="fas fa-home"></i> <span>Home</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="videos.html" class="nav-link active">
+                        <i class="fas fa-play-circle"></i> <span>Videos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="random" class="nav-link">
+                        <i class="fas fa-random"></i> <span>Random</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="collection" class="nav-link">
+                        <i class="fas fa-images"></i> <span>Collection</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="live.html" class="nav-link">
+                        <i class="fas fa-broadcast-tower"></i> <span>Live</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="nav-link" style="justify-content:space-between; cursor:default; padding: 10px;">
+                <div style="display:flex; align-items:center;">
+                    <i class="fas fa-moon"></i> 
+                    <span id="theme-text-mobile" class="nav-text" style="font-size:13px; margin-left:10px;">Dark Mode</span>
+                </div>
+                <label class="switch" style="transform:scale(0.65);">
+                    <input type="checkbox" class="theme-checkbox-mobile" onchange="syncTheme(this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="nav-link" style="cursor:default; margin-top:5px; margin-bottom:5px; border:1px solid var(--glass-border);">
+                 <i class="fas fa-shield-alt" id="status-icon-mobile"></i>
+                 <span class="nav-text" id="status-text-mobile" style="margin-left:10px; font-weight:700;">Checking...</span>
+            </div>
+
+            <div class="nav-item">
+                <a href="#" onclick="logout()" class="nav-link" style="color:var(--admin-color);">
+                    <i class="fas fa-sign-out-alt"></i> <span>Log Out</span>
+                </a>
+            </div>
+
+            <div class="sidebar-user" onclick="window.location.href='profile.html'">
+                <img id="mobile-sidebar-pic" src="https://via.placeholder.com/150" alt="Profile">
+                <div class="sidebar-user-info">
+                    <div id="mobile-sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="mobile-sidebar-email" class="sidebar-useremail">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<aside class="sidebar-desktop">
+    <div class="sidebar-container">
+        <div class="sidebar-top">
+            <div class="sidebar-brand">
+                <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
+                <span>ZONE VAULT</span>
+            </div>
+
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="profile.html" class="nav-link">
+                        <i class="fas fa-user"></i> <span class="nav-text">Profile</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="home.html" class="nav-link">
+                        <i class="fas fa-home"></i> <span class="nav-text">Home</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="videos.html" class="nav-link active">
+                        <i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="random" class="nav-link">
+                        <i class="fas fa-random"></i> <span class="nav-text">Random</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="collection" class="nav-link">
+                        <i class="fas fa-images"></i> <span class="nav-text">Collection</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="live.html" class="nav-link">
+                        <i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="nav-link" style="justify-content:space-between; cursor:default; padding: 10px;">
+                <div style="display:flex; align-items:center;">
+                    <i class="fas fa-moon"></i> 
+                    <span id="theme-text-pc" class="theme-text nav-text" style="font-size:13px; margin-left:10px;">Dark Mode</span>
+                </div>
+                <label class="switch" style="transform:scale(0.65);">
+                    <input type="checkbox" class="theme-checkbox-pc" onchange="syncTheme(this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="nav-link" style="cursor:default; margin-top:5px; margin-bottom:5px; border:1px solid var(--glass-border);">
+                 <i class="fas fa-shield-alt" id="status-icon-pc"></i>
+                 <span class="nav-text nav-text" id="status-text-pc" style="margin-left:10px; font-weight:700;">Checking...</span>
+            </div>
+
+            <div class="nav-item">
+                <a href="#" onclick="logout()" class="nav-link" style="color:var(--admin-color);">
+                    <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Log Out</span>
+                </a>
+            </div>
+
+            <div class="sidebar-user" onclick="window.location.href='profile.html'">
+                <img id="sidebar-pic" src="https://via.placeholder.com/150" alt="Profile">
+                <div class="sidebar-user-info">
+                    <div id="sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="sidebar-email" class="sidebar-useremail">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<div class="main-wrapper">
+    <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search videos, tags, categories..." oninput="handleSearch(this.value)">
+    </div>
+
+    <div class="grid-container" id="grid"></div>
+      
+    <div id="pagination"></div>
+</div>
+
+<div id="infoModal" class="modal-overlay">
+    <div class="modal-box info-modal-content">
+        <button class="close-modal" onclick="closeInfoModal()">&times;</button>
+        <div class="modal-title">Important Viewing Notice</div>
+        <div class="info-text">
+            <p>
+                <b>Welcome to the K-Pop Mix Vault.</b><br>
+                This section provides free access to exclusive content from various K-Pop groups.
+            </p>
+            <p>
+                Please note that this page utilizes <b>free third-party video storage</b> to host these videos at no cost to you. As a result, the video player may contain pop-up advertisements provided by the host.
+            </p>
+            <hr style="border-color:var(--glass-border); margin:15px 0;">
+            <p>
+                <b>Recommendation:</b><br>
+                For a safe and uninterrupted viewing experience, we strongly advise using an <b>AdBlocker</b> extension on your browser before proceeding.
+            </p>
+        </div>
+        <button onclick="closeInfoModal()" class="btn-watch" style="width:100%; margin-top:10px;">I Understand</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+<script>
+/* ==================== Firebase & Data Logic ==================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+  authDomain: "tvnstream-b4497.firebaseapp.com",
+  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+  projectId: "tvnstream-b4497",
+  storageBucket: "tvnstream-b4497.appspot.com",
+  messagingSenderId: "308384754214",
+  appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+  measurementId: "G-VFNH70R4D9"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+let userId = null;
+
+// Auth & Profile Fetch
+auth.onAuthStateChanged(user => {
+  if (user) {
+    userId = user.uid;
+
+    db.ref('users/' + userId).on('value', snapshot => {
+        const data = snapshot.val() || {};
+        const displayName = data.name || "Member";
+        const displayEmail = user.email;
+        const displayPic = data.profilePicture || "https://via.placeholder.com/150";
+        const role = (data.role || "member").toLowerCase();
+
+        // Update Desktop Sidebar
+        const sbName = document.getElementById("sidebar-name");
+        const sbEmail = document.getElementById("sidebar-email");
+        const sbPic = document.getElementById("sidebar-pic");
+        if(sbName) sbName.innerText = displayName;
+        if(sbEmail) sbEmail.innerText = displayEmail;
+        if(sbPic) sbPic.src = displayPic;
+
+        // Update Mobile Sidebar
+        const mbName = document.getElementById("mobile-sidebar-name");
+        const mbEmail = document.getElementById("mobile-sidebar-email");
+        const mbPic = document.getElementById("mobile-sidebar-pic");
+        if(mbName) mbName.innerText = displayName;
+        if(mbEmail) mbEmail.innerText = displayEmail;
+        if(mbPic) mbPic.src = displayPic;
+
+        // --- ROLE INDICATORS ---
+        const isAdm = role === 'admin';
+        const statusTextIds = ['status-text-pc', 'status-text-mobile'];
+        const statusIconIds = ['status-icon-pc', 'status-icon-mobile'];
+
+        statusTextIds.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.innerText = isAdm ? "ADMIN" : "MEMBER";
+                el.style.color = isAdm ? "var(--admin-color)" : "var(--text-muted)";
+            }
+        });
+
+        statusIconIds.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.style.color = isAdm ? "var(--admin-color)" : "var(--text-muted)";
+            }
+        });
+
+        if (isAdm) {
+            sessionStorage.setItem('isAdmin', 'true');
+            sessionStorage.setItem('internalAccess', 'true');
+        } else {
+            sessionStorage.removeItem('isAdmin');
+        }
+    });
+  } else {
+    auth.signInAnonymously().catch(console.error);
+  }
+});
+
+window.logout = function() {
+    if(confirm("Are you sure you want to log out?")) {
+        auth.signOut().then(() => window.location.href = "index.html");
+    }
+}
+
+/* ==================== Video Data (UPDATED CATEGORIES) ==================== */
+const data = [
+  {id:"v1", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/random/bts/la.jpg", category:"BTS", title:"BTS: Permission to Dance on Stage - LA", hashtags:"", link:"random/2022/bts-permission-to-dance-on-stage-la"},
+ 
+];
+
+let currentPaginationPage = 1;
+let cardsPerPage = window.innerWidth <= 768 ? 4 : 8;
+const grid = document.getElementById("grid");
+
+// --- SEARCH LOGIC ---
+let filteredData = [...data];
+
+function handleSearch(query) {
+    const term = query.toLowerCase();
+    filteredData = data.filter(item => 
+        item.title.toLowerCase().includes(term) || 
+        item.category.toLowerCase().includes(term) ||
+        item.hashtags.toLowerCase().includes(term)
+    );
+    currentPaginationPage = 1;
+    renderGrid(1);
+}
+
+window.addEventListener('resize', () => {
+    const newLimit = window.innerWidth <= 768 ? 5 : 8;
+    if(newLimit !== cardsPerPage) {
+        cardsPerPage = newLimit;
+        currentPaginationPage = 1; 
+        renderGrid(1);
+    }
+});
+
+function renderGrid(page) {
+  grid.innerHTML = "";
+  if (filteredData.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">No videos found matching your search.</div>';
+      document.getElementById("pagination").innerHTML = "";
+      return;
+  }
+  const start = (page-1)*cardsPerPage;
+  const end = start+cardsPerPage;
+  const pageData = filteredData.slice(start,end);
+
+  pageData.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "video-card";
+    
+    el.innerHTML = `
+      <div class="thumb-wrapper">
+        <img src="${item.thumb}" loading="lazy" alt="${item.title}">
+        <div class="countdown-badge" data-date="${item.releaseDate || ''}"></div>
+      </div>
+      <div class="card-body">
+        <div class="video-meta">${item.category}</div>
+        <div class="video-title">${item.title}</div>
+        <div class="video-hashtags">${item.hashtags}</div>
+        <div class="card-actions">
+            <button class="btn-watch" onclick="window.location.href='${item.link}'">WATCH NOW</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+  renderPagination();
+  startCountdown();
+}
+
+function renderPagination() {
+  const pagination = document.getElementById("pagination");
+  pagination.innerHTML = "";
+  const pageCount = Math.ceil(filteredData.length/cardsPerPage);
+  if(pageCount <= 1) return;
+  for(let i=1; i<=pageCount; i++){
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    if(i===currentPaginationPage) btn.classList.add("active");
+    btn.onclick = () => { currentPaginationPage=i; renderGrid(currentPaginationPage); window.scrollTo(0,0); };
+    pagination.appendChild(btn);
+  }
+}
+
+function startCountdown() {
+  document.querySelectorAll(".countdown-badge").forEach(elem => {
+    const dateStr = elem.dataset.date;
+    if (!dateStr) { elem.style.display='none'; return; }
+    const endDate = new Date(dateStr);
+    const update = () => {
+      const now = new Date();
+      const diff = endDate - now;
+      if (diff <= 0) { elem.textContent = "Available Now"; return; }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      elem.textContent = `${days}d left`;
+    };
+    update();
+  });
+}
+
+window.closeInfoModal = function() { 
+    document.getElementById('infoModal').classList.remove('active'); 
+    sessionStorage.setItem('infoModalShown', 'true'); 
+    document.body.classList.remove('no-scroll'); // UNLOCK SCROLL
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (!sessionStorage.getItem('infoModalShown')) {
+    document.getElementById('infoModal').classList.add('active');
+    document.body.classList.add('no-scroll'); // LOCK SCROLL INITIALLY
+  }
+  renderGrid(1); 
+});
+
+// Sidebar Toggle
+window.toggleMobileSidebar = function() { document.getElementById('mobileSidebar').classList.toggle('open'); }
+
+// Theme Logic
+function initTheme() {
+    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
+    const isDark = savedTheme === 'dark';
+    if (!isDark) { document.body.classList.add('light-mode'); }
+    document.querySelectorAll('.theme-checkbox-pc, .theme-checkbox-mobile').forEach(cb => { cb.checked = isDark; });
+    updateThemeText(isDark);
+}
+window.syncTheme = function(el) {
+    const isDark = el.checked;
+    if(isDark) {
+        document.body.classList.remove('light-mode');
+        localStorage.setItem('zoneTheme', 'dark');
+    } else {
+        document.body.classList.add('light-mode');
+        localStorage.setItem('zoneTheme', 'light');
+    }
+    document.querySelectorAll('.theme-checkbox-pc, .theme-checkbox-mobile').forEach(cb => { cb.checked = isDark; });
+    updateThemeText(isDark);
+}
+function updateThemeText(isDark) {
+    const text = isDark ? "Dark Mode" : "Light Mode";
+    const pcText = document.getElementById('theme-text-pc');
+    const mobileText = document.getElementById('theme-text-mobile');
+    if(pcText) pcText.innerText = text;
+    if(mobileText) mobileText.innerText = text;
+}
+initTheme();
+</script>
+
+<script>
+  // --- PROTECTION LOGIC (Includes Admin Bypass) ---
+  const allowedPaths = ['/index.html','/home.html','/nanabnb.html','/newtour.html','/hxwfanconcert.html','/svtholiday.html','/arenatour.html','/svtjapanconcert.html','/touragain.html','/gallery.html','/profile.html','/soon.html','/videos.html', '/admin.html'];
+  
+  // Check Admin Status from Session
+  const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+
+  const currentPage = window.location.pathname;
+  let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
+  const referrer = document.referrer;
+  const refPath = referrer ? new URL(referrer, location.origin).pathname : null;
+  
+  // If coming from allowed page OR is Admin, grant access
+  if ((refPath && allowedPaths.includes(refPath)) || isAdmin) { 
+      sessionStorage.setItem('internalAccess', 'true'); 
+      hasInternalAccess = true; 
+  }
+  
+  const isIndexPage = currentPage.endsWith('index.html') || currentPage === '/';
+  
+  // If NOT internal access AND NOT index page AND NOT admin -> Block
+  if (!hasInternalAccess && !isIndexPage && !isAdmin) { 
+      showAccessDeniedModal(); 
+  }
+
+  function showAccessDeniedModal() {
+    const modal = document.createElement('div');
+    modal.className = 'access-denied-modal';
+    const card = document.createElement('div');
+    card.className = 'access-card';
+    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.href='index.html'">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    setTimeout(() => { window.location.href = "index.html"; }, 3000);
+  }
+</script>
+
+</body>
+</html>

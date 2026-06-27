@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Account | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon-new.png" type="image/png">
+  <meta name="theme-color" content="#050505">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+        --bg-color: #050505;
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --card-bg: #121212;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --input-bg: rgba(255, 255, 255, 0.05);
+        --accent: #38bdf8;
+        --color-weak: #ef4444;   
+        --color-medium: #eab308; 
+        --color-strong: #22c55e; 
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bg-gradient {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05), transparent 40%);
+    }
+    
+    .noise-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+      z-index: -1;
+    }
+
+    #back-btn {
+      position: fixed; top: 30px; left: 30px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--card-bg); border: var(--glass-border);
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: 0.2s; z-index: 10;
+    }
+    #back-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); transform: scale(1.05); }
+
+    .glass-card {
+      background: var(--card-bg); border: var(--glass-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 24px; padding: 40px;
+      width: 100%; max-width: 420px; position: relative;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      margin: 20px;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    h2 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--text-main); }
+    .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
+
+    .input-icon-group { position: relative; margin-bottom: 16px; }
+    .input-icon-group .input-icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 14px; transition: 0.3s;
+    }
+    .input-icon-group .toggle-password {
+      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 14px; cursor: pointer; transition: 0.3s; z-index: 5;
+    }
+    .input-icon-group .toggle-password:hover { color: var(--text-main); }
+
+    .input-icon-group .at-prefix {
+      position: absolute; left: 40px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 14px; font-weight: 500;
+    }
+    .telegram-input { padding-left: 56px !important; }
+
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%; padding: 14px 40px 14px 44px;
+      background: var(--input-bg); border: var(--glass-border);
+      border-radius: 12px; color: var(--text-main); font-size: 14px; border-color: transparent; transition: 0.3s;
+    }
+    input::placeholder { color: var(--text-muted); opacity: 0.7; }
+    input:focus { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
+
+    .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px; }
+    .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--color-strong); }
+    .checkbox-group label { font-size: 13px; color: var(--text-muted); }
+    .checkbox-group a { color: var(--text-main); font-weight: 600; }
+
+    .password-criteria { list-style: none; padding: 0; margin: -10px 0 15px 5px; font-size: 12px; display: none; }
+    .password-criteria.active { display: block; }
+    .password-criteria li { color: var(--text-muted); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+    .password-criteria li.valid { color: var(--color-strong); }
+    .password-criteria li.invalid i::before { content: "\f00d"; }
+    .password-criteria li.valid i::before { content: "\f00c"; }
+
+    .strength-meter-container { margin-top: 5px; margin-bottom: 20px; padding: 0 4px; display: none; }
+    .strength-meter-container.active { display: block; }
+    .strength-bars { display: flex; gap: 4px; margin-bottom: 6px; }
+    .bar-segment { height: 3px; flex: 1; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: 0.3s; }
+    .strength-text { text-align: right; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+
+    .button-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+    button { width: 100%; padding: 14px; border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    
+    .action-btn { background: var(--text-main); color: #000; }
+    .action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .action-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .google-btn { background: transparent; color: var(--text-main); border: 1px solid var(--glass-border); }
+    .google-btn:hover:not(:disabled) { background: rgba(255,255,255,0.05); border-color: var(--text-main); }
+    .google-btn img { height: 18px; }
+
+    .switch-link { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 20px; }
+    .switch-link a { color: var(--text-main); text-decoration: none; font-weight: 600; cursor: pointer;}
+    .switch-link a:hover { text-decoration: underline; }
+
+    .hidden { display: none !important; }
+
+    .status-icon { font-size: 3rem; margin-bottom: 20px; display: block; text-align: center; }
+    .status-icon.float { animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+    .text-center { text-align: center; }
+    .text-center h3 { font-size: 18px; margin-bottom: 10px; color: var(--text-main); }
+    .text-center p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
+
+    #approved h3 { font-size: 22px; font-weight: 700; margin-top: 15px; color: var(--color-strong); }
+    #approved i { font-size: 40px; color: var(--color-strong); animation: unlockPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom: 10px; display: inline-block; }
+    @keyframes unlockPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+    @media (max-width: 480px) {
+      .glass-card { padding: 30px 25px; background: transparent; border: none; box-shadow: none; }
+      #back-btn { top: 20px; left: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="noise-overlay"></div>
+
+<button id="back-btn" onclick="window.location.href='index.html'">
+  <i class="fas fa-arrow-left"></i>
+</button>
+
+<div class="glass-card">
+  
+  <div id="auth-section">
+    <h2>Join Zone Vault</h2>
+    <p class="subtitle">Create your secure account.</p>
+    
+    <div class="input-icon-group">
+      <i class="fas fa-envelope input-icon"></i>
+      <input type="email" id="email" placeholder="Email address" required>
+    </div>
+
+    <div class="input-icon-group">
+      <i class="fas fa-lock input-icon"></i>
+      <input type="password" id="password" placeholder="Create Password" required>
+      <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+    </div>
+
+    <ul class="password-criteria" id="passwordCriteria">
+      <li id="req-length" class="invalid"><i class="fas"></i> At least 8 characters</li>
+      <li id="req-number" class="invalid"><i class="fas"></i> At least 1 number</li>
+      <li id="req-special" class="invalid"><i class="fas"></i> At least 1 special character</li>
+    </ul>
+
+    <div class="strength-meter-container" id="strengthMeter">
+      <div class="strength-bars">
+        <div class="bar-segment" id="bar1"></div>
+        <div class="bar-segment" id="bar2"></div>
+        <div class="bar-segment" id="bar3"></div>
+      </div>
+      <div class="strength-text" id="strengthText">Weak</div>
+    </div>
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="privacy-check">
+      <label for="privacy-check">I agree to the <a href="privacy" target="_blank">Privacy Policy</a></label>
+    </div>
+
+    <div class="button-stack">
+      <button class="action-btn" id="btn-register" onclick="register()">Create Account</button>
+      <button class="google-btn" onclick="googleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        Sign up with Google
+      </button>
+    </div>
+    <p class="switch-link">Already have an account? <a href="login.html">Log In</a></p>
+  </div>
+
+  <div id="verify-section" class="hidden text-center">
+    <span class="status-icon float">📧</span>
+    <h3>Verify Your Email</h3>
+    <p>We've sent a verification link to your email address. Please check your inbox.</p>
+    <button class="action-btn" onclick="reloadAndCheck()">I've Verified My Email</button>
+  </div>
+
+  <div id="form-section" class="hidden">
+    <h2>Request Access</h2>
+    <p class="subtitle">Complete your profile to join.</p>
+    
+    <div class="input-icon-group">
+      <i class="fab fa-telegram-plane input-icon"></i>
+      <span class="at-prefix">@</span>
+      <input type="text" id="name" class="telegram-input" placeholder="e.g. hoskwi_onX" required>
+    </div>
+    
+    <div class="input-icon-group">
+      <i class="fas fa-ticket-alt input-icon"></i>
+      <input type="text" id="invite-code" placeholder="Enter Code (Optional)">
+    </div>
+    
+    <div class="button-stack">
+      <button class="action-btn" id="btn-submit-code" onclick="submitRequest()">Submit Request</button>
+    </div>
+  </div>
+
+  <div id="waiting" class="hidden text-center">
+    <span class="status-icon float">⏳</span>
+    <h3>Pending Approval</h3>
+    <p>Your request is being reviewed by an admin.</p>
+    <button class="google-btn" onclick="location.reload()">Check Status</button>
+  </div>
+
+  <div id="approved" class="hidden text-center">
+    <div style="margin-bottom:15px; margin-top:20px;">
+        <i class="fas fa-check-circle"></i>
+    </div>
+    <h3>Access Granted</h3>
+    <p>Entering the Vault...</p>
+  </div>
+
+</div>
+
+<script>
+  // Password UI Logic
+  const togglePassword = document.getElementById('togglePassword');
+  const passwordInput = document.getElementById('password');
+  togglePassword.addEventListener('click', function () {
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+    this.classList.toggle('fa-eye');
+    this.classList.toggle('fa-eye-slash');
+  });
+
+  const strengthMeter = document.getElementById('strengthMeter');
+  const strengthText = document.getElementById('strengthText');
+  const bar1 = document.getElementById('bar1');
+  const bar2 = document.getElementById('bar2');
+  const bar3 = document.getElementById('bar3');
+  const criteriaList = document.getElementById('passwordCriteria');
+  const reqLength = document.getElementById('req-length');
+  const reqNumber = document.getElementById('req-number');
+  const reqSpecial = document.getElementById('req-special');
+
+  passwordInput.addEventListener('input', function() {
+    const val = passwordInput.value;
+    if (val.length > 0) { strengthMeter.classList.add('active'); criteriaList.classList.add('active'); } 
+    else {
+      strengthMeter.classList.remove('active'); criteriaList.classList.remove('active'); resetBars();
+      reqLength.classList.replace('valid', 'invalid'); reqNumber.classList.replace('valid', 'invalid'); reqSpecial.classList.replace('valid', 'invalid');
+      return;
+    }
+    let score = 0;
+    if (val.length >= 8) { reqLength.classList.replace('invalid', 'valid'); score++; } else { reqLength.classList.replace('valid', 'invalid'); }
+    if (/\d/.test(val)) { reqNumber.classList.replace('invalid', 'valid'); score++; } else { reqNumber.classList.replace('valid', 'invalid'); }
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(val)) { reqSpecial.classList.replace('invalid', 'valid'); score++; } else { reqSpecial.classList.replace('valid', 'invalid'); }
+    updateMeter(score);
+  });
+
+  function resetBars() { bar1.style.background = 'rgba(255, 255, 255, 0.1)'; bar2.style.background = 'rgba(255, 255, 255, 0.1)'; bar3.style.background = 'rgba(255, 255, 255, 0.1)'; strengthText.textContent = ''; }
+  function updateMeter(score) {
+    resetBars();
+    if (score === 1) { bar1.style.background = 'var(--color-weak)'; strengthText.textContent = 'Weak'; strengthText.style.color = 'var(--color-weak)'; }
+    else if (score === 2) { bar1.style.background = 'var(--color-medium)'; bar2.style.background = 'var(--color-medium)'; strengthText.textContent = 'Medium'; strengthText.style.color = 'var(--color-medium)'; }
+    else if (score >= 3) { bar1.style.background = 'var(--color-strong)'; bar2.style.background = 'var(--color-strong)'; bar3.style.background = 'var(--color-strong)'; strengthText.textContent = 'Strong'; strengthText.style.color = 'var(--color-strong)'; }
+  }
+</script>
+
+<script type="module" src="js/register.js"></script>
+
+</body>
+</html>

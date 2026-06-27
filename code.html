@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Access Code | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon-new.png" type="image/png">
+  <meta name="theme-color" content="#050505">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+        --bg-color: #050505;
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --card-bg: #121212;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --input-bg: rgba(255, 255, 255, 0.05);
+        --color-strong: #22c55e; 
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bg-gradient {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05), transparent 40%);
+    }
+    
+    .noise-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+      z-index: -1;
+    }
+
+    #back-btn {
+      position: fixed; top: 30px; left: 30px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--card-bg); border: var(--glass-border);
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: 0.2s; z-index: 10;
+    }
+    #back-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); transform: scale(1.05); }
+
+    .glass-card {
+      background: var(--card-bg); border: var(--glass-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 24px; padding: 40px;
+      width: 100%; max-width: 420px; position: relative;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      margin: 20px;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    h2 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--text-main); }
+    .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
+
+    .input-icon-group { position: relative; margin-bottom: 16px; }
+    .input-icon-group .input-icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 14px; transition: 0.3s;
+    }
+    
+    input[type="text"] {
+      width: 100%; padding: 14px 40px 14px 44px;
+      background: var(--input-bg); border: var(--glass-border);
+      border-radius: 12px; color: var(--text-main); font-size: 14px; border-color: transparent; transition: 0.3s;
+    }
+    input::placeholder { color: var(--text-muted); opacity: 0.7; }
+    input:focus { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
+
+    .button-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 25px; }
+    button { width: 100%; padding: 14px; border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    
+    .action-btn { background: var(--text-main); color: #000; }
+    .action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .action-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .hidden { display: none !important; }
+    .text-center { text-align: center; }
+
+    #approved h3 { font-size: 22px; font-weight: 700; margin-top: 15px; color: var(--color-strong); }
+    #approved i { font-size: 40px; color: var(--color-strong); animation: unlockPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom: 10px; display: inline-block; }
+    @keyframes unlockPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+    @media (max-width: 480px) {
+      .glass-card { padding: 30px 25px; background: transparent; border: none; box-shadow: none; }
+      #back-btn { top: 20px; left: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="noise-overlay"></div>
+
+<button id="back-btn" onclick="window.location.href='index.html'">
+  <i class="fas fa-arrow-left"></i>
+</button>
+
+<div class="glass-card">
+  
+  <div id="quick-code-section">
+    <h2>Quick Access</h2>
+    <p class="subtitle">Enter your code to unlock the vault instantly.</p>
+    
+    <div class="input-icon-group">
+      <i class="fas fa-user input-icon"></i>
+      <input type="text" id="guest-name" placeholder="Choose a Nickname (Optional)">
+    </div>
+
+    <div class="input-icon-group">
+      <i class="fas fa-unlock-alt input-icon"></i>
+      <input type="text" id="quick-code-input" placeholder="e.g. zonevault-XYZ" required>
+    </div>
+
+    <div class="button-stack">
+      <button class="action-btn" id="btn-quick-login" onclick="quickCodeLogin()">Unlock Vault</button>
+    </div>
+  </div>
+
+  <div id="approved" class="hidden text-center">
+    <div style="margin-bottom:15px; margin-top:20px;">
+        <i class="fas fa-check-circle"></i>
+    </div>
+    <h3>Access Granted</h3>
+    <p style="color: var(--text-muted); margin-top: 5px;">Entering the Vault...</p>
+  </div>
+
+</div>
+
+<script type="module" src="js/code.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon-new.png" type="image/png">
+  <meta name="theme-color" content="#050505">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE
+       ========================================= */
+    :root {
+        --bg-color: #050505;
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --card-bg: #121212;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --input-bg: rgba(255, 255, 255, 0.05);
+        --accent: #ffffff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* === BACKGROUNDS === */
+    .bg-gradient {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05), transparent 40%);
+      pointer-events: none;
+    }
+    
+    .noise-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: -1;
+    }
+
+    /* === BACK BUTTON === */
+    #back-btn {
+      position: fixed; top: 30px; left: 30px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--card-bg); border: var(--glass-border);
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: 0.2s; z-index: 10;
+    }
+    #back-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); transform: scale(1.05); }
+
+    /* === GLASS CARD === */
+    .glass-card {
+      background: var(--card-bg);
+      border: var(--glass-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 24px;
+      padding: 40px;
+      width: 100%; max-width: 420px;
+      position: relative;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      margin: 20px;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    h2 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--text-main); letter-spacing: -0.5px; }
+    .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
+
+    /* === INPUTS === */
+    .input-icon-group { position: relative; margin-bottom: 16px; }
+    
+    .input-icon-group .input-icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 14px; pointer-events: none; transition: 0.3s;
+    }
+
+    input {
+      width: 100%; padding: 14px 40px 14px 44px;
+      background: var(--input-bg);
+      border: var(--glass-border);
+      border-radius: 12px;
+      color: var(--text-main); font-size: 14px; outline: none; transition: 0.3s;
+      font-family: inherit;
+    }
+    input::placeholder { color: var(--text-muted); opacity: 0.7; }
+    input:focus { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
+    input:focus + .input-icon { color: var(--text-main); }
+
+    /* === BUTTONS === */
+    .button-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+    
+    button {
+      width: 100%; padding: 14px; border-radius: 50px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; border: none; font-family: inherit;
+    }
+
+    .action-btn { background: var(--text-main); color: #000; }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+
+    .google-btn {
+      background: transparent; color: var(--text-main);
+      border: 1px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .google-btn:hover { background: rgba(255,255,255,0.05); border-color: var(--text-main); }
+    .google-btn img { height: 18px; }
+
+    /* === LINKS & UTILS === */
+    .switch-link { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 20px; }
+    .switch-link a { color: var(--text-main); text-decoration: none; font-weight: 600; }
+    .switch-link a:hover { text-decoration: underline; }
+
+    .hidden { display: none !important; }
+    
+    /* === STATUS SCREENS === */
+    .status-icon { font-size: 3rem; margin-bottom: 20px; display: block; text-align: center; }
+    .status-icon.float { animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+    #verify-section, #waiting, #approved, #form-section { text-align: center; }
+    #verify-section h3, #waiting h3, #approved h3 { font-size: 18px; margin-bottom: 10px; color: var(--text-main); }
+    #verify-section p, #waiting p, #approved p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
+
+    /* === APPROVED SPECIFIC === */
+    #approved h3 { font-size: 22px; font-weight: 700; margin-top: 15px; }
+    #approved i { 
+        font-size: 40px; color: var(--text-main); 
+        animation: unlockPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        margin-bottom: 10px; display: inline-block;
+    }
+    @keyframes unlockPop { 
+        0% { transform: scale(0); opacity: 0; } 
+        60% { transform: scale(1.1); }
+        100% { transform: scale(1); opacity: 1; } 
+    }
+
+    /* === LOADER === */
+    #loader-section { text-align: center; padding: 20px 0; }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+      border-radius: 50%; border-top-color: var(--text-main);
+      animation: spin 1s ease-in-out infinite;
+      margin: 0 auto 15px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .glass-card { padding: 30px 25px; background: transparent; border: none; box-shadow: none; }
+      #back-btn { top: 20px; left: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="noise-overlay"></div>
+
+<button id="back-btn" onclick="window.history.back()">
+  <i class="fas fa-arrow-left"></i>
+</button>
+
+<div class="glass-card">
+  
+  <div id="loader-section">
+    <div class="spinner"></div>
+    <p class="subtitle">Securely authenticating...</p>
+  </div>
+
+  <div id="auth-section" class="hidden">
+    <h2>Zone Vault</h2>
+    <p class="subtitle">Welcome back. Please login.</p>
+    
+    <div class="input-icon-group">
+      <i class="fas fa-envelope input-icon"></i>
+      <input type="email" id="email" placeholder="Email address" required>
+    </div>
+    <div class="input-icon-group">
+      <i class="fas fa-lock input-icon"></i>
+      <input type="password" id="password" placeholder="Password" required>
+    </div>
+
+    <div class="button-stack">
+      <button class="action-btn" onclick="login()">Sign In</button>
+      <button class="google-btn" onclick="googleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        Continue with Google
+      </button>
+    </div>
+
+    <p class="switch-link">Don't have an account? <a href="register">Sign up</a></p>
+  </div>
+
+  <div id="verify-section" class="hidden">
+    <span class="status-icon float">📧</span>
+    <h3>Verify Email</h3>
+    <p>We've sent a verification link to your email address. Please check your inbox.</p>
+    <button class="action-btn" onclick="reloadAndCheck()">I've Verified My Email</button>
+  </div>
+
+  <div id="form-section" class="hidden">
+    <h2>Request Access</h2>
+    <p class="subtitle">Complete your profile to join.</p>
+    
+    <div class="input-icon-group">
+      <i class="fab fa-telegram-plane input-icon"></i>
+      <input type="text" id="name" placeholder="Telegram Username" required>
+    </div>
+    <div class="input-icon-group">
+      <i class="fas fa-key input-icon"></i>
+      <input type="text" id="reason" placeholder="Access Code" required>
+    </div>
+    
+    <div class="button-stack">
+      <button class="action-btn" onclick="submitRequest()">Submit Request</button>
+    </div>
+  </div>
+
+  <div id="waiting" class="hidden">
+    <span class="status-icon float">⏳</span>
+    <h3>Pending Approval</h3>
+    <p>Your request is being reviewed by an admin. <br>Message <strong>Hoskwi_17</strong> on Telegram for faster approval.</p>
+    <button class="google-btn" onclick="location.reload()">Check Status</button>
+  </div>
+
+  <div id="approved" class="hidden">
+    <div style="margin-bottom:15px; margin-top:20px;">
+        <i class="fas fa-unlock-alt"></i>
+    </div>
+    <h3>Access Granted</h3>
+    <p>Entering the Vault...</p>
+  </div>
+
+</div>
+
+<script type="module" src="js/login.js?v=2.1"></script>
+
+<script>
+  // Force Update Service Worker on Every Login Page Load
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.update();
+      }
+    });
+  }
+  
+  // Kung stuck pa rin sila sa loading, i-clear ang cache via JS
+  window.addEventListener('load', () => {
+    if (window.location.search.includes('forceUpdate')) {
+      caches.keys().then(names => {
+        for (let name of names) caches.delete(name);
+      });
+      console.log("Caches Purged!");
+    }
+  });
+</script>
+
+</body>
+</html>

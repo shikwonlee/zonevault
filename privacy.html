@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Policy | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="icon" href="favicon-new.png" type="image/png">
+  <meta name="theme-color" content="#050505">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE
+       ========================================= */
+    :root {
+        --bg-color: #050505;
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --card-bg: #121212;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --accent: #ffffff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    /* === BACKGROUNDS === */
+    .bg-gradient {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05), transparent 40%);
+      pointer-events: none;
+    }
+    
+    .noise-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: -1;
+    }
+
+    /* === BACK BUTTON === */
+    #back-btn {
+      position: fixed; top: 30px; left: 30px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--card-bg); border: var(--glass-border);
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: 0.2s; z-index: 10;
+      text-decoration: none;
+    }
+    #back-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); transform: scale(1.05); }
+
+    /* === GLASS CARD === */
+    .glass-card {
+      background: var(--card-bg);
+      border: var(--glass-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 24px;
+      padding: 40px 50px;
+      width: 100%; 
+      max-width: 800px;
+      position: relative;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      margin-top: 40px;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* === TYPOGRAPHY === */
+    h1 { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 5px; color: var(--text-main); letter-spacing: -0.5px; }
+    .last-updated { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 40px; }
+    
+    h2 { font-size: 20px; font-weight: 600; color: var(--text-main); margin-top: 35px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;}
+    
+    p { color: var(--text-muted); font-size: 15px; line-height: 1.7; margin-bottom: 15px; }
+    strong { color: var(--text-main); font-weight: 600; }
+    
+    ul { margin-left: 20px; margin-bottom: 15px; color: var(--text-muted); font-size: 15px; line-height: 1.7; }
+    ul ul { margin-top: 5px; margin-bottom: 5px; list-style-type: circle; }
+    li { margin-bottom: 8px; }
+    
+    code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--text-main); }
+    
+    hr { border: none; border-top: var(--glass-border); margin: 30px 0; }
+    
+    .disclaimer { font-style: italic; text-align: center; font-size: 14px; color: rgba(161, 161, 170, 0.8); margin-top: 20px;}
+
+    @media (max-width: 768px) {
+      .glass-card { padding: 30px 25px; margin-top: 60px; }
+      #back-btn { top: 20px; left: 20px; }
+      h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="noise-overlay"></div>
+
+<a href="register.html" id="back-btn" title="Go Back">
+  <i class="fas fa-arrow-left"></i>
+</a>
+
+<div class="glass-card">
+  
+  <h1>Privacy Policy for Zone Vault</h1>
+  <p class="last-updated"><strong>Last Updated:</strong> March 15, 2026</p>
+
+  <p>Welcome to <strong>Zone Vault</strong>. Your privacy is critically important to us. This Privacy Policy outlines how we collect, use, and protect your personal data when you register and interact with our application. We respect your privacy and do not actively track your device, screen size, or platform information.</p>
+
+  <h2>1. Information We Collect</h2>
+  <p>When you create an account and use Zone Vault, we collect the following minimum information required for the service to function:</p>
+  <ul>
+    <li><strong>Account Data:</strong> Your email address, encrypted password (or Google Authentication token), and your Telegram username (<code>@username</code>).</li>
+    <li><strong>Content History:</strong> We record your "watch history" or interactions with the video content provided on the platform to personalize your experience and track engagement.</li>
+  </ul>
+
+  <h2>2. How We Use Your Information</h2>
+  <p>We do not sell your personal data. Your information is used strictly for the following operational purposes:</p>
+  <ul>
+    <li><strong>Authentication & Access Control:</strong> To verify your identity, process your "Access Request," and determine if an admin has approved your entry into the vault.</li>
+    <li><strong>Security:</strong> To detect unauthorized access and block malicious "ghost sessions" from entering restricted areas.</li>
+    <li><strong>Communication:</strong> Your Telegram username is collected specifically to allow admins to contact you regarding your pending access requests or platform updates.</li>
+  </ul>
+
+  <h2>3. Data Storage & Security</h2>
+  <p>Your data is securely stored using <strong>Google Firebase Realtime Database and Authentication</strong>.</p>
+  <ul>
+    <li><strong>Encryption:</strong> Passwords are encrypted by Google's backend. Zone Vault administrators cannot see your actual password.</li>
+    <li><strong>Database Rules:</strong> Our database relies on strict security rules. Your data is isolated, meaning other regular users cannot read your personal profile information or watch history. Only authorized administrators have access to view join requests.</li>
+  </ul>
+
+  <h2>4. Third-Party Services</h2>
+  <p>We use <strong>Google Firebase</strong> for hosting, database, and authentication. By signing in with Google, you are subject to Google's standard data privacy policies regarding the transfer of your email and authentication status to our app.</p>
+
+  <h2>5. Contact</h2>
+  <p>If you have questions regarding this policy or wish to request the deletion of your account and associated profile data, please reach out to our admin directly on Telegram at <strong>@Hoskwi_17</strong>.</p>
+
+  <hr>
+  
+  <p class="disclaimer">By registering for an account at Zone Vault, you acknowledge that you have read, understood, and agree to the collection and use of your data as described in this policy.</p>
+
+</div>
+
+</body>
+</html>

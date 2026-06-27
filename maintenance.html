@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Under Maintenance | Zone Vault</title>
+   
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE (Synced)
+       ========================================= */
+    :root {
+        --bg-color: #121216; 
+        --card-bg: #1c1c22; 
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --accent: #38bdf8;
+    }
+
+    body.light-mode {
+        --bg-color: #f3f4f6;
+        --card-bg: #ffffff;
+        --glass-border: 1px solid rgba(0, 0, 0, 0.08);
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+    
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: "Outfit", sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* === BACKGROUNDS === */
+    .bg-gradient {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05), transparent 40%);
+      pointer-events: none;
+    }
+    
+    .noise-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: -1;
+    }
+
+    /* === PARTICLES === */
+    #particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+    .particle {
+      position: fixed; background: rgba(128,128,128,0.15); border-radius: 50%;
+      box-shadow: 0 0 10px rgba(128,128,128,0.05);
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      20% { opacity: 0.5; }
+      100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+    }
+
+    /* === GLASS CARD === */
+    .maintenance-card {
+      background: var(--card-bg);
+      border: var(--glass-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+      border-radius: 24px;
+      padding: 50px 40px;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      backdrop-filter: blur(10px);
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* === CONTENT === */
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+    .logo-container img { height: 32px; width: auto; }
+    .logo-container span { font-weight: 800; font-size: 18px; letter-spacing: 0.5px; }
+
+    .icon-wrapper {
+      width: 80px; height: 80px;
+      background: rgba(128, 128, 128, 0.05);
+      border: 1px solid rgba(128,128,128,0.1);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 25px;
+      font-size: 32px;
+      color: var(--accent);
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 15px;
+      color: var(--text-main);
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .loader-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(128, 128, 128, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .loader-fill {
+      position: absolute;
+      top: 0; left: 0; height: 100%; width: 40%;
+      background: var(--accent);
+      border-radius: 4px;
+      animation: loadSweep 2s ease-in-out infinite;
+    }
+
+    @keyframes loadSweep {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="bg-gradient"></div>
+  <div class="noise-overlay"></div>
+  <div id="particle-container"></div>
+
+  <div class="maintenance-card">
+      <div class="logo-container">
+          <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
+          <span>ZONE VAULT</span>
+      </div>
+
+      <div class="icon-wrapper">
+          <i class="fas fa-tools"></i>
+      </div>
+
+      <h1>We'll be right back!</h1>
+      <p>The Vault is currently undergoing scheduled maintenance to bring you a better and more secure experience. Please check back shortly.</p>
+
+      <div class="loader-bar">
+          <div class="loader-fill"></div>
+      </div>
+  </div>
+
+  <script type="module" src="/js/maintenance.js"></script>
+
+</body>
+</html>

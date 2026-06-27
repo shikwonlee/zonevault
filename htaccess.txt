@@ -1,0 +1,43 @@
+# ============================
+# ZoneVault.site Security Rules
+# ============================
+
+# --- Enable Rewrite Engine ---
+RewriteEngine On
+
+# --- Pretty URLs: /page → /page.html ---
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.*)$ $1.html [NC,L]
+
+# --- Prevent directory listing (people seeing raw folder contents) ---
+Options -Indexes
+
+# --- Hotlink Protection (images & videos) ---
+RewriteCond %{HTTP_REFERER} !^$
+RewriteCond %{HTTP_REFERER} !^https?://(www\.)?zonevault\.site/ [NC]
+RewriteRule \.(mp4|webm|jpg|jpeg|png|gif)$ - [F,NC,L]
+
+# --- Security Headers ---
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; frame-ancestors 'self';"
+
+# ============================
+# Protect HLS Stream (.m3u8 + segments)
+# ============================
+
+<FilesMatch "\.(m3u8|ts|m4s)$">
+    # Default: block all
+    Order Deny,Allow
+    Deny from all
+    Allow from env=OK
+
+    # Only allow if request comes from your domain (zonevault.site)
+    RewriteEngine On
+    RewriteCond %{HTTP_REFERER} ^https?://(www\.)?zonevault\.site [NC]
+    RewriteRule .* - [E=OK]
+</FilesMatch>
+# ============================

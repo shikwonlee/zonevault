@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard | Zone Vault</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+<link rel="icon" href="favicon-new.png" type="image/png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script> 
+
+<style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE
+       ========================================= */
+    :root {
+        --bg-color: #09090b; 
+        --card-bg: #18181b;  
+        --border-color: #27272a; 
+        --hover-bg: #27272a;
+        --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.6);
+
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        
+        --sidebar-width-collapsed: 64px; 
+        --sidebar-width-expanded: 220px; 
+        
+        --input-bg: #050505;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+
+    body { 
+        background-color: var(--bg-color); color: var(--text-main); font-family: 'Outfit', sans-serif;
+        min-height: 100vh; overflow-x: hidden; padding-left: calc(var(--sidebar-width-collapsed) + 40px); position: relative;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+    .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================
+       2. SIDEBAR
+       ========================================= */
+    .sidebar-desktop {
+        position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
+        border-radius: 16px; width: var(--sidebar-width-collapsed);
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
+        z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden; display: flex; flex-direction: column;
+    }
+    .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
+    .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
+
+    .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; justify-content: center; transition: padding 0.3s ease; }
+    .sidebar-brand img { width: 24px; height: 24px; object-fit: contain; z-index: 2; }
+    .sidebar-brand span { position: absolute; left: 50px; opacity: 0; font-weight: 800; font-size: 14px; letter-spacing: 0.5px; color: var(--text-main); transition: opacity 0.2s ease; pointer-events: none; }
+    .sidebar-desktop:hover .sidebar-brand { justify-content: flex-start; padding-left: 20px; }
+    .sidebar-desktop:hover .sidebar-brand span { opacity: 1; pointer-events: auto; }
+
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
+    .nav-link { display: flex; align-items: center; height: 40px; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; font-size: 13px; font-weight: 500; width: 100%; justify-content: center; position: relative; cursor: pointer; border-radius: 8px; }
+    .nav-link i { font-size: 16px; min-width: 20px; text-align: center; transition: color 0.3s; }
+    .nav-text { display: none; white-space: nowrap; margin-left: 12px; opacity: 0; transition: opacity 0.2s; }
+    .sidebar-desktop:hover .nav-link { justify-content: flex-start; padding-left: 12px; }
+    .sidebar-desktop:hover .nav-text { display: block; opacity: 1; transition-delay: 0.1s; }
+    
+    .nav-link:hover { background: var(--hover-bg); color: var(--text-main); }
+    .nav-link.active { color: var(--text-main); background: var(--hover-bg); font-weight: 600; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;}
+
+    .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
+    .sidebar-user { display: flex; align-items: center; justify-content: center; padding: 10px; margin-top: 5px; border-top: 1px solid var(--border-color); border-radius: 8px; }
+    .sidebar-user i { font-size: 24px; color: var(--accent); }
+    .sidebar-user-info { display: none; margin-left: 10px; }
+    .sidebar-desktop:hover .sidebar-user { justify-content: flex-start; padding-left: 10px; border-top: none; }
+    .sidebar-desktop:hover .sidebar-user-info { display: block; }
+    .sidebar-username { font-size: 13px; font-weight: 600; color: var(--text-main); }
+    .sidebar-userrole { font-size: 10px; color: var(--accent); font-weight: 700; letter-spacing: 1px; text-transform: uppercase;}
+
+    /* =========================================
+       3. MOBILE HEADER
+       ========================================= */
+    .mobile-header { display: none; padding: 15px 20px; align-items: center; justify-content: space-between; position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; background: var(--bg-color); border-bottom: 1px solid var(--border-color); }
+    .mobile-logo-container { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
+    .mobile-logo-img { height: 26px; }
+    .header-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;}
+    
+    .mobile-sidebar-menu { position: fixed; top: 0; left: 0; width: 280px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border-color); box-shadow: var(--shadow-float); z-index: 10000; transform: translateX(-100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+    .mobile-sidebar-menu.open { transform: translateX(0); }
+    .mobile-sidebar-menu .sidebar-container { overflow-y: auto; padding: 20px 15px; }
+
+    /* =========================================
+       4. VIEWS & CARDS
+       ========================================= */
+    .main-wrapper { max-width: 1400px; margin: 0 auto; width: 100%; padding-bottom: 80px; padding-top: 40px; padding-right: 40px;}
+    
+    .view-section { display: none; animation: fadeIn 0.3s ease; }
+    .view-section.active { display: block; }
+
+    .header { padding: 0 0 40px 0; }
+    .header h1 { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--accent), #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+    .header p { margin: 8px 0 0 0; color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 2px; font-weight: 500;}
+
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; }
+    
+    .card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; box-shadow: var(--shadow-subtle); transition: transform 0.2s, border-color 0.2s;}
+    .card:hover { border-color: var(--text-muted); transform: translateY(-2px); box-shadow: var(--shadow-float); }
+    .card-header { padding: 18px 24px; border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 12px;}
+    .card-header i { font-size: 18px; color: var(--accent);}
+    .card-body { padding: 24px; flex: 1; overflow-y: auto; max-height: 550px; }
+    
+    /* Forms & Inputs */
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;}
+    input, select { width: 100%; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 14px; border-radius: 10px; font-family: inherit; font-size: 14px; transition: 0.2s;}
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    input[type="file"] { border: 2px dashed var(--border-color); padding: 24px 16px; text-align: center; cursor: pointer; background: rgba(0,0,0,0.3);}
+    
+    /* Buttons */
+    button { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; color: #fff; font-size: 14px; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px;}
+    button:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); } .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+    .btn-success { background: var(--success); color: var(--bg-color); } .btn-success:hover { opacity: 0.9; }
+    .btn-warning { background: var(--warning); color: #000; } .btn-warning:hover { opacity: 0.9; }
+    .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2);} .btn-danger:hover { background: var(--danger); color: #fff; }
+
+    /* Lists */
+    .list-item { background: var(--input-bg); border: 1px solid var(--border-color); padding: 18px; border-radius: 12px; margin-bottom: 12px; transition: 0.2s;}
+    .list-item:hover { border-color: var(--text-muted); }
+    .list-title { font-weight: 700; font-size: 15px;}
+    .list-sub { font-size: 13px; color: var(--text-muted); margin-top: 8px; line-height: 1.5;}
+    .btn-row { display: flex; gap: 10px; margin-top: 16px;}
+    .btn-row button { padding: 10px; font-size: 13px; flex: 1;}
+
+    /* Watcher Stats */
+    .stat-box { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 20px; }
+    .stat-box h2 { margin: 0; font-size: 42px; color: var(--accent); font-weight: 800;}
+    .stat-box p { margin: 8px 0 0 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;}
+    #active-viewer-list { max-height: 200px; overflow-y: auto; list-style: none; padding: 0; margin: 12px 0 0 0; background: var(--input-bg); border-radius: 10px; border: 1px solid var(--border-color); }
+    
+    /* Modals & Toasts */
+    #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 14px 28px; border-radius: 30px; font-weight: 600; font-size: 14px; opacity: 0; transition: all 0.4s; z-index: 2000; box-shadow: var(--shadow-float); display: flex; align-items: center; gap: 8px;}
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 10000; padding: 20px; opacity: 0; transition: 0.2s;}
+    .modal-overlay.show { display: flex; opacity: 1; }
+    .modal-content { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 85vh; transform: translateY(20px); transition: 0.2s;}
+    .modal-overlay.show .modal-content { transform: translateY(0); }
+    
+    .modal-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;}
+    .modal-header h3 { margin: 0; font-size: 18px; font-weight: 700;}
+    .close-btn { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;}
+    .close-btn:hover { background: var(--hover-bg); color: var(--text-main);}
+    .modal-body { padding: 24px; overflow-y: auto; max-height: 60vh;}
+    
+    .user-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 10px;}
+    .user-row .username { font-weight: 600; font-size: 14px;}
+    
+    .switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: .3s; border-radius: 26px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: var(--text-muted); transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--success); border-color: var(--success);}
+    input:checked + .slider:before { transform: translateX(22px); background-color: var(--bg-color); }
+
+    @media (max-width: 900px) {
+        .sidebar-desktop { display: none; }
+        .mobile-header { display: flex; }
+        body { padding-left: 0; }
+        .main-wrapper { padding-top: 80px; padding-left: 20px; padding-right: 20px; }
+        .grid-container { grid-template-columns: 1fr; }
+    }
+</style>
+</head>
+<body>
+
+<div id="toast">
+    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+    <span id="toast-msg"></span>
+</div>
+
+<div id="security-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+    <p style="font-weight: 600; color: var(--text-muted);"><i class="fas fa-circle-notch fa-spin" style="margin-right: 8px;"></i> Checking Admin Privileges...</p>
+</div>
+
+<!-- MOBILE HEADER & SIDEBAR -->
+<div class="mobile-header">
+    <div class="mobile-logo-container">
+         <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
+         <span>ADMIN PANEL</span>
+    </div>
+    <button class="header-btn" onclick="toggleMobileSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+</div>
+
+<div id="mobileSidebar" class="mobile-sidebar-menu">
+    <div class="sidebar-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px 20px 5px;">
+            <div class="sidebar-brand" style="justify-content: flex-start; margin-bottom: 0;">
+                <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo" style="width:24px; height:24px;">
+                <span style="opacity:1; position:static; margin-left:12px; font-size:15px;">ZONE VAULT</span>
+            </div>
+            <button onclick="toggleMobileSidebar()" style="background:none; border:none; color:var(--text-main); font-size:28px; cursor:pointer;">&times;</button>
+        </div>
+        <ul class="nav-list" style="padding: 10px 0;">
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('dashboard', this)" class="nav-link nav-btn active" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-chart-pie" style="margin-right:15px;"></i> Dashboard</a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('users', this)" class="nav-link nav-btn" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-users" style="margin-right:15px;"></i> Users & Requests</a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('events', this)" class="nav-link nav-btn" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-calendar-plus" style="margin-right:15px;"></i> Build Events</a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('stream', this)" class="nav-link nav-btn" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-satellite-dish" style="margin-right:15px;"></i> Stream Control</a> </li>
+        </ul>
+        <div class="sidebar-bottom">
+            <a href="home.html" class="nav-link" style="justify-content: flex-start; padding-left: 15px; color: var(--danger);">
+                <i class="fas fa-sign-out-alt" style="margin-right:15px;"></i> Exit Admin
+            </a>
+            <div class="sidebar-user" style="justify-content: flex-start; padding-left: 10px; margin-top: 15px; cursor: default;">
+                <i class="fas fa-user-shield"></i>
+                <div class="sidebar-user-info" style="display:block; margin-left:12px;">
+                    <div class="sidebar-username">Admin</div>
+                    <div class="sidebar-userrole">Vault Control</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DESKTOP SIDEBAR -->
+<aside class="sidebar-desktop">
+    <div class="sidebar-container">
+        <div class="sidebar-brand">
+            <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
+            <span>ADMIN PANEL</span>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('dashboard', this)" class="nav-link nav-btn active"><i class="fas fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('users', this)" class="nav-link nav-btn"><i class="fas fa-users"></i> <span class="nav-text">Users & Requests</span></a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('events', this)" class="nav-link nav-btn"><i class="fas fa-calendar-plus"></i> <span class="nav-text">Build Events</span></a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="switchView('stream', this)" class="nav-link nav-btn"><i class="fas fa-satellite-dish"></i> <span class="nav-text">Stream Control</span></a> </li>
+        </ul>
+        <div class="sidebar-bottom">
+            <a href="home.html" class="nav-link" style="color: var(--danger);">
+                <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Exit Admin</span>
+            </a>
+            <div class="sidebar-user" style="cursor: default;">
+                <i class="fas fa-user-shield"></i>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-username">Admin</div>
+                    <div class="sidebar-userrole">Vault Control</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<div class="main-wrapper">
+    <div class="header">
+        <h1 id="page-title">COMMAND CENTER</h1>
+        <p id="page-subtitle">Dashboard & Analytics</p>
+    </div>
+
+    <!-- VIEW 1: DASHBOARD -->
+    <div id="view-dashboard" class="view-section active">
+        <div class="grid-container">
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header"><i class="fas fa-broadcast-tower"></i> Active Broadcasts Overview</div>
+                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;" id="events-list">
+                    <p style="color: var(--text-muted); font-size: 14px;">Loading active signals...</p>
+                </div>
+            </div>
+
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header"><i class="fas fa-eye"></i> Live Viewer Analytics</div>
+                <div class="card-body">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 0;">Monitor active watchers in real-time.</p>
+                    <div class="form-group">
+                        <select id="viewer-event-select" onchange="loadViewers(this.value)">
+                            <option value="">Select Event to monitor...</option>
+                        </select>
+                    </div>
+                    
+                    <div id="viewer-stats" style="display: none;">
+                        <div class="stat-box">
+                            <h2 id="active-count">0</h2>
+                            <p>Current Viewers</p>
+                        </div>
+                        <label style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px;">Watcher Registry:</label>
+                        <ul id="active-viewer-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: USERS & REQUESTS -->
+    <div id="view-users" class="view-section">
+        <div class="grid-container">
+            <div class="card" style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto; width: 100%;">
+                <div class="card-header"><i class="fas fa-user-plus"></i> Pending Join Requests</div>
+                <div class="card-body" id="requests-list">
+                    <p style="color: var(--text-muted); font-size: 14px;">Loading pending queries...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 3: BUILD EVENTS -->
+    <div id="view-events" class="view-section">
+        <div class="grid-container">
+            <div class="card" style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto; width: 100%;">
+                <div class="card-header"><i class="fas fa-image"></i> Step 1: Build Event Poster</div>
+                <div class="card-body">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 0;">Establish the event details first. Stream links are not required at this stage.</p>
+                    <div class="form-group">
+                        <label>Event Poster Image</label>
+                        <input type="file" id="ev-img-file" accept="image/*">
+                        <div style="font-size: 12px; font-weight: 500; margin-top: 8px; color: var(--text-main);" id="upload-status"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Event Title</label>
+                        <input type="text" id="ev-title" placeholder="e.g. LIVE CONCERT DAY 1">
+                    </div>
+                    <div class="form-group" style="display: flex; gap: 12px;">
+                        <div style="flex:1"><label>Date</label><input type="date" id="ev-date"></div>
+                        <div style="flex:1"><label>Time</label><input type="time" id="ev-time"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Target Player Page (HTML File)</label>
+                        <input type="text" id="ev-page" value="live.html" placeholder="e.g. live.html">
+                    </div>
+                    <button class="btn-primary" onclick="postEvent()" id="createBtn">
+                        <i class="fas fa-rocket"></i> Deploy Event Poster
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 4: STREAM CONTROL -->
+    <div id="view-stream" class="view-section">
+        <div class="grid-container">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-link"></i> Step 2: Stream Injector</div>
+                <div class="card-body">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 0;">Select an existing event and inject the live streaming URL when ready.</p>
+                    <div class="form-group">
+                        <label>Target Event</label>
+                        <select id="stream-select" onchange="loadStreamData(this.value)">
+                            <option value="">Loading events...</option>
+                        </select>
+                    </div>
+                    <div id="stream-editor" style="display: none;">
+                        <div class="form-group">
+                            <label>Internal Player Title</label>
+                            <input type="text" id="edit-title">
+                        </div>
+                        <div class="form-group">
+                            <label>Master Stream Link (.m3u8 / iframe)</label>
+                            <input type="text" id="edit-url" placeholder="Paste link here...">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Player Page</label>
+                            <input type="text" id="edit-page">
+                        </div>
+                        <button class="btn-warning" onclick="updateStreamDetails()" id="updateBtn">
+                            <i class="fas fa-satellite-dish"></i> Transmit Stream Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><i class="fas fa-lock"></i> Security & Access Control</div>
+                <div class="card-body">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 0;">Grant or revoke viewer access to specific broadcast events in real-time.</p>
+                    <div class="form-group">
+                        <label>Select Event Configuration</label>
+                        <select id="access-select">
+                            <option value="">Loading events...</option>
+                        </select>
+                    </div>
+                    <button class="btn-success" onclick="openSelectedAccessModal()">
+                        <i class="fas fa-key"></i> Open Access Manager
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ACCESS MODAL -->
+<div id="access-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h3>Manage User Access</h3>
+                <span id="access-target-title" style="font-size: 13px; color: var(--accent); font-weight: 500;"></span>
+            </div>
+            <button class="close-btn" onclick="closeAccessModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="search-user" placeholder="Search approved user..." onkeyup="filterUsers()" style="margin-bottom: 20px;">
+            <div id="approved-users-list">
+                <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Loading user database...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// SPA VIEW LOGIC
+function switchView(viewId, btnElement) {
+    // Hide all views
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    // Remove active class from all nav buttons
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    
+    // Show selected view
+    document.getElementById('view-' + viewId).classList.add('active');
+    
+    // Update active button state (both mobile and desktop)
+    const matchingBtns = document.querySelectorAll(`[onclick="switchView('${viewId}', this)"]`);
+    matchingBtns.forEach(btn => btn.classList.add('active'));
+
+    // Update Header Titles
+    const title = document.getElementById('page-title');
+    const subtitle = document.getElementById('page-subtitle');
+    
+    if(viewId === 'dashboard') { title.innerText = "COMMAND CENTER"; subtitle.innerText = "Dashboard & Analytics"; }
+    if(viewId === 'users') { title.innerText = "USER MANAGEMENT"; subtitle.innerText = "Pending Join Requests"; }
+    if(viewId === 'events') { title.innerText = "EVENT CREATION"; subtitle.innerText = "Build Event Posters & Data"; }
+    if(viewId === 'stream') { title.innerText = "STREAM CONTROL"; subtitle.innerText = "Injection & Security Access"; }
+
+    // Close mobile sidebar if open
+    document.getElementById('mobileSidebar').classList.remove('open');
+}
+
+// Mobile Sidebar Toggle
+function toggleMobileSidebar() {
+    document.getElementById('mobileSidebar').classList.toggle('open');
+}
+
+// INITIALIZATION
+const firebaseConfig = {
+  apiKey: "AIzaSyAeaQVRzcL9qvGRKpqGyPKolTMltieN3zU",
+  authDomain: "notif-bfe68.firebaseapp.com",
+  databaseURL: "https://notif-bfe68-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "notif-bfe68",
+  storageBucket: "notif-bfe68.firebasestorage.app",
+  messagingSenderId: "417377105074",
+  appId: "1:417377105074:web:bf27cd8dbbf0cc101005ab"
+};
+firebase.initializeApp(firebaseConfig);
+const dbRealtime = firebase.database();
+
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dp6x9xmku/upload";
+const CLOUDINARY_UPLOAD_PRESET = "thumbnail"; 
+
+let pendingAccessEventId = null;
+let currentViewerListener = null;
+
+setTimeout(() => { document.getElementById('security-overlay').style.display = 'none'; }, 800);
+
+function showToast(msg) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toast-msg").innerText = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3000);
+}
+
+// --- 1. PENDING REQUESTS ---
+function loadRequests() {
+    dbRealtime.ref("join_requests").on('value', (snapshot) => {
+        const list = document.getElementById("requests-list");
+        list.innerHTML = "";
+        if (!snapshot.exists()) { list.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; margin-top: 20px;">No pending requests found.</p>'; return; }
+
+        snapshot.forEach((child) => {
+            const data = child.val(); const username = child.key; 
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="list-title">${data.username}</div>
+                    <div class="list-sub" style="font-family: monospace;">Auth Code: <span style="color:var(--text-main); font-weight:600;">${data.code}</span></div>
+                    <div class="btn-row">
+                        <button class="btn-success" onclick="approveRequest('${username}', '${data.code}')">Approve</button>
+                        <button class="btn-danger" onclick="rejectRequest('${username}')">Reject</button>
+                    </div>
+                </div>`;
+        });
+    });
+}
+
+async function approveRequest(username, code) {
+    if(confirm(`Grant permanent platform approval for user: ${username}?`)) {
+        try {
+            await dbRealtime.ref("approved_users/" + username).set({ code: code, approvedAt: firebase.database.ServerValue.TIMESTAMP });
+            await dbRealtime.ref("join_requests/" + username).remove();
+            showToast(`User ${username} approved!`);
+        } catch (e) { alert("Failed to approve user."); }
+    }
+}
+async function rejectRequest(username) {
+    if(confirm(`Are you sure you want to reject ${username}?`)) { 
+        try { await dbRealtime.ref("join_requests/" + username).remove(); showToast("Request rejected."); } catch (e) {}
+    }
+}
+
+// --- 2. LOAD ALL EVENTS DATA ---
+function loadEvents() {
+    dbRealtime.ref('live_events').on('value', (snapshot) => {
+        const list = document.getElementById("events-list");
+        const accessSelect = document.getElementById("access-select");
+        const streamSelect = document.getElementById("stream-select");
+        const viewerSelect = document.getElementById("viewer-event-select");
+        
+        list.innerHTML = "";
+        const defaultOption = '<option value="">Select Target Event...</option>';
+        accessSelect.innerHTML = defaultOption; streamSelect.innerHTML = defaultOption; viewerSelect.innerHTML = defaultOption;
+        document.getElementById("stream-editor").style.display = "none";
+
+        if (!snapshot.exists()) { list.innerHTML = '<p style="color: var(--text-muted); font-size: 14px;">No active broadcasts detected.</p>'; return; }
+
+        snapshot.forEach((child) => {
+            const ev = child.val(); const id = child.key;
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="list-title">${ev.title}</div>
+                    <div class="list-sub">
+                        Event ID: <span style="font-family:monospace;">${id}</span><br>
+                        Schedule: <span style="color:var(--text-main);">${ev.date} @ ${ev.time}</span><br>
+                        Target Page: <span style="color:var(--accent); font-weight: 600;">${ev.player_page || 'live.html'}</span>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn-danger" onclick="deleteEvent('${id}')"><i class="fas fa-trash"></i> Terminate Event</button>
+                    </div>
+                </div>`;
+            const optionHTML = `<option value="${id}">${ev.title}</option>`;
+            accessSelect.innerHTML += optionHTML; streamSelect.innerHTML += optionHTML; viewerSelect.innerHTML += optionHTML;
+        });
+    });
+}
+
+// --- VIEWER ANALYTICS LOGIC (FIXED) ---
+function loadViewers(eventId) {
+    if (currentViewerListener) { dbRealtime.ref(`active_viewers`).off('value', currentViewerListener); }
+    if (!eventId) { document.getElementById('viewer-stats').style.display = 'none'; return; }
+    
+    document.getElementById('viewer-stats').style.display = 'block';
+    const list = document.getElementById('active-viewer-list');
+    list.innerHTML = '<li style="padding: 16px; color: var(--text-muted); font-size: 13px; text-align: center;">Fetching data...</li>';
+    
+    currentViewerListener = dbRealtime.ref(`active_viewers/${eventId}`).on('value', (snap) => {
+        const viewers = snap.val();
+        let count = 0; list.innerHTML = "";
+        
+        if (viewers) {
+            for (const user in viewers) {
+                // BUG FIX: viewers[user] holds a string (sessionId), not true/false. Checking if it exists is enough.
+                if (viewers[user]) {
+                    count++;
+                    list.innerHTML += `
+                        <li style="padding: 14px 18px; border-bottom: 1px solid var(--border-color); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px; color: var(--text-main);">
+                            <div style="width: 10px; height: 10px; background: var(--status-online); border-radius: 50%; box-shadow: 0 0 8px var(--status-online);"></div>
+                            ${user}
+                        </li>`;
+                }
+            }
+        }
+        
+        document.getElementById('active-count').innerText = count;
+        if (count === 0) { list.innerHTML = '<li style="padding: 20px; color: var(--text-muted); font-size: 13px; text-align: center;">No active viewers streaming right now.</li>'; }
+    });
+}
+
+// --- 3. CREATE EVENT ---
+async function uploadToCloudinary(file) {
+    const status = document.getElementById("upload-status");
+    status.innerText = "Processing media upload..."; status.style.color = "var(--text-main)";
+    const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    try {
+        const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+        const data = await response.json();
+        if(data.secure_url) { status.innerText = "Media Upload Success!"; status.style.color = "var(--success)"; return data.secure_url; } 
+        else { throw new Error("Cloudinary error."); }
+    } catch(e) { status.innerText = "Network connection error."; status.style.color = "var(--danger)"; throw e; }
+}
+
+async function postEvent() {
+    const file = document.getElementById("ev-img-file").files[0];
+    const title = document.getElementById("ev-title").value;
+    const date = document.getElementById("ev-date").value;
+    const time = document.getElementById("ev-time").value;
+    const playerPage = document.getElementById("ev-page").value || "live.html";
+
+    if(!file || !title || !date || !time) { alert("Data Incomplete."); return; }
+    const createBtn = document.getElementById("createBtn");
+    createBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Deploying Architecture...';
+
+    try {
+        const imageUrl = await uploadToCloudinary(file);
+        dbRealtime.ref('live_events').push().set({ title: title, image: imageUrl, date: date, time: time, stream_title: title, stream_url: "", player_page: playerPage });
+        createBtn.innerHTML = '<i class="fas fa-rocket"></i> Deploy Event Poster';
+        showToast("Event architecture deployed!");
+        document.getElementById("ev-title").value = ''; document.getElementById("ev-date").value = ''; document.getElementById("ev-time").value = ''; document.getElementById("ev-page").value = 'live.html'; document.getElementById("ev-img-file").value = ''; document.getElementById("upload-status").innerText = "";
+    } catch(e) { createBtn.innerHTML = '<i class="fas fa-rocket"></i> Deploy Event Poster'; }
+}
+
+function deleteEvent(id) {
+    if(confirm("CRITICAL WARNING: Terminating this event will wipe all configurations and revoke all user access. Proceed?")) {
+        dbRealtime.ref('live_events/' + id).remove(); dbRealtime.ref('event_access/' + id).remove(); dbRealtime.ref('active_viewers/' + id).remove();
+        showToast("Event Terminated and Purged.");
+    }
+}
+
+// --- 4. STREAM MANAGER ---
+function loadStreamData(eventId) {
+    if(!eventId) { document.getElementById("stream-editor").style.display = "none"; return; }
+    dbRealtime.ref('live_events/' + eventId).once('value').then((snap) => {
+        const data = snap.val();
+        if(data) {
+            document.getElementById("edit-title").value = data.stream_title || data.title || "";
+            document.getElementById("edit-url").value = data.stream_url || data.url || "";
+            document.getElementById("edit-page").value = data.player_page || "live.html";
+            document.getElementById("stream-editor").style.display = "block";
+        }
+    });
+}
+
+function updateStreamDetails() {
+    const eventId = document.getElementById("stream-select").value;
+    const newTitle = document.getElementById("edit-title").value;
+    const newUrl = document.getElementById("edit-url").value;
+    const newPage = document.getElementById("edit-page").value || "live.html";
+    if(!eventId) return;
+    const btn = document.getElementById("updateBtn");
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Transmitting...';
+    dbRealtime.ref('live_events/' + eventId).update({ stream_title: newTitle, stream_url: newUrl, player_page: newPage }).then(() => {
+        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Transmit Stream Link';
+        showToast("Stream signal configuration updated!");
+        document.getElementById("stream-editor").style.display = "none"; document.getElementById("stream-select").value = "";
+    }).catch(e => { alert("Database error."); btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Transmit Stream Link'; });
+}
+
+// --- 5. ACCESS CONTROL ---
+function openSelectedAccessModal() {
+    const select = document.getElementById("access-select"); const eventId = select.value;
+    if (!eventId) { alert("Action required: Select a target event from the dropdown menu."); return; }
+    openAccessModal(eventId, select.options[select.selectedIndex].text);
+}
+
+function openAccessModal(eventId, eventTitle) {
+    pendingAccessEventId = eventId;
+    document.getElementById("access-target-title").innerText = `Target: ${eventTitle}`;
+    document.getElementById("access-modal").classList.add("show"); 
+    document.getElementById("search-user").value = ""; 
+    const listContainer = document.getElementById("approved-users-list");
+    listContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; margin-top: 20px;">Fetching secure user matrix...</p>';
+
+    dbRealtime.ref(`event_access/${eventId}`).once('value').then((snap) => {
+        const currentAccess = snap.val() || {};
+        dbRealtime.ref("approved_users").once('value').then((querySnapshot) => {
+            listContainer.innerHTML = "";
+            if (!querySnapshot.exists()) { listContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center;">No approved users found.</p>'; return; }
+            querySnapshot.forEach((child) => {
+                const username = child.key; const isGranted = currentAccess[username] === true; 
+                listContainer.innerHTML += `
+                    <div class="user-row" data-username="${username.toLowerCase()}">
+                        <span class="username">${username}</span>
+                        <label class="switch">
+                            <input type="checkbox" onchange="toggleAccess('${username}', this.checked)" ${isGranted ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>`;
+            });
+        });
+    });
+}
+function closeAccessModal() { pendingAccessEventId = null; document.getElementById("access-modal").classList.remove("show"); }
+function toggleAccess(username, isChecked) {
+    const ref = dbRealtime.ref(`event_access/${pendingAccessEventId}/${username}`);
+    if (isChecked) { ref.set(true).then(() => { showToast(`Signal UNLOCKED for ${username}`); }); } 
+    else { ref.remove().then(() => { showToast(`Signal REVOKED for ${username}`); }); }
+}
+function filterUsers() {
+    const input = document.getElementById("search-user").value.toLowerCase();
+    document.querySelectorAll(".user-row").forEach(row => {
+        if (row.getAttribute("data-username").includes(input)) { row.style.display = "flex"; } else { row.style.display = "none"; }
+    });
+}
+
+// System Init
+loadRequests(); loadEvents();
+</script>
+
+</body>
+</html>

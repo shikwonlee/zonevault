@@ -104,19 +104,6 @@
         pointer-events: none; z-index: -1;
     }
 
-    /* GLOBAL WATERMARK (Visible when not in full screen) */
-    .page-watermark {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: clamp(40px, 6vw, 60px); /* Responsive size, perfect for iPhones up to desktop */
-        opacity: 0.35; /* Medyo transparent */
-        z-index: 9999;
-        pointer-events: none; /* So it doesn't block touch/clicks */
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-        transition: opacity 0.3s ease;
-    }
-
     @media (max-width: 900px) and (orientation: landscape) {
         body {
             padding: 0;
@@ -381,8 +368,6 @@
 <body>
 
 <div class="noise-overlay"></div>
-
-<img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" class="page-watermark" alt="Zone Vault Watermark">
 
 <div class="main-layout">
 
@@ -659,28 +644,17 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
           style: { display: 'none' } 
       });
 
-      // --- FULLSCREEN WATERMARK LAYER ---
-      // This guarantees the watermark is visible when user activates full screen mode
+      // --- PERMANENT WATERMARK LAYER INSIDE THE PLAYER ---
       art.layers.add({
           name: 'watermarkLayer',
-          html: '<img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" style="width: 100%; height: auto; opacity: 0.35; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">',
+          html: '<img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" style="width: 100%; height: auto; opacity: 0.4; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">',
           style: {
               position: 'absolute',
-              top: '20px',
-              right: '20px',
-              width: 'clamp(40px, 6vw, 60px)',
+              top: '15px',
+              right: '15px',
+              width: 'clamp(35px, 6vw, 55px)', // iPhone friendly, auto-scales on bigger screens
               pointerEvents: 'none',
-              zIndex: '99',
-              display: 'none' // Hidden by default, shown via fullscreen event below
-          }
-      });
-
-      // Toggle watermark layer exactly when fullscreen changes
-      art.on('fullscreen', (state) => {
-          if (state) {
-              art.layers.watermarkLayer.style.display = 'block';
-          } else {
-              art.layers.watermarkLayer.style.display = 'none';
+              zIndex: '99'
           }
       });
 

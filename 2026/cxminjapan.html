@@ -104,6 +104,19 @@
         pointer-events: none; z-index: -1;
     }
 
+    /* GLOBAL WATERMARK (Visible when not in full screen) */
+    .page-watermark {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: clamp(40px, 6vw, 60px); /* Responsive size, perfect for iPhones up to desktop */
+        opacity: 0.35; /* Medyo transparent */
+        z-index: 9999;
+        pointer-events: none; /* So it doesn't block touch/clicks */
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        transition: opacity 0.3s ease;
+    }
+
     @media (max-width: 900px) and (orientation: landscape) {
         body {
             padding: 0;
@@ -114,7 +127,7 @@
         }
         .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; gap: 0; }
         .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #playlist, .center-logo, .back-btn { display: none !important; }
+        #playlist, .back-btn { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; }
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
@@ -134,9 +147,6 @@
     /* =========================================
        2. LAYOUT - CINEMATIC SPLIT
        ========================================= */
-    .center-logo { display: flex; justify-content: center; margin-bottom: 30px; }
-    .center-logo img { width: 55px; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); transition: transform 0.3s; }
-    .center-logo img:hover { transform: scale(1.05); }
 
     .main-layout {
         max-width: 1600px; width: 100%; margin: 0 auto;
@@ -321,7 +331,6 @@
        ========================================= */
     @media (max-width: 1099px) {
         body { padding: 20px 16px; }
-        .center-logo { margin-bottom: 20px; }
         #poster-container, #player-container { border-radius: 16px; }
         .playlist-card { max-height: none; } 
         #playlist-items { max-height: 400px; } 
@@ -373,9 +382,7 @@
 
 <div class="noise-overlay"></div>
 
-<div class="center-logo">
-  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
-</div>
+<img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" class="page-watermark" alt="Zone Vault Watermark">
 
 <div class="main-layout">
 
@@ -402,7 +409,7 @@
 
 </div> 
 
-<a href="https://zonevault.site/videos" class="back-btn">
+<a href="https://zonevault.live/videos" class="back-btn">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M15 18l-6-6 6-6" />
   </svg>
@@ -650,6 +657,31 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
           name: 'skipIntroLayer',
           html: '<button class="skip-intro-btn" onclick="event.stopPropagation(); window.skipIntroGlobal();">Skip Intro</button>',
           style: { display: 'none' } 
+      });
+
+      // --- FULLSCREEN WATERMARK LAYER ---
+      // This guarantees the watermark is visible when user activates full screen mode
+      art.layers.add({
+          name: 'watermarkLayer',
+          html: '<img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" style="width: 100%; height: auto; opacity: 0.35; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">',
+          style: {
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              width: 'clamp(40px, 6vw, 60px)',
+              pointerEvents: 'none',
+              zIndex: '99',
+              display: 'none' // Hidden by default, shown via fullscreen event below
+          }
+      });
+
+      // Toggle watermark layer exactly when fullscreen changes
+      art.on('fullscreen', (state) => {
+          if (state) {
+              art.layers.watermarkLayer.style.display = 'block';
+          } else {
+              art.layers.watermarkLayer.style.display = 'none';
+          }
       });
 
       if(artSubtitles.length > 0) {

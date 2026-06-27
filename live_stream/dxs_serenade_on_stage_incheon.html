@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live | Zone Vault</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+
+<link rel="icon" href="favicon-new.png" type="image/png" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0c">
+
+<meta name="apple-mobile-web-app-title" content="Zone Vault">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1B2RJ659GL');
+</script>
+
+<script>
+    (function() {
+        function applyTheme(theme) {
+            if (theme === 'light' || theme === '#ffffff' || theme === 'white') {
+                document.documentElement.classList.add('light-mode');
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f8f9fa');
+            } else {
+                document.documentElement.classList.remove('light-mode');
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0a0a0c');
+            }
+        }
+        const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme');
+        if (savedTheme) { applyTheme(savedTheme); } 
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) { applyTheme('light'); }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'zoneTheme' || e.key === 'zoneVaultTheme') { applyTheme(e.newValue); }
+        });
+    })();
+</script>
+
+<style>
+  /* --- CSS VARIABLES & ANIMATIONS (Matte Minimalist) --- */
+  :root {
+      --surface-bg: #0a0a0a;
+      --surface-1: #141414;
+      --surface-2: #1e1e1e;
+      --surface-3: #2a2a2a;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1aa;
+      --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-deep: 0 10px 40px rgba(0, 0, 0, 0.8);
+      --accent-flat: #e53935; 
+  }
+
+  /* --- LIGHT MODE VARIABLES --- */
+  html.light-mode body {
+      --surface-bg: #f5f5f7;
+      --surface-1: #ffffff;
+      --surface-2: #eaeaec;
+      --surface-3: #d1d1d6;
+      --border-subtle: rgba(0, 0, 0, 0.1);
+      --border-hover: rgba(0, 0, 0, 0.25);
+      --text-primary: #111111;
+      --text-secondary: #555555;
+      --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+      --shadow-deep: 0 10px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes modalPop { from { opacity: 0; transform: scale(0.98) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+  /* --- CUSTOM SCROLLBAR --- */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #888; }
+
+  /* --- ANTI COPY-PASTE --- */
+  * { 
+      box-sizing: border-box; 
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.2s ease; 
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+  }
+
+  html {
+      height: 100%;
+      background-color: var(--surface-bg) !important;
+  }
+
+  body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: var(--surface-bg) !important; 
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    text-align: center; 
+    padding-top: 24px; 
+    padding-bottom: 30px; 
+    position: relative; 
+    min-height: 100vh;
+  }
+
+  /* --- NEW 2-COLUMN DESKTOP LAYOUT --- */
+  .main-layout {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 24px; 
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  @media (min-width: 1024px) {
+    .main-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px; 
+        align-items: start;
+        text-align: left;
+    }
+  }
+
+  .video-wrapper-left { 
+      width: 100%; 
+      position: relative; 
+      animation: fadeIn 0.6s ease; 
+  }
+
+  /* Sticky player on desktop */
+  @media (min-width: 1024px) {
+      .video-wrapper-left { position: sticky; top: 24px; }
+  }
+
+  /* --- HEADER / LOGO --- */
+  .center-logo { 
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      margin-bottom: 24px; 
+      animation: fadeIn 0.8s ease; 
+      padding: 0 24px; 
+      width: 100%;
+  }
+  .center-logo img { width: 44px; height: auto; border-radius: 8px; } 
+
+  /* --- POSTER AREA --- */
+  #poster-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background-size: cover;
+    background-position: center;
+    background-image: url('https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png'); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    box-shadow: var(--shadow-deep);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  #poster-container:hover { border-color: var(--border-hover); }
+
+  /* --- ARTPLAYER CONTAINER --- */
+  #player-container {
+    display: none; 
+    width: 100%;
+    aspect-ratio: 16/9;
+    box-shadow: var(--shadow-deep);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative; 
+    background: #000; 
+    border: 1px solid var(--border-subtle);
+    animation: fadeIn 0.4s ease;
+  }
+    
+  .artplayer-app { width: 100%; height: 100%; }
+
+  .custom-live-badge {
+      font-weight: 800;
+      font-size: 12px;
+      color: #ffffff;
+      background: var(--accent-flat);
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-left: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: none; 
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+  }
+
+  .uid-watermark {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-family: 'Roboto Mono', ui-monospace, monospace;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      pointer-events: none; 
+      z-index: 20;
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+  }
+
+  h2 {
+    font-size: 22px;
+    color: var(--text-primary);
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-align: left; 
+    letter-spacing: -0.5px;
+  }
+
+  /* --- SERVER BUTTONS --- */
+  .server-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      justify-content: flex-start;
+      animation: fadeIn 0.4s ease;
+      flex-wrap: wrap;
+  }
+
+  .server-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+  }
+
+  .server-btn:hover { 
+      background: var(--surface-3); 
+      border-color: var(--border-hover);
+  }
+
+  .server-btn.active {
+      background: var(--accent-flat);
+      color: #ffffff;
+      border-color: var(--accent-flat);
+  }
+
+  /* --- VIEWS & BUTTON CONTAINER --- */
+  .views-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; 
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 16px; 
+    margin-bottom: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+   
+  #current-date-display { 
+    font-size: 14px; 
+    color: var(--text-secondary); 
+    font-weight: 500;
+  }
+
+  .guidelines-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .guidelines-btn:hover { background: var(--surface-3); border-color: var(--border-hover); }
+
+  /* --- PLAYLIST STYLES --- */
+  #playlist { 
+    width: 100%; 
+    text-align: left;
+  }
+
+  #playlist-items {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+  }
+
+  .playlist-card {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      text-align: left;
+      animation: slideInRight 0.4s ease backwards;
+      box-shadow: var(--shadow-soft);
+  }
+  
+  .playlist-card:nth-child(1) { animation-delay: 0.05s; }
+  .playlist-card:nth-child(2) { animation-delay: 0.1s; }
+  .playlist-card:nth-child(3) { animation-delay: 0.15s; }
+
+  .playlist-card:hover { border-color: var(--border-hover); transform: translateX(4px); }
+
+  .card-header {
+      font-size: 15px;
+      color: var(--text-primary); 
+      font-weight: 600;
+      margin-top: 32px; 
+      line-height: 1.4;
+  }
+
+  .card-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+  }
+
+  .date-info { text-align: left; }
+  .date-main { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; display: block; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .time-sub { font-size: 16px; font-weight: 700; color: var(--text-primary); display: block; letter-spacing: -0.5px;}
+
+  .ticket-status {
+      position: absolute;
+      top: 16px; left: 16px; 
+      font-size: 10px; font-weight: 700;
+      display: inline-flex; align-items: center;
+      text-transform: uppercase;
+      padding: 4px 8px; border-radius: 4px;
+      letter-spacing: 0.5px;
+  }
+  
+  /* Status Colors Adjustments */
+  .ticket-status.verified { background: rgba(100, 100, 100, 0.15); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  html.light-mode .ticket-status.verified { background: rgba(0, 0, 0, 0.05); }
+  .ticket-status.denied { background: rgba(255, 68, 68, 0.1); color: #ff6b6b; border: 1px solid rgba(255, 68, 68, 0.2); }
+  .ticket-status.ended-badge { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+  .enter-btn {
+      background: var(--surface-3); 
+      color: var(--text-secondary); 
+      border: 1px solid var(--border-subtle);
+      padding: 8px 16px; 
+      font-size: 12px; 
+      font-weight: 600;
+      border-radius: 6px; 
+      cursor: not-allowed;
+      min-width: 90px;
+  }
+  .enter-btn.active { 
+      background: var(--text-primary); 
+      color: var(--surface-bg); 
+      border-color: var(--text-primary); 
+      cursor: pointer; 
+  }
+  .enter-btn.active:hover { opacity: 0.85; }
+  .enter-btn.ended { opacity: 0.5; cursor: not-allowed; }
+
+  /* Mobile Tweaks */
+  @media (max-width: 768px) {
+    body { padding: 16px 0 !important; }
+    .main-layout { padding: 0 16px !important; }
+    h2 { font-size: 20px; }
+    .playlist-card:hover { transform: translateY(-2px); translateX(0); }
+  }
+
+  /* --- STREAM GUIDELINES MODAL CSS --- */
+  .guidelines-modal-overlay {
+      display: none; 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 10000;
+      align-items: center; justify-content: center;
+      padding: 24px;
+  }
+  
+  .guidelines-content {
+      background: var(--surface-1);
+      width: 100%; max-width: 500px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-deep);
+      display: flex; flex-direction: column;
+      max-height: 85vh; 
+      animation: modalPop 0.3s ease;
+  }
+
+  .guide-header {
+      font-size: 16px; font-weight: 600; color: var(--text-primary);
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      text-align: left;
+  }
+
+  .guide-list {
+      padding: 24px;
+      overflow-y: auto; 
+      text-align: left;
+  }
+
+  .guide-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+  }
+
+  .dot-icon {
+      width: 6px; height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      margin-top: 8px;
+      flex-shrink: 0;
+  }
+
+  .item-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+  }
+
+  .highlight { font-weight: 600; color: var(--text-primary); }
+  .highlight-red { font-weight: 600; color: #ff6b6b; }
+
+  .close-guide-btn {
+      margin: 0 24px 24px 24px;
+      background: var(--text-primary);
+      color: var(--surface-bg);
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+  }
+  .close-guide-btn:hover { opacity: 0.85; }
+
+  /* --- ADMIN & SYSTEM NOTIFICATION TOAST --- */
+  .admin-toast, .system-toast {
+      position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+      border-radius: 6px;
+      font-weight: 600; font-size: 13px; z-index: 20000;
+      display: flex; align-items: center; gap: 10px;
+      transition: top 0.4s ease;
+      pointer-events: none;
+      padding: 12px 24px; 
+      width: max-content;
+      max-width: 90%;
+      box-shadow: var(--shadow-soft);
+  }
+
+  .admin-toast { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .system-toast { background: var(--surface-3); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+  .admin-toast.show, .system-toast.show { top: 24px; }
+
+</style>
+</head>
+
+<body oncopy="return false" oncut="return false" onpaste="return false">
+
+<div id="adminToast" class="admin-toast">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Admin Access Granted
+</div>
+
+<div id="systemToast" class="system-toast"></div>
+
+<div class="center-logo">
+  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
+</div>
+
+<div class="main-layout">
+
+  <div class="video-wrapper-left">
+      
+    <div id="poster-container"></div>
+
+    <div id="player-container">
+       <div id="artplayer-app" class="artplayer-app"></div>
+       
+       <div id="iframe-app" style="display: none; width: 100%; height: 100%;">
+            <iframe 
+                src="https://player.angelthump.com/?channel=prdt" 
+                style="width: 100%; height: 100%; border: none; display: block;" 
+                allow="fullscreen"
+                allowfullscreen="true">
+            </iframe>
+       </div>
+    </div>
+
+    <h2 id="main-title"></h2>
+
+    <div id="server-controls" class="server-container" style="display: none;">
+      <button id="btn-server-1" class="server-btn active" onclick="switchServer(1)">Server 1</button>
+      <button id="btn-server-2" class="server-btn" onclick="switchServer(2)">Server 2</button>
+      <button id="btn-server-3" class="server-btn" onclick="switchServer(3)" style="display: none;">Server 3</button>
+    </div>
+
+    <div id="views-display" class="views-container">
+      <span id="current-date-display"></span>
+      <button class="guidelines-btn" onclick="openGuidelines()">
+         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+         Stream Guidelines
+      </button>
+    </div>
+  </div>
+
+  <div id="playlist">
+    <div id="playlist-items">
+    </div>
+  </div>
+
+</div> 
+
+<div id="guidelines-modal" class="guidelines-modal-overlay">
+    <div class="guidelines-content">
+        <div class="guide-header">
+            Stream Guidelines
+        </div>
+        
+        <div class="guide-list">
+          
+          <div class="guide-item">
+    <div class="dot-icon"></div>
+    <div class="item-text">
+        <span class="highlight">Timezone Note:</span> All scheduled times are in Philippine Time (PHT). For International Carats, the access button will open exactly at the scheduled PHT time, regardless of your current location or local timezone.
+    </div>
+</div>
+          
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight">One Device Policy:</span> Only 1 device can access the stream. If you try to login again on another device, the first connected device will be automatically logged out.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    You can change the <span class="highlight">Video Resolution</span> (1080p, 720p, 540p, 480p, 360p, 240p) or set it to 0p via the settings gear icon.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    Only <span class="highlight">allowed/verified users</span> can access or view the live stream. Unverified accounts will be blocked.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    The ID displayed on the bottom left is your <span class="highlight">User ID</span>. This is recorded in our database and used to grant your access.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight-red">NO RESTREAMING:</span> Restreaming on any platform is strictly prohibited. If caught, you will immediately lose access to the stream and be permanently blacklisted.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight-red">SCREENSHOT AND SCREEN RECORDING ARE PROHIBITED.</span> Do not capture, record, or redistribute any part of the stream. Posting while the stream is ongoing is strictly not allowed.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight-red">DO NOT SHARE LINKS:</span> Sharing, reposting, or distributing the website or stream link where you are watching is strictly prohibited. Violators may have their access revoked without notice.
+                </div>
+            </div>
+            
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    If you experience buffering or black screen, please refresh the page or lower the video quality.
+                </div>
+            </div>
+
+             <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    No sound? Tap the audio icon to unmute. iOS users should check if the physical silent switch is on.
+                </div>
+            </div>
+        </div>
+        
+        <button class="close-guide-btn" onclick="closeGuidelines()">I UNDERSTAND</button>
+    </div>
+</div>
+
+<script>
+// --- ANTI COPY PASTE JS FALLBACK ---
+document.addEventListener('contextmenu', event => event.preventDefault());
+document.addEventListener('copy', event => event.preventDefault());
+document.addEventListener('cut', event => event.preventDefault());
+document.addEventListener('paste', event => event.preventDefault());
+document.addEventListener('selectstart', event => event.preventDefault());
+
+// --- CONFIGURATION ---
+const playlistData = [
+  { 
+    id: "1", 
+    title: "DAY 1 - DxS [Serenade] ON STAGE - INCHEON", 
+    status: "live",
+    date: "April 17, 2026 5:30 PM",
+    image: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png",
+  },
+    { 
+    id: "2", 
+    title: "DAY 2 - DxS [Serenade] ON STAGE - INCHEON", 
+    status: "live",
+    date: "April 18, 2026 4:30 PM",
+    image: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png",
+  },
+    { 
+    id: "3", 
+    title: "DAY 3 - DxS [Serenade] ON STAGE - INCHEON", 
+    status: "live",
+    date: "April 19, 2026 3:30 PM",
+    image: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png",
+  }
+];
+
+const playlistContainer = document.getElementById('playlist-items');
+const posterContainer = document.getElementById('poster-container');
+const playerContainer = document.getElementById('player-container');
+const mainTitle = document.getElementById('main-title');
+const currentDateDisplay = document.getElementById('current-date-display');
+
+window.currentEpData = null;
+let art = null; 
+let localSessionToken = null; 
+let currentStreamRef = null; 
+
+let globalUserVerified = false; 
+let isAdminUser = false; 
+
+// --- SERVER SWITCHING GLOBALS ---
+let activeServer = 1; 
+let currentUrls = { url1: '', url2: '', url3: '' };
+let currentStreamStatus = '';
+</script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+  authDomain: "tvnstream-b4497.firebaseapp.com",
+  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+  projectId: "tvnstream-b4497",
+  storageBucket: "tvnstream-b4497.appspot.com",
+  messagingSenderId: "308384754214",
+  appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(); 
+const db = firebase.database();
+
+const PAGE_ID = "dxs_serenade"; 
+
+// --- GUIDELINES MODAL LOGIC ---
+function openGuidelines() {
+    document.getElementById('guidelines-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeGuidelines() {
+    document.getElementById('guidelines-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+document.getElementById('guidelines-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeGuidelines();
+});
+
+// --- RETURN TO MAIN VIEW LOGIC ---
+function returnToMainView() {
+    if(art) { art.destroy(false); art = null; }
+    
+    playerContainer.style.animation = "none"; 
+    playerContainer.style.display = "none";
+    posterContainer.style.display = "flex";
+    posterContainer.style.animation = "fadeIn 0.3s ease";
+    
+    // Reset player app visibilities
+    document.getElementById('artplayer-app').style.display = "block";
+    document.getElementById('iframe-app').style.display = "none";
+    
+    mainTitle.textContent = '';
+    window.currentEpData = null;
+
+    // Reset server controls
+    document.getElementById('server-controls').style.display = "none";
+    activeServer = 1; 
+    updateServerButtonStyles();
+
+    const url = new URL(window.location);
+    url.search = ''; 
+    window.history.pushState({}, '', url);
+
+    document.body.style.overflow = 'auto';
+    renderPlaylist(globalUserVerified);
+}
+
+// --- SHOW SYSTEM NOTIFICATION TOAST ---
+function showSystemMessage(message, forceExit = true) {
+    if (forceExit) {
+        returnToMainView();
+    }
+    const toast = document.getElementById('systemToast');
+    toast.innerHTML = message;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); }, 4000);
+}
+
+
+function initPlaylistSync() {
+    playlistData.forEach((item, index) => {
+        db.ref(`live/${item.id}/status`).on('value', (snapshot) => {
+            const status = snapshot.val();
+            if (status) {
+                playlistData[index].status = status;
+                renderPlaylist(globalUserVerified);
+                if (window.currentEpData && window.currentEpData.id === item.id && status.toLowerCase() === 'ended') {
+                    handleStreamEnded(item.id);
+                }
+            }
+        });
+    });
+}
+initPlaylistSync();
+
+function registerAndMonitorSession(uid) {
+    if (isAdminUser) {
+        console.log("Admin session: Device monitoring bypassed.");
+        return; 
+    }
+
+    localSessionToken = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    db.ref(`active_sessions/${uid}`).set(localSessionToken);
+
+    const sessionRef = db.ref(`active_sessions/${uid}`);
+    sessionRef.on('value', (snapshot) => {
+        const serverSession = snapshot.val();
+        if (serverSession && serverSession !== localSessionToken) {
+            showSystemMessage("Disconnected: Account active on another device.");
+        }
+    });
+}
+
+auth.onAuthStateChanged(user => {
+    if (!user) {
+        globalUserVerified = false;
+        isAdminUser = false;
+        renderPlaylist(false);
+        return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkUid = urlParams.get('uid');
+    
+    if (linkUid && linkUid !== user.uid) {
+        globalUserVerified = false;
+        renderPlaylist(false);
+        showSystemMessage("Invalid link token. Access restricted.");
+        
+        const url = new URL(window.location);
+        url.search = ''; 
+        window.history.replaceState({}, '', url);
+        return;
+    }
+
+    db.ref('users/' + user.uid).once('value').then(snapshot => {
+        const userData = snapshot.val() || {};
+        const role = (userData.role || 'member').toLowerCase();
+
+        if (role === 'admin') {
+            globalUserVerified = true;
+            isAdminUser = true; 
+            
+            const toast = document.getElementById('adminToast');
+            if(toast) {
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 4000);
+            }
+
+            renderPlaylist(true); 
+            
+            const videoId = urlParams.get('v');
+            if (videoId && !window.currentEpData) {
+                 setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
+            }
+            return; 
+        } else {
+            isAdminUser = false; 
+        }
+
+        // SILENT PAGE ACCESS CHECK
+        const accessRef = db.ref(`page_access/${PAGE_ID}/${user.uid}`);
+        accessRef.on('value', (accessSnap) => {
+            const isAllowed = accessSnap.val();
+            globalUserVerified = (isAllowed === true); 
+            renderPlaylist(isAllowed === true);
+            
+            if (isAllowed === true) {
+                const videoId = urlParams.get('v'); 
+                if (videoId && !window.currentEpData) {
+                      setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
+                }
+            } else {
+                 if(art || document.getElementById('iframe-app').style.display === 'block') {
+                     showSystemMessage(`Access revoked by system.<br>UID: ${user.uid}`);
+                 }
+            }
+        });
+    });
+});
+
+function handleStreamEnded(epId) {
+    const epIndex = playlistData.findIndex(i => i.id === epId);
+    if(epIndex > -1) {
+        playlistData[epIndex].status = "ended";
+    }
+    showSystemMessage("Stream Ended. Awaiting next scheduled broadcast.");
+}
+
+function loadAndPlayEpisode(epId, updateUrl = true) {
+    const ep = playlistData.find(item => item.id === epId);
+    if (!ep) return;
+
+    const today = new Date();
+    if (ep.date) {
+        const epDateStr = ep.date + " GMT+0800"; 
+        const releaseDate = new Date(epDateStr);
+        if (releaseDate > today) { 
+            alert(`\nBROADCAST SCHEDULED FOR (PHT): ${ep.date}`); 
+            return; 
+        }
+    }
+    
+    if(ep.status && ep.status.toLowerCase() === 'ended') {
+        showSystemMessage("Transmission Ended.");
+        return;
+    }
+    
+    if(auth.currentUser) {
+        registerAndMonitorSession(auth.currentUser.uid);
+    }
+
+    if (updateUrl && auth.currentUser) {
+        const titleSlug = ep.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const uniqueToken = Math.random().toString(36).substr(2, 9);
+        const newUrl = window.location.pathname + `?v=${ep.id}&uid=${auth.currentUser.uid}&token=${uniqueToken}&title=${titleSlug}`;
+        history.pushState({id: ep.id, uid: auth.currentUser.uid}, '', newUrl);
+    }
+
+    window.currentEpData = ep;
+    
+    posterContainer.style.display = "none";
+    playerContainer.style.display = "block";
+    playerContainer.style.animation = "fadeIn 0.4s ease";
+
+    if(currentStreamRef) {
+        currentStreamRef.off();
+    }
+
+    currentStreamRef = db.ref(`live/${ep.id}`);
+    
+    currentStreamRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      
+      if(!data) { 
+          showSystemMessage("Broadcast Signal Lost");
+          return; 
+      }
+      
+      if (data.status && data.status.toLowerCase() === 'ended') {
+          handleStreamEnded(ep.id);
+          return;
+      }
+      
+      if(!data.url) return;
+
+      // Update global URL references
+      currentUrls.url1 = data.url;
+      currentUrls.url2 = data.url2 || data.url; 
+      currentUrls.url3 = data.url3 || data.url; 
+      currentStreamStatus = data.status || ep.status;
+
+      mainTitle.textContent = data.title || ep.title;
+      
+      // Show server buttons wrapper
+      document.getElementById('server-controls').style.display = "flex";
+
+      // DAY 2 ONLY LOGIC: Show Server 3 only if episode ID is "1"
+      // Server 1 & Server 2 will now ALWAYS remain visible for Day 1, 2, & 3
+      const btnServer3 = document.getElementById('btn-server-3');
+      if (ep.id === "1") {
+          btnServer3.style.display = "inline-block";
+      } else {
+          btnServer3.style.display = "none";
+          // If user switches back to Day 2 or 3 while on Server 3, force them back to Server 1
+          if (activeServer === 3) {
+              activeServer = 1;
+              updateServerButtonStyles();
+          }
+      }
+
+      // Decide which layout/URL to load based on active server
+      if (activeServer === 2) {
+          document.getElementById('artplayer-app').style.display = 'none';
+          document.getElementById('iframe-app').style.display = 'block';
+          if(art) { art.destroy(true); art = null; }
+      } else {
+          document.getElementById('iframe-app').style.display = 'none';
+          document.getElementById('artplayer-app').style.display = 'block';
+          
+          let targetUrl = currentUrls.url1;
+          if (activeServer === 3) targetUrl = currentUrls.url3;
+          
+          if(!art || art.url !== targetUrl) {
+               setupStream(targetUrl, currentStreamStatus); 
+          }
+      }
+    });
+}
+
+function setupStream(streamUrl, status) {
+    if(art) { 
+        art.destroy(true); // 'true' deletes the old player HTML completely
+        art = null; 
+    } 
+
+    const isLive = status && status.toUpperCase() === 'LIVE';
+
+    art = new Artplayer({
+        container: '#artplayer-app',
+        url: streamUrl,
+        type: 'm3u8',
+        customType: {
+            m3u8: function (video, url, art) {
+                if (Hls.isSupported()) {
+                    if (art.hls) art.hls.destroy();
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                    art.hls = hls;
+                    
+                    art.on('destroy', () => hls.destroy());
+                    hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                        const levels = hls.levels.map((level, index) => {
+                            return {
+                                default: index === hls.currentLevel,
+                                html: level.height + 'p', 
+                                url: level.url || url, 
+                                index: index, 
+                            };
+                        });
+                        
+                        levels.unshift({
+                            default: true,
+                            html: 'Auto',
+                            index: -1,
+                        });
+                        
+                        art.controls.update({
+                            name: 'quality',
+                            index: 10,
+                            position: 'right',
+                            style: { marginRight: '10px' },
+                            html: 'Quality', 
+                            selector: levels,
+                            onSelect: function (item) {
+                                hls.currentLevel = item.index;
+                                return item.html;
+                            },
+                        });
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = url;
+                }
+            },
+        },
+        volume: 0.7,
+        isLive: isLive,
+        muted: false,
+        autoplay: true,
+        autoSize: true,
+        autoMini: true,
+        fullscreen: true,
+        subtitleOffset: true,
+        mutex: true,
+        backdrop: false, 
+        playsInline: true,
+        autoPlayback: true,
+        airplay: true,
+        theme: '#ffffff', 
+        
+        layers: [
+            {
+                name: 'uid-watermark',
+                html: `<div class="uid-watermark">UID:${auth.currentUser ? auth.currentUser.uid : 'AWAITING_AUTH'}</div>`,
+                style: { position: 'absolute', bottom: '20px', left: '20px', zIndex: '20' }
+            }
+        ],
+
+        controls: [
+            {
+                name: 'live-badge',
+                position: 'left', 
+                index: 30, 
+                html: `<div class="custom-live-badge">LIVE</div>`,
+                tooltip: 'Live Broadcast',
+                style: { marginLeft: '5px', marginRight: '25px' }
+            }
+        ],
+    });
+
+    art.on('ready', () => {
+        const badge = document.querySelector('.custom-live-badge');
+        if(badge) { badge.style.display = isLive ? 'flex' : 'none'; }
+        
+        const isMobile = /Mobi|Android|iPad|Tablet/i.test(navigator.userAgent);
+        if(isMobile) {
+            art.on('fullscreen', (state) => {
+                 if(state && screen.orientation) screen.orientation.lock('landscape').catch(()=>{});
+                 else if(!state && screen.orientation) screen.orientation.unlock();
+            });
+        }
+    });
+
+    let lastSaveTime = 0;
+    art.on('video:timeupdate', () => {
+        const user = auth.currentUser;
+        if (user && window.currentEpData && !art.video.paused && art.video.currentTime > 5 && Date.now() - lastSaveTime > 5000) { 
+            let pageName = window.location.pathname.substring(window.location.pathname.lastIndexOf('/') + 1) || "videos.html"; 
+            db.ref('watchHistory/' + user.uid + '/' + window.currentEpData.id).update({ 
+                id: window.currentEpData.id, 
+                title: window.currentEpData.title, 
+                image: window.currentEpData.image, 
+                currentTime: art.video.currentTime, 
+                duration: art.video.duration || 0, 
+                timestamp: Date.now(), 
+                page: pageName 
+            });
+            lastSaveTime = Date.now();
+        }
+    });
+}
+
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.id) {
+        loadAndPlayEpisode(event.state.id, false);
+    } else {
+        returnToMainView();
+    }
+});
+
+function renderPlaylist(isUserVerified) {
+    playlistContainer.innerHTML = ''; 
+    playlistData.forEach((ep, index) => {
+        const card = document.createElement('div');
+        card.className = 'playlist-card';
+        card.style.animationDelay = `${index * 0.05}s`;
+        
+        const today = new Date();
+        let isDateLocked = false;
+        if (ep.date) {
+            const phtDate = new Date(ep.date + " GMT+0800");
+            if (phtDate > today) isDateLocked = true;
+        }
+
+        let badgeHtml = '', buttonClass = 'enter-btn', buttonText = 'LOCKED', buttonDisabled = true;
+        
+        const isEnded = ep.status && (ep.status.toLowerCase() === 'ended' || ep.status.toLowerCase() === 'done');
+
+        if (isEnded) {
+            badgeHtml = `<div class="ticket-status ended-badge">Ended</div>`;
+            buttonText = 'Ended'; buttonClass += ' ended'; buttonDisabled = true;
+        } else if (isUserVerified) {
+            badgeHtml = `<div class="ticket-status verified">Verified</div>`;
+            if (!isDateLocked) { buttonClass += ' active'; buttonText = 'Enter'; buttonDisabled = false; } 
+            else { buttonClass += ' time-locked'; buttonText = 'Standby'; }
+        } else {
+            badgeHtml = `<div class="ticket-status denied">Not Verified</div>`;
+            buttonText = 'Locked';
+            buttonDisabled = true; 
+        }
+
+        let displayDate = "COMING SOON", displayTime = "";
+        if(ep.date) {
+            const d = new Date(ep.date); 
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            displayDate = `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+            let h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12; h = h ? h : 12; m = m < 10 ? '0'+m : m;
+            displayTime = h + ':' + m + ' ' + ampm;
+        }
+
+        card.innerHTML = `${badgeHtml}<div class="card-header">${ep.title}</div><div class="card-body"><div class="date-info"><span class="date-main">${displayDate}</span><span class="time-sub">${displayTime}</span></div><button class="${buttonClass}" data-unlock-time="${ep.date}" data-id="${ep.id}" data-verified="${isUserVerified}" data-ended="${isEnded}" ${buttonDisabled ? 'disabled' : ''}>${buttonText}</button></div>`;
+        
+        card.querySelector('button').addEventListener('click', (e) => {
+            const isVerified = e.target.getAttribute('data-verified') === 'true';
+            const isEventEnded = e.target.getAttribute('data-ended') === 'true';
+            
+            const dateStr = e.target.getAttribute('data-unlock-time');
+            const unlockTime = dateStr ? new Date(dateStr + " GMT+0800") : new Date();
+            
+            if (isEventEnded || !isVerified) return; 
+            
+            if (new Date() >= unlockTime) { 
+                loadAndPlayEpisode(ep.id, true); 
+                document.querySelector('.video-wrapper-left').scrollIntoView({ behavior: 'smooth' }); 
+            } 
+            else { alert("Event has not started yet."); }
+        });
+        playlistContainer.appendChild(card);
+    });
+}
+
+function startGlobalTimer() {
+    setInterval(() => {
+        const now = new Date(); 
+        
+        document.querySelectorAll('.enter-btn.time-locked').forEach(btn => {
+            const dateStr = btn.getAttribute('data-unlock-time');
+            if (dateStr) {
+                const phtUnlockTime = new Date(dateStr + " GMT+0800");
+                
+                if (now >= phtUnlockTime) {
+                    btn.textContent = 'Enter'; 
+                    btn.classList.remove('time-locked'); 
+                    btn.classList.add('active'); 
+                    btn.disabled = false;
+                }
+            }
+        });
+        if(currentDateDisplay) currentDateDisplay.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }, 1000);
+}
+startGlobalTimer();
+
+document.onkeydown = function(e) { if(e.keyCode == 123) return false; }
+
+// --- SERVER SWITCHING LOGIC ---
+function switchServer(serverNum) {
+    if (activeServer === serverNum) return; 
+    
+    activeServer = serverNum;
+    updateServerButtonStyles();
+
+    const artplayerApp = document.getElementById('artplayer-app');
+    const iframeApp = document.getElementById('iframe-app');
+
+    if (serverNum === 2) {
+        showSystemMessage(`Switching to Server 2...`, false);
+        // Destroy artplayer to save bandwidth when using Iframe
+        if (art) { art.destroy(true); art = null; }
+        
+        artplayerApp.style.display = 'none';
+        iframeApp.style.display = 'block';
+    } else {
+        showSystemMessage(`Switching to Server ${serverNum}...`, false);
+        iframeApp.style.display = 'none';
+        artplayerApp.style.display = 'block';
+
+        let targetUrl = currentUrls.url1;
+        if (serverNum === 3) targetUrl = currentUrls.url3;
+
+        if (targetUrl) {
+            setupStream(targetUrl, currentStreamStatus);
+        } else {
+            showSystemMessage(`Server ${serverNum} is currently unavailable.`, false);
+        }
+    }
+}
+
+function updateServerButtonStyles() {
+    const btn1 = document.getElementById('btn-server-1');
+    const btn2 = document.getElementById('btn-server-2');
+    const btn3 = document.getElementById('btn-server-3');
+    
+    if (btn1 && btn2) {
+        btn1.classList.toggle('active', activeServer === 1);
+        btn2.classList.toggle('active', activeServer === 2);
+    }
+    if (btn3) {
+        btn3.classList.toggle('active', activeServer === 3);
+    }
+}
+</script>
+
+</body>
+</html>

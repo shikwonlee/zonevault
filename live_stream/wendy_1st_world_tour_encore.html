@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live | Zone Vault</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+
+<link rel="icon" href="favicon-new.png" type="image/png" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+
+<meta name="apple-mobile-web-app-title" content="Zone Vault">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1B2RJ659GL');
+</script>
+
+<style>
+  /* --- CSS VARIABLES --- */
+  :root {
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      --main-accent: #ff0033; /* Red Accent */
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: #000000 !important; /* FORCED DARK MODE */
+    color: #ffffff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
+  body {
+    text-align: center;
+    padding-top: 20px; 
+    padding-bottom: 20px;
+  }
+
+  .main-layout {
+    max-width: 100%;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 20px; 
+  }
+
+  .video-wrapper-left {
+    width: 100%;
+    position: relative; 
+  }
+
+  /* --- POSTER AREA --- */
+  #poster-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background-size: cover;
+    background-position: center;
+    background-image: url('https://res.cloudinary.com/dp6x9xmku/image/upload/v1772344056/2025-26_WENDY_1st_WORLD_TOUR_W_EALIVE_ENCORE_yb3aws.png'); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    box-shadow: var(--glass-shadow);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #poster-overlay {
+    background: rgba(0, 0, 0, 0.5); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 15px 25px;
+    border-radius: 50px;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    pointer-events: none; 
+    text-shadow: var(--text-shadow);
+  }
+
+  /* --- ARTPLAYER CONTAINER --- */
+  #player-container {
+    display: none; 
+    width: 100%;
+    aspect-ratio: 16/9;
+    box-shadow: var(--glass-shadow);
+    position: relative; 
+    background: transparent; 
+  }
+    
+  /* The actual div artplayer attaches to */
+  .artplayer-app {
+      width: 100%;
+      height: 100%;
+  }
+
+  /* --- CUSTOM LIVE BADGE STYLE --- */
+  .custom-live-badge {
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+      color: #ffffff;
+      margin-left: 10px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: none; /* Hidden by default */
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+  }
+
+  /* --- UID WATERMARK (Artplayer Layer) --- */
+  .uid-watermark {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5); /* Slightly transparent */
+      text-shadow: 0 1px 2px black; /* Shadow for visibility */
+      pointer-events: none; /* Click through */
+      z-index: 20;
+      white-space: nowrap;
+      font-weight: bold;
+  }
+
+  h2 {
+    font-size: 24px;
+    color: white;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-align: left; 
+    text-shadow: var(--text-shadow);
+  }
+
+  /* --- VIEWS & BUTTON CONTAINER --- */
+  .views-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Spreads date and button */
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px; 
+    margin-bottom: 5px;
+    color: #a1a1a1;
+    font-size: 16px;
+    font-weight: 500;
+  }
+   
+  #current-date-display { 
+    margin-left: 0px;
+    font-size: 14px; 
+    color: #666; 
+  }
+
+  /* --- GUIDELINES BUTTON --- */
+  .guidelines-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .guidelines-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.02);
+  }
+
+  /* --- PLAYLIST STYLES --- */
+  #playlist { 
+    width: 100%; 
+    max-width: 1100px; 
+    margin: 20px auto; 
+    text-align: left;
+  }
+
+  #playlist-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      padding-right: 5px;
+      max-height: 500px;
+      overflow-y: auto;
+  }
+
+  .playlist-card {
+      background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+      border-radius: 12px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      min-height: 180px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      position: relative;
+      text-align: left;
+  }
+
+  .card-header {
+      font-size: 17px;
+      color: white; 
+      font-weight: 700;
+      margin-top: 35px; 
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  }
+
+  .card-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .date-info { text-align: left; }
+  .date-main { font-size: 14px; font-weight: 600; color: #ccc; text-transform: uppercase; display: block; }
+  .time-sub { font-size: 20px; font-weight: 800; color: white; display: block; }
+
+  .ticket-status {
+      position: absolute;
+      top: 15px; left: 20px; 
+      font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; gap: 6px;
+      text-transform: uppercase;
+      padding: 4px 10px; border-radius: 20px;
+      backdrop-filter: blur(5px);
+  }
+  .ticket-status.verified { background: rgba(77, 184, 255, 0.15); color: #4db8ff; border: 1px solid rgba(77, 184, 255, 0.3); }
+  .ticket-status.denied { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.3); }
+  .ticket-status.ended-badge { background: rgba(100, 100, 100, 0.15); color: #888; border: 1px solid rgba(100, 100, 100, 0.3); }
+
+  .enter-btn {
+      background: #333; color: #666; border: none;
+      padding: 8px 20px; font-size: 13px; font-weight: 700;
+      border-radius: 50px; cursor: not-allowed;
+      transition: all 0.3s ease;
+      min-width: 90px;
+  }
+  .enter-btn.active { background: white; color: black; cursor: pointer; }
+  .enter-btn.active:hover { background: #e0e0e0; transform: scale(1.05); }
+  .enter-btn.ended { background: #1a1a1a !important; color: #444 !important; border: 1px solid #333 !important; cursor: not-allowed; }
+
+  /* Mobile Tweaks */
+  @media (max-width: 768px) {
+    body { padding: 10px 0 !important; }
+    .main-layout { padding: 0 15px !important; }
+    h2 { font-size: 18px; }
+  }
+
+  .center-logo { display: flex; justify-content: center; margin-bottom: 20px; }
+  .center-logo img { width: 50px; height: auto; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+
+  @media (min-width: 900px) {
+    .main-layout { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 20px; text-align: left; }
+    .video-wrapper-left { width: 100%; max-width: 1100px; margin: 0 auto; }
+  }
+
+  /* --- FULL SCREEN ACCESS DENIED MODAL (FOR LINK PROTECTION) --- */
+  .access-denied-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 1); /* SOLID BLACK */
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 99999; /* TOPMOST */
+    text-align: center; padding: 20px;
+    flex-direction: column;
+  }
+
+  .redirect-timer {
+      font-size: 20px;
+      color: #ff4444;
+      margin-top: 20px;
+      font-weight: 700;
+  }
+
+  /* --- STREAM GUIDELINES MODAL CSS --- */
+  .guidelines-modal-overlay {
+      display: none; /* Hidden by default */
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10000;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+  }
+  
+  .guidelines-content {
+      background: #151515;
+      width: 100%; max-width: 500px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      display: flex; flex-direction: column;
+      max-height: 85vh; /* Phone friendly height */
+      position: relative;
+      animation: modalFadeIn 0.3s ease;
+  }
+
+  @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+  }
+
+  .guide-header {
+      font-size: 20px; font-weight: 700; color: white;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+  }
+
+  .guide-list {
+      padding: 20px;
+      overflow-y: auto; /* Scrollable content */
+      text-align: left;
+  }
+
+  .guide-item {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+  }
+
+  .dot-icon {
+      width: 8px; height: 8px;
+      background: var(--main-accent);
+      border-radius: 50%;
+      margin-top: 8px;
+      flex-shrink: 0;
+      box-shadow: 0 0 10px var(--main-accent);
+  }
+
+  .item-text {
+      font-size: 14px;
+      color: #ccc;
+      line-height: 1.5;
+  }
+
+  .highlight {
+      font-weight: 700;
+      color: white;
+  }
+
+  .close-guide-btn {
+      margin: 10px 20px 20px 20px;
+      background: #333;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+  }
+  .close-guide-btn:hover { background: #444; }
+
+  /* --- ADMIN & SYSTEM NOTIFICATION TOAST --- */
+  .admin-toast, .system-toast {
+      position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+      border-radius: 50px;
+      font-weight: 700; font-size: 14px; z-index: 20000;
+      backdrop-filter: blur(10px);
+      display: flex; align-items: center; gap: 12px;
+      transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 12px 30px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      width: max-content;
+      max-width: 90%;
+      text-align: center;
+      justify-content: center;
+  }
+
+  /* Admin Style */
+  .admin-toast {
+      background: rgba(220, 38, 38, 0.95); 
+      color: white; 
+      border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* Generic System/Error Style */
+  .system-toast {
+      background: #222; 
+      color: #fff; 
+      border: 1px solid rgba(255, 68, 68, 0.4);
+      box-shadow: 0 10px 30px rgba(255, 0, 0, 0.15);
+  }
+  
+  .admin-toast.show, .system-toast.show { top: 30px; }
+
+</style>
+</head>
+
+<body>
+
+<div id="adminToast" class="admin-toast">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    You are using ADMIN ACCOUNT
+</div>
+
+<div id="systemToast" class="system-toast">
+   </div>
+
+<div class="center-logo">
+  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
+</div>
+
+<div class="main-layout">
+
+  <div class="video-wrapper-left">
+      
+    <div id="poster-container">
+      <div id="poster-overlay">Select the Live to Watch</div>
+    </div>
+
+    <div id="player-container">
+       <div class="artplayer-app"></div>
+    </div>
+
+    <div id="views-display" class="views-container">
+      <span id="current-date-display"></span>
+      <button class="guidelines-btn" onclick="openGuidelines()">
+         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+         Stream Guidelines
+      </button>
+    </div>
+
+    <h2 id="main-title"></h2>
+  </div>
+
+  <div id="playlist">
+    <div id="playlist-items">
+    </div>
+  </div>
+
+</div> 
+
+<div id="guidelines-modal" class="guidelines-modal-overlay">
+    <div class="guidelines-content">
+        <div class="guide-header">
+            Stream Guidelines
+        </div>
+        
+        <div class="guide-list">
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight">One Device Policy:</span> Only 1 device can access the stream. If you try to login again on another device, the first connected device will be automatically logged out.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    You can change the <span class="highlight">Video Resolution</span> (1080p, 720p, 540p, 480p, 360p, 240p) or set it to 0p via the settings gear icon.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    Only <span class="highlight">allowed/verified users</span> can access or view the live stream. Unverified accounts will be blocked.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    The ID displayed on the bottom left is your <span class="highlight">User ID</span>. This is recorded in our database and used to grant your access.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight" style="color:#ff4444;">NO RESTREAMING:</span> Restreaming on any platform is strictly prohibited. If caught, you will immediately lose access to the stream and be permanently blacklisted.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight" style="color:#ff4444;">SCREENSHOT AND SCREEN RECORDING ARE PROHIBITED.</span>
+                    Do not capture, record, or redistribute any part of the stream.
+                    Posting while the stream is ongoing is strictly not allowed.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight" style="color:#ff4444;">DO NOT SHARE LINKS:</span>
+                    Sharing, reposting, or distributing the website or stream link where you are watching is strictly prohibited. Violators may have their access revoked without notice.
+                </div>
+            </div>
+            
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    If you experience buffering or black screen, please refresh the page or lower the video quality.
+                </div>
+            </div>
+
+             <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    No sound? Tap the audio icon to unmute. iOS users should check if the physical silent switch is on.
+                </div>
+            </div>
+        </div>
+        
+        <button class="close-guide-btn" onclick="closeGuidelines()">I UNDERSTAND</button>
+    </div>
+</div>
+
+<script>
+// --- CONFIGURATION ---
+// Initial Skeleton Data - Updates via Firebase
+const playlistData = [
+  { 
+    id: "1", 
+    title: "2025-26 WENDY 1st WORLD TOUR [W:EALIVE] ENCORE ", 
+    status: "live",
+    date: "March 01, 2026 2:50 PM",
+    image: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1772344056/2025-26_WENDY_1st_WORLD_TOUR_W_EALIVE_ENCORE_yb3aws.png",
+  }
+];
+
+const playlistContainer = document.getElementById('playlist-items');
+const posterContainer = document.getElementById('poster-container');
+const playerContainer = document.getElementById('player-container');
+const mainTitle = document.getElementById('main-title');
+const currentDateDisplay = document.getElementById('current-date-display');
+
+window.currentEpData = null;
+let art = null; // Artplayer Instance
+let localSessionToken = null; // Stores this browser's session ID
+let currentStreamRef = null; // Stores the current Firebase Listener for stream status
+
+// Access State Globals
+let globalUserVerified = false; 
+let isAdminUser = false; // --- NEW: TRACK ADMIN STATUS ---
+</script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+  authDomain: "tvnstream-b4497.firebaseapp.com",
+  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+  projectId: "tvnstream-b4497",
+  storageBucket: "tvnstream-b4497.appspot.com",
+  messagingSenderId: "308384754214",
+  appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(); 
+const db = firebase.database();
+
+const PAGE_ID = "wendy_world_tour"; 
+
+// --- GUIDELINES MODAL LOGIC ---
+function openGuidelines() {
+    document.getElementById('guidelines-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeGuidelines() {
+    document.getElementById('guidelines-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+// Close if clicked outside
+document.getElementById('guidelines-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeGuidelines();
+});
+
+
+// --- RETURN TO MAIN VIEW LOGIC (Reset to Playlist) ---
+function returnToMainView() {
+    // 1. Destroy Player
+    if(art) { art.destroy(false); art = null; }
+    
+    // 2. Hide Player / Show Poster
+    playerContainer.style.display = "none";
+    posterContainer.style.display = "flex";
+    mainTitle.textContent = '';
+    window.currentEpData = null;
+
+    // 3. Clean URL without refreshing (Remove ?v=...)
+    const url = new URL(window.location);
+    url.search = ''; 
+    window.history.pushState({}, '', url);
+
+    // 4. Reset Body Overflow
+    document.body.style.overflow = 'auto';
+    
+    // 5. Re-render Playlist (uses globalUserVerified state)
+    renderPlaylist(globalUserVerified);
+}
+
+// --- SMART GO BACK (For Link Blocking) ---
+function smartGoBack() {
+    // Clean URL first so they can't reload
+    const url = new URL(window.location);
+    url.search = ''; 
+    window.history.replaceState({}, '', url);
+
+    if (document.referrer) {
+        window.history.back();
+    } else {
+        // If no history (new tab), reload to lobby
+        window.location.reload();
+    }
+}
+
+// --- SHOW SYSTEM NOTIFICATION TOAST ---
+function showSystemMessage(message) {
+    returnToMainView();
+    const toast = document.getElementById('systemToast');
+    toast.innerHTML = message;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); }, 4000);
+}
+
+// --- FULL SCREEN BLOCK MODAL ---
+function showBlockingModal(message) {
+    // 1. Hide Main Content
+    document.querySelector('.main-layout').style.display = 'none';
+    
+    // 2. Create Modal
+    const modal = document.createElement('div');
+    modal.className = 'access-denied-modal';
+    modal.innerHTML = `
+        <strong style="color: #FF4444; font-size: 32px; margin-bottom: 20px;">Access Restricted</strong>
+        <div style="font-size: 18px; max-width: 90%; line-height: 1.4;">${message}</div>
+        <div id="blockTimer" class="redirect-timer">Redirecting in 2...</div>
+    `;
+    document.body.appendChild(modal);
+
+    // 3. Timer Logic
+    let count = 2;
+    const interval = setInterval(() => {
+        count--;
+        const timerElem = document.getElementById('blockTimer');
+        if(timerElem) timerElem.innerText = `Redirecting in ${count}...`;
+        
+        if (count <= 0) {
+            clearInterval(interval);
+            smartGoBack();
+        }
+    }, 1000);
+}
+
+
+// --- NEW FUNCTION: SYNC PLAYLIST STATUS WITH FIREBASE ---
+function initPlaylistSync() {
+    playlistData.forEach((item, index) => {
+        // Listen to status changes for EACH episode in the playlist
+        db.ref(`live/${item.id}/status`).on('value', (snapshot) => {
+            const status = snapshot.val();
+            if (status) {
+                playlistData[index].status = status;
+                renderPlaylist(globalUserVerified);
+                if (window.currentEpData && window.currentEpData.id === item.id && status.toLowerCase() === 'ended') {
+                    handleStreamEnded(item.id);
+                }
+            }
+        });
+    });
+}
+initPlaylistSync();
+
+
+// --- ONE DEVICE POLICY LOGIC (UPDATED WITH ADMIN BYPASS) ---
+function registerAndMonitorSession(uid) {
+    if (isAdminUser) {
+        console.log("Admin session: Device monitoring bypassed.");
+        return; 
+    }
+
+    localSessionToken = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    db.ref(`active_sessions/${uid}`).set(localSessionToken);
+
+    const sessionRef = db.ref(`active_sessions/${uid}`);
+    sessionRef.on('value', (snapshot) => {
+        const serverSession = snapshot.val();
+        if (serverSession && serverSession !== localSessionToken) {
+            showSystemMessage("Disconnected: Account active on another device.");
+        }
+    });
+}
+
+// --- UPDATED AUTH & SECURITY LOGIC (ADMIN/MEMBER SPLIT) ---
+auth.onAuthStateChanged(user => {
+    // SCENARIO 1: NOT LOGGED IN
+    if (!user) {
+        showBlockingModal("You must be logged in to view this content.");
+        return;
+    }
+
+    // SCENARIO 1 (PART 2): COPY-PASTE LINK PROTECTION
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkUid = urlParams.get('uid');
+    if (linkUid && linkUid !== user.uid) {
+        showBlockingModal("Access Restricted. Unauthorized link sharing detected.");
+        return;
+    }
+
+
+    // 1. Check User Role from Database FIRST
+    db.ref('users/' + user.uid).once('value').then(snapshot => {
+        const userData = snapshot.val() || {};
+        const role = (userData.role || 'member').toLowerCase();
+
+        // --- ADMIN (Bypass Everything) ---
+        if (role === 'admin') {
+            console.log("Admin access granted");
+            globalUserVerified = true;
+            isAdminUser = true; 
+            
+            const toast = document.getElementById('adminToast');
+            if(toast) {
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 4000);
+            }
+
+            renderPlaylist(true); 
+            
+            // Auto-load video if in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('v');
+            if (videoId && !window.currentEpData) {
+                 setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
+            }
+            return; 
+        } else {
+            isAdminUser = false; // Ensure false for members
+        }
+
+        // --- MEMBER CHECKS ---
+        
+        // 2. Permission Check (Member Only)
+        const accessRef = db.ref(`page_access/${PAGE_ID}/${user.uid}`);
+        accessRef.on('value', (accessSnap) => {
+            const isAllowed = accessSnap.val();
+            globalUserVerified = (isAllowed === true); 
+            renderPlaylist(isAllowed === true);
+            
+            if (isAllowed === true) {
+                const videoId = urlParams.get('v'); 
+                if (videoId && !window.currentEpData) {
+                      setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
+                }
+            } else {
+                 // SCENARIO 3: REVOKED WHILE WATCHING
+                 if(art) {
+                     showSystemMessage(`ACCESS REVOKED. You have been removed due to violating live stream rules.<br>UID: ${user.uid}`);
+                 }
+            }
+        });
+    });
+});
+
+// --- HANDLE STREAM ENDED (REALTIME) ---
+function handleStreamEnded(epId) {
+    const epIndex = playlistData.findIndex(i => i.id === epId);
+    if(epIndex > -1) {
+        playlistData[epIndex].status = "ended";
+    }
+    showSystemMessage("Stream Ended. Please come back for the next event!");
+}
+
+
+// --- CORE FUNCTION: PLAY EPISODE (ARTPLAYER) ---
+function loadAndPlayEpisode(epId, updateUrl = true) {
+    const ep = playlistData.find(item => item.id === epId);
+    if (!ep) return;
+
+    // --- GLOBAL TIME CHECK (PHT BASE) ---
+    const today = new Date();
+    if (ep.date) {
+        const epDateStr = ep.date + " GMT+0800"; 
+        const releaseDate = new Date(epDateStr);
+        if (releaseDate > today) { 
+            alert(`\nLIVE STREAM DATE (PHT): ${ep.date}`); 
+            return; 
+        }
+    }
+    
+    // Check if locally marked ended
+    if(ep.status && ep.status.toLowerCase() === 'ended') {
+        showSystemMessage("Stream Ended.");
+        return;
+    }
+    
+    // --- ACTIVATE ONE DEVICE POLICY ---
+    if(auth.currentUser) {
+        registerAndMonitorSession(auth.currentUser.uid);
+    }
+
+    if (updateUrl && auth.currentUser) {
+        const titleSlug = ep.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const uniqueToken = Math.random().toString(36).substr(2, 9);
+        const newUrl = window.location.pathname + `?v=${ep.id}&uid=${auth.currentUser.uid}&token=${uniqueToken}&title=${titleSlug}`;
+        history.pushState({id: ep.id, uid: auth.currentUser.uid}, '', newUrl);
+    }
+
+    window.currentEpData = ep;
+    posterContainer.style.display = "none";
+    playerContainer.style.display = "block";
+
+    // --- REALTIME LISTENER FOR STREAM STATUS ---
+    if(currentStreamRef) {
+        currentStreamRef.off();
+    }
+
+    currentStreamRef = db.ref(`live/${ep.id}`);
+    
+    currentStreamRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      
+      if(!data) { 
+          showSystemMessage("Live Unavailable");
+          return; 
+      }
+      
+      if (data.status && data.status.toLowerCase() === 'ended') {
+          handleStreamEnded(ep.id);
+          return;
+      }
+      
+      if(!data.url) return;
+
+      mainTitle.textContent = data.title || ep.title;
+      
+      if(!art || art.url !== data.url) {
+           setupStream(data.url, data.status || ep.status); 
+      }
+    });
+}
+
+// --- ARTPLAYER SETUP ---
+function setupStream(streamUrl, status) {
+    if(art) { art.destroy(false); } 
+
+    const isLive = status && status.toUpperCase() === 'LIVE';
+
+    art = new Artplayer({
+        container: '.artplayer-app',
+        url: streamUrl,
+        type: 'm3u8',
+        customType: {
+            m3u8: function (video, url, art) {
+                if (Hls.isSupported()) {
+                    if (art.hls) art.hls.destroy();
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                    art.hls = hls;
+                    
+                    art.on('destroy', () => hls.destroy());
+                    hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                        const levels = hls.levels.map((level, index) => {
+                            return {
+                                default: index === hls.currentLevel,
+                                html: level.height + 'p', 
+                                url: level.url || url, 
+                                index: index, 
+                            };
+                        });
+                        
+                        levels.unshift({
+                            default: true,
+                            html: 'Auto',
+                            index: -1,
+                        });
+                        
+                        art.controls.update({
+                            name: 'quality',
+                            index: 10,
+                            position: 'right',
+                            style: { marginRight: '10px' },
+                            html: 'Quality', 
+                            selector: levels,
+                            onSelect: function (item) {
+                                hls.currentLevel = item.index;
+                                return item.html;
+                            },
+                        });
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = url;
+                }
+            },
+        },
+        volume: 0.7,
+        isLive: isLive,
+        muted: false,
+        autoplay: true,
+        autoSize: true,
+        autoMini: true,
+        fullscreen: true,
+        subtitleOffset: true,
+        mutex: true,
+        backdrop: false, 
+        playsInline: true,
+        autoPlayback: true,
+        airplay: true,
+        theme: '#ff0033', 
+        
+        layers: [
+            {
+                name: 'uid-watermark',
+                html: `<div class="uid-watermark">ID:${auth.currentUser ? auth.currentUser.uid : 'Loading...'}</div>`,
+                style: {
+                    position: 'absolute',
+                    bottom: '15px',
+                    left: '15px',
+                    zIndex: '20'
+                }
+            }
+        ],
+
+        controls: [
+            {
+                name: 'live-badge',
+                position: 'left', 
+                index: 30, 
+                html: `<div class="custom-live-badge">LIVE</div>`,
+                tooltip: 'Live Stream',
+                style: {
+                    marginLeft: '5px',
+                    marginRight: '25px', 
+                }
+            }
+        ],
+    });
+
+    art.on('ready', () => {
+        const badge = document.querySelector('.custom-live-badge');
+        if(badge) {
+            badge.style.display = isLive ? 'flex' : 'none';
+        }
+        
+        const isMobile = /Mobi|Android|iPad|Tablet/i.test(navigator.userAgent);
+        if(isMobile) {
+            art.on('fullscreen', (state) => {
+                 if(state && screen.orientation) screen.orientation.lock('landscape').catch(()=>{});
+                 else if(!state && screen.orientation) screen.orientation.unlock();
+            });
+        }
+    });
+
+    let lastSaveTime = 0;
+    art.on('video:timeupdate', () => {
+        const user = auth.currentUser;
+        if (user && window.currentEpData && !art.video.paused && art.video.currentTime > 5 && Date.now() - lastSaveTime > 5000) { 
+            let pageName = window.location.pathname.substring(window.location.pathname.lastIndexOf('/') + 1) || "videos.html"; 
+            db.ref('watchHistory/' + user.uid + '/' + window.currentEpData.id).update({ 
+                id: window.currentEpData.id, 
+                title: window.currentEpData.title, 
+                image: window.currentEpData.image, 
+                currentTime: art.video.currentTime, 
+                duration: art.video.duration || 0, 
+                timestamp: Date.now(), 
+                page: pageName 
+            });
+            lastSaveTime = Date.now();
+        }
+    });
+}
+
+// Browser Back Button
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.id) {
+        loadAndPlayEpisode(event.state.id, false);
+    } else {
+        returnToMainView();
+    }
+});
+
+function renderPlaylist(isUserVerified) {
+    playlistContainer.innerHTML = ''; 
+    playlistData.forEach(ep => {
+        const card = document.createElement('div');
+        card.className = 'playlist-card';
+        
+        const today = new Date();
+        let isDateLocked = false;
+        if (ep.date) {
+            const phtDate = new Date(ep.date + " GMT+0800");
+            if (phtDate > today) isDateLocked = true;
+        }
+
+        let badgeHtml = '', buttonClass = 'enter-btn', buttonText = 'LOCKED', buttonDisabled = true;
+        
+        const isEnded = ep.status && (ep.status.toLowerCase() === 'ended' || ep.status.toLowerCase() === 'done');
+
+        if (isEnded) {
+            badgeHtml = `<div class="ticket-status ended-badge">EVENT ENDED</div>`;
+            buttonText = 'ENDED'; buttonClass += ' ended'; buttonDisabled = true;
+        } else if (isUserVerified) {
+            badgeHtml = `<div class="ticket-status verified">ACCOUNT VERIFIED</div>`;
+            if (!isDateLocked) { buttonClass += ' active'; buttonText = 'ENTER'; buttonDisabled = false; } 
+            else { buttonClass += ' time-locked'; buttonText = 'WAITING'; }
+        } else {
+            badgeHtml = `<div class="ticket-status denied">ACCOUNT NOT VERIFIED</div>`;
+            buttonText = 'NO ACCESS';
+        }
+
+        let displayDate = "COMING SOON", displayTime = "";
+        if(ep.date) {
+            const d = new Date(ep.date); 
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'], months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            displayDate = `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+            let h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12; h = h ? h : 12; m = m < 10 ? '0'+m : m;
+            displayTime = h + ':' + m + ' ' + ampm + " PHT";
+        }
+
+        card.innerHTML = `${badgeHtml}<div class="card-header">${ep.title}</div><div class="card-body"><div class="date-info"><span class="date-main">${displayDate}</span><span class="time-sub">${displayTime}</span></div><button class="${buttonClass}" data-unlock-time="${ep.date}" data-id="${ep.id}" data-verified="${isUserVerified}" data-ended="${isEnded}" ${buttonDisabled ? 'disabled' : ''}>${buttonText}</button></div>`;
+        
+        card.querySelector('button').addEventListener('click', (e) => {
+            const isVerified = e.target.getAttribute('data-verified') === 'true';
+            const isEventEnded = e.target.getAttribute('data-ended') === 'true';
+            
+            const dateStr = e.target.getAttribute('data-unlock-time');
+            const unlockTime = dateStr ? new Date(dateStr + " GMT+0800") : new Date();
+            
+            if (isEventEnded) return;
+            
+            // SCENARIO 2: LOGGED IN BUT NO PERMISSION (ON CLICK)
+            if (!isVerified) { 
+                showSystemMessage(`Access is not given. Please contact the admin.<br>UID: ${auth.currentUser.uid}`);
+                return; 
+            }
+            
+            if (new Date() >= unlockTime) { 
+                loadAndPlayEpisode(ep.id, true); 
+                document.querySelector('.video-wrapper-left').scrollIntoView({ behavior: 'smooth' }); 
+            } 
+            else { alert("Event has not started yet. Please wait."); }
+        });
+        playlistContainer.appendChild(card);
+    });
+}
+
+function startGlobalTimer() {
+    setInterval(() => {
+        const now = new Date(); 
+        
+        document.querySelectorAll('.enter-btn.time-locked').forEach(btn => {
+            const dateStr = btn.getAttribute('data-unlock-time');
+            if (dateStr) {
+                const phtUnlockTime = new Date(dateStr + " GMT+0800");
+                
+                if (now >= phtUnlockTime) {
+                    btn.textContent = 'ENTER'; 
+                    btn.classList.remove('time-locked'); 
+                    btn.classList.add('active'); 
+                    btn.disabled = false;
+                }
+            }
+        });
+        if(currentDateDisplay) currentDateDisplay.textContent = now.toLocaleTimeString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    }, 1000);
+}
+startGlobalTimer();
+
+document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+document.onkeydown = function(e) { if(e.keyCode == 123) return false; }
+</script>
+
+</body>
+</html>

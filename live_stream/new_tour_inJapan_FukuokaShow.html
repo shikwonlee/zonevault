@@ -1,0 +1,2029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live | Zone Vault</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
+<link rel="icon" href="favicon-new.png" type="image/png" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+
+<meta name="apple-mobile-web-app-title" content="Zone Vault">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" sizes="192x192" href="favicon-new.png">
+<link rel="apple-touch-icon" sizes="512x512" href="favicon-new.png">
+<link rel="apple-touch-startup-image" href="splash.png">
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1B2RJ659GL');
+</script>
+
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('zoneVaultTheme');
+    if(savedTheme) {
+      const style = document.createElement('style');
+      style.innerHTML = `
+        body { 
+          background: ${savedTheme} !important; 
+          background-size: cover !important;
+          background-attachment: fixed !important;
+          background-repeat: no-repeat !important;
+          min-height: 100vh;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  })();
+</script>
+
+<style>
+  /* --- CSS VARIABLES --- */
+  :root {
+      --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+      --glass-border: 1px solid rgba(255, 255, 255, 0.2);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --glass-blur: blur(20px);
+      --text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      --plyr-color-main: #ff0033; /* Red Accent */
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: black; /* Fallback */
+    text-align: center;
+    padding-top: 20px; 
+    padding-bottom: 20px;
+    transition: background 0.5s ease;
+  }
+
+  .main-layout {
+    max-width: 100%;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 20px; 
+  }
+
+  .video-wrapper-left {
+    width: 100%;
+    position: relative; 
+  }
+
+  #poster-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background-size: cover;
+    background-position: center;
+    background-image: url('https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/jpntour.png'); 
+    border-radius: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    box-shadow: var(--glass-shadow);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* --- GLASSMORPHISM POSTER OVERLAY --- */
+  #poster-overlay {
+    background: rgba(0, 0, 0, 0.5); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 15px 25px;
+    border-radius: 50px;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    pointer-events: none; 
+    max-width: 90%;
+    text-align: center;
+    margin: 0 auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-shadow: var(--text-shadow);
+    transform: translateZ(0);
+    will-change: transform, backdrop-filter;
+  }
+
+  #player-container {
+    display: none; 
+    width: 100%;
+    box-shadow: var(--glass-shadow);
+    position: relative; 
+  }
+
+  h2 {
+    font-size: 24px;
+    color: white;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-align: left; 
+    text-shadow: var(--text-shadow);
+  }
+
+  h3.playlist-header {
+    color: white; 
+    margin-bottom: 10px; 
+    font-size: 20px;
+    text-shadow: var(--text-shadow);
+  }
+
+  /* --- MOBILE PORTRAIT (Standard View) --- */
+  @media (max-width: 768px) {
+    body { padding: 10px 0 !important; }
+    .main-layout { padding: 0 15px !important; }
+      
+    h2 { font-size: 18px; }
+    h3.playlist-header { 
+        font-size: 16px; 
+        margin-top: 20px; 
+        opacity: 0.9;
+    }
+    #poster-overlay { 
+        font-size: 14px; 
+        padding: 10px 15px;
+        border-radius: 35px;
+        border-width: 1px;
+    }
+    .center-logo { margin-top: 15px; }
+    .center-logo img { width: 40px; }
+  }
+
+  /* --- 🚀 MOBILE LANDSCAPE ONLY (TRUE FULLSCREEN FIX) --- */
+  @media screen and (max-width: 915px) and (orientation: landscape) {
+    #player-container, #poster-container {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9999 !important; 
+        background: black !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border: none !important;
+    }
+
+    .plyr {
+        width: 100% !important;
+        height: 100% !important;
+    }
+      
+    video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+    }
+
+    .mobile-header, .center-logo {
+        display: none !important;
+    }
+
+    .video-wrapper-left {
+        height: 100vh;
+    }
+      
+    #views-display, 
+    #main-title, 
+    #playlist,
+    .guide-btn-container {
+        display: none !important; 
+    }
+  }
+
+  .center-logo { display: flex; justify-content: center; margin-bottom: 20px; }
+  .center-logo img { width: 50px; height: auto; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+
+  .plyr {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 0px;
+    overflow: hidden;
+  }
+      
+  video { width: 100%; }
+
+/* --- REALISTIC STREAMING CONTROLS (Center Time / Mute Right) --- */
+.plyr__controls {
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0) 100%) !important;
+  padding: 20px 15px !important;
+  display: flex !important;
+  align-items: center;
+  position: relative; 
+  z-index: 50 !important; 
+}
+
+.plyr__volume {
+   margin-left: auto !important;
+}
+
+.plyr__time {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 2px 2px rgba(0,0,0,0.8);
+  pointer-events: none; 
+  margin: 0 !important;
+}
+
+.plyr__time--current {
+  left: 50%;
+  transform: translate(-100%, -50%); 
+  padding-right: 5px; 
+}
+
+.plyr__time--duration {
+  left: 50%;
+  transform: translate(0, -50%); 
+  padding-left: 5px;
+}
+
+.plyr__time--duration::before {
+  content: "/";
+  position: absolute;
+  left: -4px;
+  color: rgba(255,255,255,0.5);
+}
+
+.plyr__control {
+  background: transparent;
+  border-radius: 8px !important;
+  transition: transform 0.2s ease, background 0.2s ease;
+  padding: 7px !important;
+}
+.plyr__control:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.15);
+}
+.plyr__control svg {
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+}
+
+.plyr__control--overlaid {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255,255,255,0.4);
+  backdrop-filter: blur(8px);
+  width: 70px; height: 70px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+.plyr__control--overlaid:hover {
+  background: var(--plyr-color-main) !important;
+  border-color: var(--plyr-color-main);
+  transform: scale(1.1);
+}
+
+.plyr__captions {
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  text-shadow: 0 0 4px black, 0 0 8px black;
+  padding-bottom: 60px !important; 
+}
+.plyr__caption { background: transparent !important; }
+
+  /* --- GLASSMORPHISM SEEK OVERLAY --- */
+  .seek-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    z-index: 20; 
+    will-change: transform, opacity;
+  }
+  .seek-overlay.visible {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  .seek-overlay svg {
+    width: 40px;
+    height: 40px;
+    fill: white;
+    display: block;
+  }
+      
+  /* Scrollbar Styling */
+  #playlist-items::-webkit-scrollbar { width: 8px; }
+  #playlist-items::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+  #playlist-items::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }
+  #playlist-items::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+
+
+  /* --- UPDATED CARD GRID (CUSTOM STYLE) --- */
+  #playlist-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      padding-right: 5px;
+      max-height: 500px;
+      overflow-y: auto;
+  }
+
+  .playlist-card {
+      background: linear-gradient(145deg, #222222, #1a1a1a);
+      border-radius: 12px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 180px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.2s ease;
+      position: relative;
+      text-align: left;
+  }
+
+  .card-header {
+      font-size: 17px;
+      color: white; 
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 5px;
+      padding-right: 0px; 
+      margin-top: 35px; 
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  }
+
+  .card-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .date-info {
+      text-align: left;
+  }
+
+  .date-main {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ccc;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+      display: block;
+      letter-spacing: 0.5px;
+  }
+
+  .time-sub {
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+      display: block;
+  }
+
+  /* --- ACCOUNT VERIFIED BADGE --- */
+  .ticket-status {
+      position: absolute;
+      top: 15px;
+      left: 20px; 
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      backdrop-filter: blur(5px);
+  }
+
+  .ticket-status.verified { 
+      background: rgba(77, 184, 255, 0.15);
+      color: #4db8ff; 
+      border: 1px solid rgba(77, 184, 255, 0.3);
+  }
+    
+  .ticket-status.denied { 
+      background: rgba(255, 68, 68, 0.15);
+      color: #ff4444; 
+      border: 1px solid rgba(255, 68, 68, 0.3);
+  }
+
+  /* --- NEW: ENDED BADGE STYLE --- */
+  .ticket-status.ended-badge {
+      background: rgba(100, 100, 100, 0.15);
+      color: #888;
+      border: 1px solid rgba(100, 100, 100, 0.3);
+  }
+
+  .enter-btn {
+      background: #333;
+      color: #666;
+      border: none;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 50px; 
+      cursor: not-allowed;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      min-width: 90px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  }
+
+  /* Active State */
+  .enter-btn.active {
+      background: white; 
+      color: black;
+      cursor: pointer;
+  }
+
+  .enter-btn.active:hover {
+      background: #e0e0e0;
+      transform: scale(1.05);
+  }
+
+  /* --- NEW: FINISHED EVENT BUTTON STYLE --- */
+  .enter-btn.ended {
+    background: #1a1a1a !important;
+    color: #444 !important;
+    border: 1px solid #333 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* --- STATUS BADGE DESIGNS --- */
+  .status-badge {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 6px;
+    width: fit-content;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+  }
+    
+  #player-status-badge.status-uid {
+    position: absolute;
+    top: auto !important;
+    bottom: 6px !important;
+    left: 15px !important;
+    z-index: 1 !important;
+    display: none;
+    pointer-events: none;
+      
+    /* UPDATED STYLE: Transparent but Readable */
+    font-size: 9px !important; 
+    padding: 4px 10px !important;
+      
+    /* 1. Background: Almost invisible black tint for contrast */
+    background: rgba(0, 0, 0, 0.2) !important; 
+      
+    /* 2. Color: White with 60% opacity (ghostly but visible) */
+    color: rgba(255, 255, 255, 0.6) !important; 
+      
+    /* 3. Shadow: The secret to readability on any background */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+      
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 6px;
+    font-family: 'Roboto Mono', monospace;
+    text-transform: none;
+    backdrop-filter: blur(2px); 
+  }
+
+  /* --- 🚀 NEW: RANDOM APPEAR/DISAPPEAR WATERMARK --- */
+  .floating-watermark {
+    position: absolute;
+    top: 10%; 
+    left: 10%;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 16px;
+    font-weight: 900;
+    
+    /* Initially Invisible */
+    opacity: 0;
+    
+    /* NEW: High visibility for "Can Read" request */
+    color: rgba(255, 255, 255, 0.5); 
+    text-shadow: 0 0 5px rgba(0,0,0,0.8); 
+    
+    pointer-events: none; 
+    z-index: 25; 
+    user-select: none;
+    white-space: nowrap;
+    
+    /* Fade Transition Only */
+    transition: opacity 1s ease-in-out; 
+  }
+
+  .live-control-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 0, 0, 0.15);
+    border: 1px solid rgba(255, 0, 0, 0.4);
+    color: #ff4444;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 10px;
+    pointer-events: none;
+    height: 24px;
+    user-select: none;
+  }
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background: #ff4444;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #ff4444;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.7; }
+  }
+
+  .player-overlay-title {
+    position: absolute;
+    top: 20px; 
+    left: 0; 
+    right: 0;
+    text-align: center;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    padding: 0 60px;
+  }
+  .player-overlay-title.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .buffering-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    pointer-events: none;
+    display: none;
+  }
+  .buffering-overlay.visible {
+    display: block;
+  }
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--plyr-color-main);
+    animation: spin 1s ease-in-out infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* --- UPDATED VIEWS & DATE CONTAINER --- */
+  .views-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-top: 15px; 
+    margin-bottom: 5px;
+    color: #a1a1a1;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    opacity: 0; 
+    transition: opacity 0.5s ease;
+  }
+  .views-container.visible {
+    opacity: 1;
+  }
+  .views-icon {
+    width: 18px;
+    height: 18px;
+    fill: #a1a1a1;
+  }
+  #current-date-display {
+    margin-left: 5px;
+    font-size: 14px;
+    color: #666;
+    font-weight: 400;
+  }
+
+  @media (max-width: 600px) {
+    #player-status-badge.status-uid {
+        font-size: 8px !important;
+        bottom: 13px !important;
+        left: 10px !important;
+    }
+    .floating-watermark {
+        font-size: 12px; 
+    }
+    .player-overlay-title {
+        font-size: 10px;
+        top: 15px;
+        padding: 0 40px;
+    }
+    .live-control-badge {
+        font-size: 9px;
+        padding: 1px 6px;
+        height: 20px;
+        margin-left: 6px;
+    }
+  }
+
+  /* --- DESKTOP LAYOUT --- */
+  @media (min-width: 900px) {
+    .main-layout {
+      display: flex;
+      flex-direction: column; 
+      align-items: center;
+      gap: 10px; 
+      padding: 0 20px; 
+      text-align: left;
+    }
+    .video-wrapper-left { width: 100%; max-width: 1100px; margin: 0 auto; }
+      
+    #playlist { 
+        width: 100%; 
+        max-width: 1100px; 
+        margin: 20px auto !important; 
+        text-align: left;
+    }
+      
+    h3.playlist-header { margin-top: 0 !important; line-height: 1; }
+    #playlist-items { 
+        max-height: 500px !important; 
+        padding-right: 10px;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* --- TABLET LAYOUT FIX (768px - 1024px) --- */
+  /* Forces Video on Top, Playlist on Bottom */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .main-layout {
+        display: block !important; 
+        padding: 0 30px !important; 
+    }
+    
+    .video-wrapper-left {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 30px;
+    }
+
+    #playlist {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+    }
+
+    /* 2 Cards per row on tablet */
+    #playlist-items {
+        grid-template-columns: repeat(2, 1fr) !important; 
+    }
+    
+    h2 { font-size: 26px; }
+  }
+
+
+  /* --- STREAMING GUIDE BUTTON --- */
+  .guide-btn-container {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 10px;
+      margin-bottom: 20px;
+  }
+
+  .guide-btn {
+      background: #222; /* Solid background */
+      border: 1px solid #444;
+      color: #ccc;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+
+  .guide-btn:hover {
+      background: #333;
+      color: white;
+      border-color: white;
+      transform: translateY(-2px);
+  }
+
+  /* --- GUIDE MODAL (SOLID DARK STYLE - NO GLASS) --- */
+  .guide-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85); /* Darker overlay */
+      z-index: 20000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      padding: 20px;
+  }
+
+  .guide-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+  }
+
+  .guide-modal-content {
+      background: #121212; /* Solid Black/Dark Grey */
+      border: 1px solid #333;
+      width: 100%;
+      max-width: 550px;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: left;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      transform: scale(0.95);
+      transition: transform 0.2s ease;
+      position: relative;
+      max-height: 80vh;
+      overflow-y: auto; /* Scroll if list is too long */
+  }
+
+  .guide-modal-overlay.active .guide-modal-content {
+      transform: scale(1);
+  }
+
+  .guide-header {
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+  }
+
+  /* --- LIST STYLE --- */
+  .guide-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+  }
+
+  .guide-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+  }
+
+  .dot-icon {
+      min-width: 8px;
+      height: 8px;
+      background: var(--plyr-color-main); /* Uses your red accent */
+      border-radius: 50%;
+      margin-top: 7px;
+      box-shadow: 0 0 5px var(--plyr-color-main);
+  }
+
+  .item-text {
+      color: #ccc;
+      font-size: 14px;
+      line-height: 1.6;
+  }
+
+  .highlight {
+      color: white;
+      font-weight: 600;
+  }
+
+  .guide-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+  }
+  .guide-close-btn:hover { color: white; }
+
+</style>
+</head>
+
+<body>
+
+<div class="center-logo">
+  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
+</div>
+
+<div class="main-layout">
+
+  <div class="video-wrapper-left">
+      
+    <div id="poster-container">
+      <div id="poster-overlay">Select the Live to Watch</div>
+    </div>
+
+    <div id="player-container">
+      <div id="player-status-badge" class="status-badge"></div>
+      
+      <div id="floating-watermark" class="floating-watermark"></div>
+
+      <div id="player-overlay-title" class="player-overlay-title"></div>
+      
+      <div id="buffering-overlay" class="buffering-overlay">
+        <div class="spinner"></div>
+      </div>
+      
+      <div class="plyr__video-wrapper">
+        <video id="videoPlayer" playsinline controls crossorigin="anonymous"></video>
+      </div>
+    </div>
+
+    <div id="views-display" class="views-container">
+      <svg class="views-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <span id="view-count-text">0</span>
+      <span id="current-date-display"></span>
+    </div>
+
+    <h2 id="main-title"></h2>
+
+    <div class="guide-btn-container">
+        <button class="guide-btn" onclick="toggleGuideModal(true)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+            Read Rules & Guide
+        </button>
+    </div>
+  </div>
+
+  <div id="playlist" style="width: 100%; max-width: 1100px; margin: 20px auto; text-align: left;">
+    <div id="playlist-items">
+    </div>
+  </div>
+
+</div> 
+
+<div id="guide-modal" class="guide-modal-overlay">
+    <div class="guide-modal-content">
+        <button class="guide-close-btn" onclick="toggleGuideModal(false)">&times;</button>
+        
+        <div class="guide-header">
+            Stream Guidelines
+        </div>
+        
+        <div class="guide-list">
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight">One Device Policy:</span> Only 1 device can access the stream. If you try to login again on another device, the first connected device will be automatically logged out.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    You can change the <span class="highlight">Video Resolution</span> (1080p, 720p, 540p, 480p, 360p, 240p) or set it to 0p via the settings gear icon.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    Only <span class="highlight">allowed/verified users</span> can access or view the live stream. Unverified accounts will be blocked.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    The ID displayed on the bottom left is your <span class="highlight">User ID</span>. This is recorded in our database and used to grant your access.
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    <span class="highlight" style="color:#ff4444;">NO RESTREAMING:</span> Restreaming on any platform is strictly prohibited. If caught, you will immediately lose access to the stream and be permanently blacklisted.
+                </div>
+            </div>
+
+           <div class="guide-item">
+    <div class="dot-icon"></div>
+    <div class="item-text">
+        <span class="highlight">SCREENSHOT AND SCREEN RECORDING ARE PROHIBITED.</span>
+        Do not capture, record, or redistribute any part of the stream.
+        Posting while the stream is ongoing is strictly not allowed.
+    </div>
+</div>
+
+<div class="guide-item">
+    <div class="dot-icon"></div>
+    <div class="item-text">
+        <span class="highlight" style="color:#ff4444;">DO NOT SHARE LINKS:</span>
+        Sharing, reposting, or distributing the website or stream link where you are watching is strictly prohibited. Violators may have their access revoked without notice.
+    </div>
+</div>
+
+            
+            <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    If you experience buffering or black screen, please refresh the page or lower the video quality.
+                </div>
+            </div>
+
+             <div class="guide-item">
+                <div class="dot-icon"></div>
+                <div class="item-text">
+                    No sound? Tap the audio icon to unmute. iOS users should check if the physical silent switch is on.
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 25px; text-align: right;">
+             <button onclick="toggleGuideModal(false)" style="background: #333; color: white; border: 1px solid #555; padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- 1. CONFIGURATION & DATA ---
+const playlistData = [
+    { 
+    id: "1", 
+    title: "DAY 1 - SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show", 
+    status: "ended", 
+    date: "December 20, 2025 4:30 PM", 
+    image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png",
+  },
+  { 
+    id: "2", 
+    title: "DAY 2 - SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show", 
+    status: "ended",
+    date: "December 21, 2025 4:30 PM",
+    image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png",
+  }
+];
+
+const playlistContainer = document.getElementById('playlist-items');
+const posterContainer = document.getElementById('poster-container');
+const playerContainer = document.getElementById('player-container');
+const mainTitle = document.getElementById('main-title');
+const playerBadge = document.getElementById('player-status-badge');
+const overlayTitle = document.getElementById('player-overlay-title'); 
+const currentDateDisplay = document.getElementById('current-date-display');
+
+// NEW: Globals for Views and Buffering
+const bufferingOverlay = document.getElementById('buffering-overlay');
+const viewsDisplay = document.getElementById('views-display');
+const viewCountText = document.getElementById('view-count-text');
+
+let currentViewListenerRef = null;
+let currentPresenceRef = null; 
+
+// Global variable to store current ep data
+window.currentEpData = null;
+
+// --- NEW: GUIDE MODAL LOGIC ---
+function toggleGuideModal(show) {
+    const modal = document.getElementById('guide-modal');
+    if (show) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; 
+    } else {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Close when clicking outside
+document.getElementById('guide-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        toggleGuideModal(false);
+    }
+});
+</script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+  authDomain: "tvnstream-b4497.firebaseapp.com",
+  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+  projectId: "tvnstream-b4497",
+  storageBucket: "tvnstream-b4497.appspot.com",
+  messagingSenderId: "308384754214",
+  appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(); 
+const db = firebase.database();
+
+// =========================================================================
+// !!! 🚨 START OF PAGE-LEVEL SECURITY SCRIPT (REAL-TIME) 🚨 !!!
+// =========================================================================
+
+const PAGE_ID = "fukuokanewtour"; 
+
+// --- SMART GO BACK FUNCTION (Centralized) ---
+function smartGoBack() {
+    if (document.referrer && window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = 'videos.html';
+    }
+}
+
+// Function to show the denial screen
+function showAccessDeniedModal(message) {
+    if(typeof player !== 'undefined' && player) {
+        player.pause();
+        if(player.fullscreen.active) player.fullscreen.exit();
+    }
+    document.body.style.overflow = 'hidden';
+    if(document.querySelector('.access-denied-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'access-denied-modal';
+    modal.style.opacity = '1';
+    modal.style.animation = 'none';
+
+    modal.innerHTML = `
+        <strong style="color: #FF4444; font-size: 36px; margin-bottom: 20px;">Access Denied</strong>
+        <div style="margin-top: 15px; font-size: 18px; max-width: 90%; line-height: 1.4; text-shadow: var(--text-shadow);">
+            ${message}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 30px; width: 80%; max-width: 300px;">
+            <button onclick="smartGoBack()" 
+                    style="background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.3); color: white;">
+                GO BACK
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Function to remove modal
+function removeAccessDeniedModal() {
+    const modal = document.querySelector('.access-denied-modal');
+    if(modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Check on page load AND listen for changes
+auth.onAuthStateChanged(user => {
+    if (!user) {
+        showAccessDeniedModal("You must be logged in to view this content.");
+        renderPlaylist(false); // Render playlist as Not Verified
+        return;
+    }
+
+    // --- 🚨 NEW: LINK OWNERSHIP CHECK 🚨 ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkUid = urlParams.get('uid'); // Get UID from URL
+
+    // If the link has a UID, but it doesn't match the current logged-in user
+    if (linkUid && linkUid !== user.uid) {
+        showAccessDeniedModal(
+            "<span style='color: #ff4444'>SECURITY ALERT</span><br><br>" +
+            "This session link belongs to another user.<br>" +
+            "Please return to the main menu and generate your own link."
+        );
+        return; // Stop execution
+    }
+    // ---------------------------------------
+
+    // Set Badge UID
+    if(playerBadge) {
+        playerBadge.textContent = "ID: " + user.uid;
+        playerBadge.style.display = "block"; 
+        playerBadge.classList.add('status-uid');
+    }
+
+
+    // --- REALTIME LISTENER (.on instead of .once) ---
+    const accessRef = db.ref(`page_access/${PAGE_ID}/${user.uid}`);
+      
+    accessRef.on('value', (snapshot) => {
+        const isAllowed = snapshot.val();
+        
+        // --- 1. RENDER PLAYLIST BASED ON ACCESS ---
+        renderPlaylist(isAllowed === true);
+        
+        // --- 2. HANDLE GLOBAL PAGE ACCESS ---
+        if (isAllowed === true) {
+            console.log("Access Granted/Verified for:", user.uid);
+            removeAccessDeniedModal(); 
+
+            // ============================================================
+            // 🚀 START: ONE DEVICE POLICY ENFORCEMENT 🚀
+            // ============================================================
+            
+            // 1. Generate a unique ID for THIS specific tab/window
+            const currentSessionToken = Date.now().toString() + "_" + Math.random().toString(36).substr(2, 9);
+            const sessionRef = db.ref(`user_sessions/${user.uid}`);
+
+            // 2. Set this token as the "Active" one in the database
+            sessionRef.set({
+                token: currentSessionToken,
+                device: navigator.userAgent, // Optional: tracking device info
+                last_login: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // 3. Listen for changes. If the token in DB changes, it means another device logged in.
+            sessionRef.on('value', (sessionSnap) => {
+                const sessionData = sessionSnap.val();
+                
+                // If data exists AND the token in DB does not match MY token
+                if (sessionData && sessionData.token !== currentSessionToken) {
+                    
+                    // Kill the player immediately
+                    if(typeof player !== 'undefined' && player) {
+                        player.stop();
+                        document.getElementById('player-container').style.display = 'none';
+                    }
+
+                    // Show blocking modal
+                    showAccessDeniedModal(
+                        "<span style='color: #ff4444; font-weight:bold;'>SESSION EXPIRED</span><br><br>" +
+                        "This account has been opened on another device.<br>" +
+                        "<small style='color:#ccc;'>Only 1 device is allowed at a time.</small><br><br>" +
+                        "<small>The other device is now the active one.</small>"
+                    );
+                }
+            });
+            // ============================================================
+            // 🚀 END: ONE DEVICE POLICY ENFORCEMENT 🚀
+            // ============================================================
+
+            // --- AUTO PLAY LOGIC MOVED HERE FOR SECURITY ---
+            const videoId = urlParams.get('v'); 
+            if (videoId && !window.currentEpData) {
+                 setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
+            }
+        } else {
+            // Immediate Block
+            console.warn("Access Revoked in Realtime");
+            showAccessDeniedModal(
+                "<span style='color: red; font-weight: bold;'>You have violated Admin rules.</span><br>" +
+                "Your access to this stream has been revoked.<br><br>" +
+                "Please message us if you are sure this is an error.<br>" +
+                "Your UID: <small>" + user.uid + "</small>"
+            );
+        }
+    });
+});
+// =========================================================================
+// !!! 🚨 END OF PAGE-LEVEL SECURITY SCRIPT 🚨 !!!
+// =========================================================================
+
+const video = document.getElementById("videoPlayer");
+let hls;
+
+// --- PLYR CONFIG UPDATED: CHANGED TO 'LET' AND MOVED INIT INSIDE HLS LOGIC ---
+let player = null;
+
+const defaultPlyrOptions = {
+  captions: { active: true, update: true, language: "en" },
+  controls: [
+    'play-large',   
+    'play', 
+    'playback',
+    'mute', // Will be pushed to right via CSS
+    'settings',
+    'fullscreen'
+  ],
+  settings: ["captions","speed","quality"],
+  clickToPlay: false, 
+  dblclickFullscreen: false,
+  i18n: {
+    quality: 'Quality',
+    qualityBadge: { 2160: '4K', 1440: 'HD', 1080: 'HD', 720: 'HD', 576: 'SD', 480: 'SD' }
+  }
+};
+
+// --- HELPER: UPDATE LIVE BADGE IN PLAYER ---
+function updatePlayerLiveBadge(status) {
+    if (!player || !player.elements || !player.elements.controls) return;
+    const controls = player.elements.controls;
+    let badge = controls.querySelector('.live-control-badge');
+
+    if(status && status.toUpperCase() === 'LIVE') {
+        if(!badge) {
+            badge = document.createElement('div');
+            badge.className = 'live-control-badge';
+            badge.innerHTML = '<span class="live-dot"></span>LIVE';
+            
+            const playBtn = controls.querySelector('[data-plyr="play"]');
+            if(playBtn) {
+                playBtn.after(badge);
+            } else {
+                controls.insertBefore(badge, controls.firstChild);
+            }
+        }
+        badge.style.display = 'flex';
+    } else {
+        if(badge) badge.style.display = 'none';
+    }
+}
+
+// --- 2. CORE FUNCTION: PLAY EPISODE ---
+function loadAndPlayEpisode(epId, updateUrl = true) {
+    const ep = playlistData.find(item => item.id === epId);
+    
+    if (!ep) {
+        console.warn("Episode ID not found:", epId);
+        return;
+    }
+
+    const today = new Date();
+    if (ep.date) {
+        const releaseDate = new Date(ep.date);
+        if (releaseDate > today) {
+            alert(`\nLIVE STREAM DATE: ${ep.date}`);
+            return; 
+        }
+    }
+
+    // --- 🚨 NEW: GENERATE EXCLUSIVE SESSION URL 🚨 ---
+    if (updateUrl) {
+        const user = auth.currentUser;
+        if (user) {
+            // 1. Create a "Slug" from the title (spaces to dashes, lowercase)
+            const titleSlug = ep.title
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with dash
+                .replace(/(^-|-$)+/g, '');    // Remove leading/trailing dashes
+
+            // 2. Generate Timestamp
+            const sessionTime = Date.now();
+
+            // 3. Construct the secure URL
+            // Format: ?v=ID & session=TIME & uid=USERID & title=SLUG
+            const newUrl = window.location.pathname + 
+                           `?v=${ep.id}` + 
+                           `&session=${sessionTime}` + 
+                           `&uid=${user.uid}` + 
+                           `&title=${titleSlug}`;
+
+            history.pushState({id: ep.id, uid: user.uid}, '', newUrl);
+        }
+    }
+    // ------------------------------------------------
+
+    // D. Set Data & UI
+    window.currentEpData = ep;
+    
+    if(overlayTitle) {
+        overlayTitle.textContent = ep.title;
+    }
+
+    // We do NOT call updatePlayerLiveBadge here yet because player might not be ready
+    // We will call it in attachPlayerEvents or after player creation
+
+    posterContainer.style.display = "none";
+    playerContainer.style.display = "block";
+
+    // =========================================================
+    // --- LIVE VIEWERS LOGIC (Presence System) ---
+    
+    const user = auth.currentUser;
+
+    if (currentPresenceRef) {
+        currentPresenceRef.remove(); 
+        currentPresenceRef.onDisconnect().cancel(); 
+        currentPresenceRef = null;
+    }
+
+    if (currentViewListenerRef) {
+        currentViewListenerRef.off(); 
+    }
+
+    if (user) {
+        const presencePath = `active_viewers/${epId}/${user.uid}`;
+        currentPresenceRef = db.ref(presencePath);
+        currentPresenceRef.onDisconnect().remove();
+        currentPresenceRef.set({
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            device: navigator.userAgent
+        });
+    }
+
+    const viewsRef = db.ref(`active_viewers/${epId}`);
+    currentViewListenerRef = viewsRef;
+    
+    currentViewListenerRef.on('value', (snapshot) => {
+        const viewersData = snapshot.val();
+        const count = viewersData ? Object.keys(viewersData).length : 0;
+        viewCountText.textContent = new Intl.NumberFormat().format(count) + "";
+        viewsDisplay.classList.add('visible');
+    });
+    // =========================================================
+
+    db.ref(`live/${ep.id}`).once('value').then(snapshot => {
+      const data = snapshot.val();
+      if(!data || !data.url) { alert("Live unavailable"); return; }
+
+      const resumePlayback = () => {
+          player.volume = 1;    // Set volume to 100%
+          player.muted = false; // Force Unmute
+          
+          // Re-apply badge
+          updatePlayerLiveBadge(ep.status);
+
+          if (!window.currentEpData || !user) {
+             var playPromise = player.play();
+             if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Autoplay blocked.");
+                });
+             }
+             return;
+          }
+          db.ref('watchHistory/' + user.uid + '/' + window.currentEpData.id).once('value').then(snap => {
+              const saved = snap.val();
+              if (saved && saved.currentTime > 0) {
+                  player.currentTime = saved.currentTime;
+              }
+              
+              var playPromise = player.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Autoplay blocked.");
+                });
+              }
+          });
+      };
+
+      // --- UPDATED HLS LOGIC WITH QUALITY CHANGER FIX ---
+      if(typeof Hls !== 'undefined' && Hls.isSupported()){
+        if(hls) {
+            hls.destroy();
+        }
+        hls = new Hls();
+        hls.loadSource(data.url);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+            
+            // 1. Get available qualities from the HLS stream
+            const availableQualities = hls.levels.map((l) => l.height);
+            
+            // 2. Add '0' to represent 'Auto' at the beginning
+            availableQualities.unshift(0);
+
+            // 3. Update Plyr config with these new options dynamically
+            const newOptions = Object.assign({}, defaultPlyrOptions);
+            newOptions.quality = {
+                default: 0, // Default to Auto
+                options: availableQualities,
+                forced: true,
+                onChange: (newQuality) => {
+                    if (newQuality === 0) {
+                        hls.currentLevel = -1; // -1 represents Auto in HLS.js
+                    } else {
+                        // Find the index of the selected height
+                        hls.levels.forEach((level, levelIndex) => {
+                            if (level.height === newQuality) {
+                                hls.currentLevel = levelIndex;
+                            }
+                        });
+                    }
+                }
+            };
+
+            // 4. Destroy old player if exists and create new one with OPTIONS
+            if(player) {
+                player.destroy();
+            }
+
+            player = new Plyr(video, newOptions);
+
+            // 5. Re-attach the custom events (Glassmorphism, Double tap, etc)
+            attachPlayerEvents();
+
+            // 6. Trigger playback
+            setTimeout(resumePlayback, 100);
+        });
+        
+      } else {
+        // Fallback for Safari (Native HLS)
+        video.src = data.url;
+        
+        // Init player for Safari (without advanced quality controls as Safari handles it natively)
+        if(player) player.destroy();
+        player = new Plyr(video, defaultPlyrOptions);
+        attachPlayerEvents();
+
+        video.addEventListener('loadedmetadata', resumePlayback, { once: true });
+      }
+
+      video.querySelectorAll("track").forEach(t => t.remove());
+      if(data.subtitles){
+        Object.entries(data.subtitles).forEach(([lang,url])=>{
+          const track = document.createElement("track");
+          track.kind = "subtitles";
+          track.label = lang.toUpperCase();
+          track.srclang = lang;
+          track.src = url;
+          if(lang==="en") track.default = true;
+          video.appendChild(track);
+        });
+      }
+      
+      if(data.title){
+        mainTitle.textContent = data.title;
+        if(overlayTitle) overlayTitle.textContent = data.title;
+      } else {
+        mainTitle.textContent = ep.title;
+      }
+
+    }).catch(err => console.error("Firebase Error:", err));
+}
+
+// --- 3. HANDLE BROWSER BACK BUTTON ---
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.id) {
+        loadAndPlayEpisode(event.state.id, false);
+    } else {
+        posterContainer.style.display = "flex";
+        playerContainer.style.display = "none";
+        if(player) player.pause();
+    }
+});
+
+// --- 4. NEW GENERATE PLAYLIST UI (UPDATED FOR ENDED STATUS) ---
+function renderPlaylist(isUserVerified) {
+    playlistContainer.innerHTML = ''; // Clear existing items
+
+    playlistData.forEach(ep => {
+        // Create Card
+        const card = document.createElement('div');
+        card.className = 'playlist-card';
+
+        // Check Date Locking 
+        const today = new Date();
+        let isDateLocked = false;
+        let releaseDate = null;
+        if (ep.date) {
+            releaseDate = new Date(ep.date); 
+            if (releaseDate > today) isDateLocked = true;
+        }
+
+        // --- DETERMINE STATUS ---
+        let badgeHtml = '';
+        let buttonClass = 'enter-btn';
+        let buttonText = 'LOCKED';
+        let buttonDisabled = true;
+
+        // CHECK 1: IS EVENT ENDED? (Priority Check)
+        const isEnded = ep.status && (ep.status.toLowerCase() === 'ended' || ep.status.toLowerCase() === 'done');
+
+        if (isEnded) {
+            // Status: ENDED (Overrides everything else)
+            badgeHtml = `
+                <div class="ticket-status ended-badge">
+                    EVENT ENDED
+                </div>`;
+            buttonText = 'ENDED';
+            buttonClass += ' ended'; // Adds dark style
+            buttonDisabled = true;
+
+        } else if (isUserVerified) {
+            // Status: VERIFIED & ACTIVE
+            badgeHtml = `
+                <div class="ticket-status verified">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                    ACCOUNT VERIFIED
+                </div>`;
+            
+            if (!isDateLocked) {
+                buttonClass += ' active';
+                buttonText = 'ENTER';
+                buttonDisabled = false;
+            } else {
+                buttonClass += ' time-locked';
+                buttonText = 'WAITING'; // Verified but too early
+            }
+
+        } else {
+            // Status: ACCESS DENIED
+            badgeHtml = `
+                <div class="ticket-status denied">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    ACCOUNT NOT VERIFIED
+                </div>`;
+            buttonText = 'NO ACCESS';
+        }
+
+        // --- PARSE DATE FOR DISPLAY ---
+        let displayDate = "COMING SOON";
+        let displayTime = "";
+        
+        if(ep.date) {
+            const d = new Date(ep.date);
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            
+            displayDate = `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+            // Simple Time formatting
+            let hours = d.getHours();
+            let minutes = d.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            minutes = minutes < 10 ? '0'+minutes : minutes;
+            displayTime = hours + ':' + minutes + ' ' + ampm + " PHT";
+        }
+
+        // --- BUILD HTML ---
+        card.innerHTML = `
+            ${badgeHtml}
+            <div class="card-header">${ep.title}</div>
+            <div class="card-body">
+                <div class="date-info">
+                    <span class="date-main">${displayDate}</span>
+                    <span class="time-sub">${displayTime}</span>
+                </div>
+                <button 
+                    class="${buttonClass}" 
+                    data-unlock-time="${ep.date}"
+                    data-id="${ep.id}"
+                    data-verified="${isUserVerified}"
+                    data-ended="${isEnded}"
+                    ${buttonDisabled ? 'disabled' : ''} 
+                >${buttonText}</button>
+            </div>
+        `;
+
+        // Click Event
+        const btn = card.querySelector('button');
+        
+        btn.addEventListener('click', (e) => {
+            const isVerified = e.target.getAttribute('data-verified') === 'true';
+            const isEventEnded = e.target.getAttribute('data-ended') === 'true';
+            const unlockTimeStr = e.target.getAttribute('data-unlock-time');
+            const unlockTime = unlockTimeStr ? new Date(unlockTimeStr) : new Date();
+            const now = new Date();
+
+            if (isEventEnded) {
+                return; // Do nothing if ended
+            }
+
+            if (!isVerified) {
+                alert("Access Denied: Your account is not verified for this event.");
+                return;
+            }
+
+            if (now >= unlockTime) {
+                loadAndPlayEpisode(ep.id, true);
+                document.querySelector('.video-wrapper-left').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert("Event has not started yet. Please wait.");
+            }
+        });
+
+        playlistContainer.appendChild(card);
+    });
+}
+
+// --- NEW FUNCTION: GLOBAL TIMER TO AUTO-UNLOCK BUTTONS ---
+function startGlobalTimer() {
+    setInterval(() => {
+        const now = new Date();
+
+        // 1. Update Buttons
+        const lockedButtons = document.querySelectorAll('.enter-btn.time-locked');
+        lockedButtons.forEach(btn => {
+            const unlockTimeStr = btn.getAttribute('data-unlock-time');
+            if (unlockTimeStr) {
+                const unlockTime = new Date(unlockTimeStr);
+                if (now >= unlockTime) {
+                    btn.textContent = 'ENTER';
+                    btn.classList.remove('time-locked');
+                    btn.classList.add('active');
+                    // Ensure it is visually clickable (removed disabled attribute if logic added it)
+                    btn.disabled = false; 
+                }
+            }
+        });
+
+        // 2. Update Date beside Viewers
+        if(currentDateDisplay) {
+            const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true };
+            currentDateDisplay.textContent = " • " + now.toLocaleTimeString('en-US', options);
+        }
+
+    }, 1000); // Check every second
+}
+
+// Start the timer
+startGlobalTimer();
+
+
+// --- 5. CHECK URL ON PAGE LOAD ---
+// (REMOVED OLD LISTENER TO PREVENT DOUBLE LOAD / SECURITY BYPASS)
+// Logic moved inside auth.onAuthStateChanged for security.
+
+const isMobileOrTablet = /Mobi|Android|iPad|Tablet/i.test(navigator.userAgent);
+
+// --- WRAPPED EVENTS FUNCTION ---
+// We need this because we destroy and recreate the player to update quality settings
+function attachPlayerEvents() {
+    if(!player) return;
+
+    function enterFullscreen(el) {
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    }
+
+    player.on('enterfullscreen', () => {
+      if (isMobileOrTablet) {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('landscape').catch(err => {});
+        } else if (window.screen.lockOrientation) {
+          window.screen.lockOrientation('landscape');
+        }
+      }
+    });
+
+    player.on('exitfullscreen', () => {
+      if (isMobileOrTablet) {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      }
+    });
+
+    // --- NEW: BUFFERING EVENTS & OVERLAY MANAGEMENT ---
+    player.on('waiting', () => {
+        if (bufferingOverlay) bufferingOverlay.classList.add('visible');
+    });
+
+    player.on('playing', () => {
+        if (bufferingOverlay) bufferingOverlay.classList.remove('visible');
+    });
+
+    player.on('pause', () => {
+        if (bufferingOverlay) bufferingOverlay.classList.remove('visible');
+    });
+
+    player.on('canplay', () => {
+        if (bufferingOverlay) bufferingOverlay.classList.remove('visible');
+    });
+
+    player.on('ready', () => {
+        const videoContainer = player.elements.container;
+        const videoWrapper = videoContainer.querySelector('.plyr__video-wrapper');
+        if (!videoWrapper) return;
+        
+        // --- MOVE ELEMENTS INTO WRAPPER ---
+        const badge = document.getElementById('player-status-badge');
+        
+        // --- ADDED THIS LINE FOR FLOATING WATERMARK ---
+        const floater = document.getElementById('floating-watermark');
+
+        const overlayTitle = document.getElementById('player-overlay-title');
+        const buffer = document.getElementById('buffering-overlay');
+        
+        if(badge) videoWrapper.appendChild(badge);
+        
+        // --- ADDED THIS LINE FOR FLOATING WATERMARK ---
+        if(floater) videoWrapper.appendChild(floater);
+        
+        if(overlayTitle) videoWrapper.appendChild(overlayTitle);
+        if(buffer) videoWrapper.appendChild(buffer);
+
+        // --- 🚀 GHOST WATERMARK LOGIC (APPEAR/DISAPPEAR) ---
+        function watermarkLoop() {
+             if(!floater) return;
+
+             // 1. Move to random spot (Instant because opacity is 0)
+             // Widen ranges to hit edges more "Left, Right, Top, Bottom"
+             // Top: 5% to 85% (Covers top and bottom)
+             // Left: 5% to 70% (Covers left and center, avoids right overflow)
+             // To truly hit the "Right" side, we rely on the text width filling the gap, 
+             // but we can push it further if we assume mobile screens wrap? No, white-space: nowrap.
+             
+             const rTop = Math.floor(Math.random() * 85) + 5; 
+             const rLeft = Math.floor(Math.random() * 75) + 5; 
+             
+             floater.style.top = rTop + "%";
+             floater.style.left = rLeft + "%";
+
+             // 2. Fade In (small delay to ensure position updated)
+             setTimeout(() => {
+                 // --- CHANGE: INCREASED OPACITY TO 0.7 FOR BETTER READABILITY ---
+                 floater.style.opacity = "0.7"; 
+
+                 // 3. Stay visible for random time (e.g., 5000ms to 10000ms)
+                 const visibleTime = Math.floor(Math.random() * 5000) + 5000;
+
+                 setTimeout(() => {
+                     // 4. Fade Out
+                     floater.style.opacity = "0";
+
+                     // 5. Stay hidden for LONG random time (e.g., 10s to 60s)
+                     // This fixes the "every 2-3 sec" complaint
+                     const hiddenTime = Math.floor(Math.random() * 50000) + 10000;
+                     setTimeout(watermarkLoop, hiddenTime);
+
+                 }, visibleTime);
+             }, 100);
+        }
+
+        // Start the loop
+        watermarkLoop();
+
+
+        player.on('controlsshown', () => {
+            if(overlayTitle) overlayTitle.classList.add('visible');
+        });
+
+        player.on('controlshidden', () => {
+            if(overlayTitle && !player.paused) { 
+                overlayTitle.classList.remove('visible');
+            }
+        });
+        
+        if(overlayTitle) overlayTitle.classList.add('visible');
+
+        // --- DOUBLE TAP LOGIC ---
+        const rewindIcon = document.getElementById('rewind-icon-overlay');
+        const forwardIcon = document.getElementById('forward-icon-overlay');
+        const playPauseIcon = document.getElementById('play-pause-icon-overlay');
+        const playSvg = document.getElementById('svg-play') ? document.getElementById('svg-play').cloneNode(true) : null;
+        const pauseSvg = document.getElementById('svg-pause') ? document.getElementById('svg-pause').cloneNode(true) : null;
+        
+        if(playSvg) playSvg.style.display = 'block';
+        if(pauseSvg) pauseSvg.style.display = 'block';
+
+        if (rewindIcon) videoWrapper.appendChild(rewindIcon);
+        if (forwardIcon) videoWrapper.appendChild(forwardIcon);
+        if (playPauseIcon) videoWrapper.appendChild(playPauseIcon);
+
+        let lastTapTime = 0, tapTimeout = null, iconHideTimeout = null;
+
+        function showSeekIcon(type) {
+            if (iconHideTimeout) clearTimeout(iconHideTimeout);
+            if(rewindIcon) rewindIcon.classList.remove('visible');
+            if(forwardIcon) forwardIcon.classList.remove('visible');
+            if(playPauseIcon) playPauseIcon.classList.remove('visible');
+
+            let iconToShow;
+            if (type === 'rewind') iconToShow = rewindIcon;
+            else if (type === 'forward') iconToShow = forwardIcon;
+            else if (type === 'play-pause') {
+                iconToShow = playPauseIcon;
+                if(playPauseIcon) {
+                    playPauseIcon.innerHTML = '';
+                    if (player.paused && pauseSvg) playPauseIcon.appendChild(pauseSvg); 
+                    else if (!player.paused && playSvg) playPauseIcon.appendChild(playSvg);
+                }
+            }
+            if (iconToShow) {
+                iconToShow.classList.add('visible');
+                iconHideTimeout = setTimeout(() => { iconToShow.classList.remove('visible'); }, 500);
+            }
+        }
+
+        function handleDoubleTap(event) {
+            const rect = videoWrapper.getBoundingClientRect();
+            const tapX = event.clientX - rect.left;
+            const zoneWidth = rect.width;
+            if (tapX < zoneWidth * 0.35) { player.rewind(10); showSeekIcon('rewind'); }
+            else if (tapX > zoneWidth * 0.65) { player.forward(10); showSeekIcon('forward'); }
+            else { showSeekIcon('play-pause'); player.togglePlay(); }
+        }
+
+        videoWrapper.addEventListener('click', (event) => {
+            if (event.target.closest('.plyr__controls')) return;
+            event.stopPropagation();
+            const currentTime = new Date().getTime();
+            const timeSinceLastTap = currentTime - lastTapTime;
+            if (tapTimeout) { clearTimeout(tapTimeout); tapTimeout = null; }
+
+            if (timeSinceLastTap > 0 && timeSinceLastTap < 300) {
+                event.preventDefault(); handleDoubleTap(event); lastTapTime = 0;
+            } else {
+                event.preventDefault();
+                tapTimeout = setTimeout(() => { player.toggleControls(); }, 300);
+            }
+            lastTapTime = currentTime;
+        });
+
+        videoWrapper.addEventListener('dblclick', (e) => { e.preventDefault(); e.stopPropagation(); });
+    });
+
+    // --- CLOUD SAVING LOGIC ---
+    let lastSaveTime = 0; 
+
+    player.on("timeupdate", () => {
+        const user = auth.currentUser;
+        const now = Date.now();
+        if (user && window.currentEpData && !player.paused && player.currentTime > 5) {
+            if (now - lastSaveTime > 5000) { 
+                let path = window.location.pathname;
+                let pageName = path.substring(path.lastIndexOf('/') + 1);
+                if(!pageName) pageName = "videos.html"; 
+
+                const dataToSave = {
+                    id: window.currentEpData.id,
+                    title: window.currentEpData.title,
+                    image: window.currentEpData.image,
+                    currentTime: player.currentTime,
+                    duration: player.duration || 0,
+                    timestamp: now,
+                    page: pageName 
+                };
+                  
+                db.ref('watchHistory/' + user.uid + '/' + window.currentEpData.id).update(dataToSave);
+                lastSaveTime = now;
+            }
+        }
+    });
+}
+
+
+// --- REMOVE VIEWER ON TAB CLOSE ---
+window.addEventListener('beforeunload', () => {
+    if (currentPresenceRef) {
+        currentPresenceRef.remove();
+    }
+});
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.onupdatefound = () => {
+        const newSW = reg.installing;
+        newSW.onstatechange = () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            window.location.reload();
+          }
+        };
+      };
+    }).catch(err => {});
+  }
+</script>
+
+<style>
+  /* Access Denied Modal - Hyper Glass */
+  .access-denied-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85); 
+    color: #fff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 11000; text-align: center; padding: 20px;
+    opacity: 0; animation: fadeIn 0.5s forwards; flex-direction: column;
+    backdrop-filter: blur(15px);
+    transform: translateZ(0);
+    will-change: opacity, backdrop-filter;
+  }
+  .access-denied-modal strong { font-size: 24px; margin-bottom: 10px; text-shadow: var(--text-shadow); }
+  .access-denied-modal button {
+    margin-top: 15px; padding: 10px 25px; 
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white; border-radius: 50px;
+    cursor: pointer; font-weight: bold; transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+  }
+  .access-denied-modal button:hover { background: rgba(255,255,255,0.25); color: white; }
+  @keyframes fadeIn { to { opacity: 1; } }
+</style>
+
+
+<div id="rewind-icon-overlay" class="seek-overlay">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.9998 1.5V6.4428C5.5598 6.9048 2.4418 10.3368 2.4418 14.8828C2.4418 19.8288 6.4418 23.8288 11.3878 23.8288C15.8278 23.8288 19.4678 20.4968 20.0758 16.1988H17.5558C17.0098 18.9888 14.4838 21.3288 11.3878 21.3288C7.8118 21.3288 4.9418 18.4588 4.9418 14.8828C4.9418 11.6688 7.3738 9.0708 10.4998 8.6148V13.4998L17.4998 7.4998L9.9998 1.5Z"/></svg>
+</div>
+<div id="forward-icon-overlay" class="seek-overlay">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.0002 1.5L6.50016 7.49984L14.0002 13.4998V8.61484C17.1262 9.07084 19.5582 11.6688 19.5582 14.8828C19.5582 18.4588 16.6882 21.3288 13.1122 21.3288C10.0162 21.3288 7.49016 18.9888 6.94416 16.1988H4.42416C5.03216 20.4968 8.67216 23.8288 13.1122 23.8288C18.0582 23.8288 22.0582 19.8288 22.0582 14.8828C22.0582 10.3368 18.9402 6.90484 14.5002 6.44284V1.5Z"/></svg>
+</div>
+<div id="play-pause-icon-overlay" class="seek-overlay"></div>
+
+<svg id="svg-play" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14V19.14L19 12.14L8 5.14Z"/></svg>
+<svg id="svg-pause" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19H10V5H6V19ZM14 5V19H18V5H14Z"/></svg>
+
+<script>
+  const allowedPaths = [
+    '/index.html',
+    '/home.html',
+    '/nanabnb.html',
+    '/newtour.html',
+    '/hxwfanconcert.html',
+    '/svtholiday.html',
+    '/arenatour.html',
+    '/svtjapanconcert.html',
+    '/touragain.html',
+    '/gallery.html',
+    '/profile.html',
+    '/soon.html'
+  ];
+
+  const currentPage = window.location.pathname;
+
+  let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
+
+  const referrer = document.referrer;
+  const refPath = referrer ? new URL(referrer).pathname : null;
+  const cameFromAllowedPage = refPath && allowedPaths.includes(refPath);
+
+  if (cameFromAllowedPage) {
+    sessionStorage.setItem('internalAccess', 'true');
+    hasInternalAccess = true;
+  }
+</script>
+
+<script>
+// Content Protection
+document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+document.onkeydown = function(e) {
+    if(e.keyCode == 123) return false;
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
+    if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+    if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+}
+window.ondragstart = function() { return false; } 
+document.onselectstart = function() { return false; }
+</script>
+
+</body>
+</html>

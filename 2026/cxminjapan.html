@@ -645,14 +645,15 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
       });
 
       // --- PERMANENT WATERMARK LAYER INSIDE THE PLAYER ---
+      // In-adjust ang margins (top at right) para hindi siksik at liniitan pa ng konti (clamp width).
       art.layers.add({
           name: 'watermarkLayer',
           html: '<img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" style="width: 100%; height: auto; opacity: 0.4; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">',
           style: {
               position: 'absolute',
-              top: '15px',
-              right: '15px',
-              width: 'clamp(35px, 6vw, 55px)', // iPhone friendly, auto-scales on bigger screens
+              top: '25px',       
+              right: '30px',     
+              width: 'clamp(28px, 4vw, 45px)', 
               pointerEvents: 'none',
               zIndex: '99'
           }

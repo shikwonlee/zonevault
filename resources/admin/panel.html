@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Home | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+        --bg-color: #000000;
+        --sidebar-bg: #050505;
+        --card-bg: #0a0a0a;
+        --text-main: #ffffff;
+        --text-muted: #888888;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --sidebar-width: 280px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    body { 
+        background-color: var(--bg-color); 
+        color: var(--text-main); 
+        min-height: 100vh; 
+        overflow-x: hidden; 
+    }
+
+    /* Top Nav */
+    .top-nav { 
+        width: 100%; 
+        padding: 18px 25px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        position: sticky; 
+        top: 0; 
+        z-index: 999; 
+        background: rgba(0, 0, 0, 0.9); 
+        border-bottom: var(--glass-border); 
+    }
+    
+    .menu-trigger { 
+        font-size: 20px; 
+        cursor: pointer; 
+        color: var(--text-main); 
+        padding: 8px; 
+        border-radius: 8px;
+        transition: background 0.2s;
+    }
+    .menu-trigger:hover { background: rgba(255,255,255,0.1); }
+
+    .logo { 
+        font-weight: 700; 
+        letter-spacing: 0.5px; 
+        font-size: 18px; 
+        text-transform: uppercase;
+        color: var(--text-main);
+    }
+
+    /* Sidebar - ULTIMATE PERFORMANCE FIX */
+    .sidebar { 
+        position: fixed; 
+        top: 0; 
+        left: 0;
+        /* translate3d forces the GPU to render this layer entirely */
+        transform: translate3d(-100%, 0, 0); 
+        width: var(--sidebar-width); 
+        height: 100%; 
+        background: var(--sidebar-bg); 
+        /* Replaced box-shadow with a solid border to eliminate lag */
+        border-right: 1px solid #1a1a1a; 
+        z-index: 1001; 
+        transition: transform 0.25s ease-out; 
+        padding: 40px 20px; 
+        will-change: transform; 
+    }
+    .sidebar.active { 
+        transform: translate3d(0, 0, 0); 
+    }
+    
+    /* Overlay */
+    .sidebar-overlay { 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        background: rgba(0,0,0,0.8); 
+        z-index: 1000; 
+        opacity: 0; 
+        pointer-events: none; /* Prevents ghost clicks */
+        transition: opacity 0.25s ease-out; 
+        will-change: opacity;
+    }
+    .sidebar-overlay.active { 
+        opacity: 1; 
+        pointer-events: auto; 
+    }
+
+    .nav-btn { 
+        width: 100%; 
+        padding: 14px 18px; 
+        border-radius: 10px; 
+        color: var(--text-muted); 
+        cursor: pointer; 
+        transition: all 0.2s ease; 
+        display: flex; 
+        align-items: center; 
+        gap: 15px; 
+        margin-bottom: 8px; 
+        font-size: 15px; 
+        font-weight: 500;
+        text-decoration: none; 
+    }
+    
+    .nav-btn:hover { 
+        color: var(--text-main); 
+        background: rgba(255,255,255,0.05); 
+        transform: translate3d(4px, 0, 0);
+    }
+    
+    .nav-btn.active { 
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent); 
+        color: var(--text-main); 
+        border-left: 3px solid var(--text-main);
+        border-radius: 0 10px 10px 0;
+    }
+
+    .nav-btn i { font-size: 16px; width: 20px; text-align: center; }
+
+    /* Main Content */
+    .container { 
+        padding: 60px 20px; 
+        text-align: center; 
+        max-width: 700px; 
+        margin: 0 auto; 
+        animation: slideUp 0.5s ease-out forwards; 
+    }
+    @keyframes slideUp { 
+        from { opacity: 0; transform: translate3d(0, 20px, 0); } 
+        to { opacity: 1; transform: translate3d(0, 0, 0); } 
+    }
+
+    /* Minimalist Dark Card - Removed heavy shadows here too */
+    .admin-card { 
+        background: var(--card-bg); 
+        border: var(--glass-border); 
+        border-radius: 20px; 
+        padding: 50px 30px; 
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .admin-card::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 150px;
+        height: 150px;
+        background: #ffffff;
+        filter: blur(90px);
+        opacity: 0.03;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .card-content { position: relative; z-index: 1; }
+
+    .welcome-pill { 
+        display: inline-flex; 
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px; 
+        border-radius: 50px; 
+        background: rgba(255, 255, 255, 0.05); 
+        color: var(--text-main); 
+        font-size: 12px; 
+        font-weight: 500; 
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 25px; 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+    }
+
+    h2 { 
+        font-size: 36px; 
+        font-weight: 700; 
+        margin-bottom: 15px; 
+        color: var(--text-main);
+    }
+
+    p { 
+        color: var(--text-muted); 
+        line-height: 1.6; 
+        font-size: 16px;
+        margin-bottom: 35px; 
+        max-width: 450px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .pulse-dot {
+        width: 10px;
+        height: 10px;
+        background-color: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #10b981;
+        animation: pulse 2s infinite;
+        will-change: transform, box-shadow;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    @media (max-width: 600px) {
+      .sidebar { width: 85%; }
+      h2 { font-size: 28px; }
+      .admin-card { padding: 40px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+<script type="text/babel" data-type="module">
+  const { useState } = React;
+
+  function AdminHome() {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <React.Fragment>
+        <nav className="top-nav">
+          <div className="menu-trigger" onClick={() => setIsOpen(true)}>
+            <i className="fas fa-bars-staggered"></i>
+          </div>
+          <div className="logo">ZONE VAULT</div>
+          <div style={{width: '36px'}}></div>
+        </nav>
+
+        <div className={`sidebar-overlay ${isOpen ? 'active' : ''}`} onClick={() => setIsOpen(false)}></div>
+
+        <aside className={`sidebar ${isOpen ? 'active' : ''}`}>
+          <div style={{ marginBottom: '40px', paddingLeft: '15px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>Admin Panel</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Management Suite</p>
+          </div>
+
+          <a href="panel" className="nav-btn active">
+            <i className="fas fa-house"></i>
+            <span>Admin Home</span>
+          </a>
+
+            <a href="upload" className="nav-btn"> 
+              <i className="fas fa-cloud-arrow-up"></i>
+              <span>Upload Video</span>
+            </a>
+          
+          <a href="request_join" className="nav-btn">
+            <i className="fas fa-user-plus"></i>
+            <span>Request Join</span>
+          </a>
+
+          <a href="notif" className="nav-btn">
+            <i className="fas fa-bullhorn"></i>
+            <span>Notifications</span>
+          </a>
+
+          <a href="generator" className="nav-btn">
+            <i className="fas fa-key"></i>
+            <span>Access Codes</span>
+          </a>
+
+          <a href="page_access" className="nav-btn">
+            <i className="fas fa-shield-halved"></i>
+            <span>Page Access</span>
+          </a>
+
+          <a href="watch_history" className="nav-btn">
+            <i className="fas fa-history"></i>
+            <span>Watch History</span>
+          </a>
+              
+          <a href="user_directory" className="nav-btn">
+            <i className="fas fa-address-book"></i>
+            <span>User Directory</span>
+          </a>
+        </aside>
+
+        <main className="container">
+          <div className="admin-card">
+            <div className="card-content">
+                <div className="welcome-pill">
+                    <i className="fas fa-shield-cat"></i> System Administrator
+                </div>
+                <h2>Welcome Back</h2>
+                <p>Select a management tool from the sidebar to manage vault entries and control event page permissions.</p>
+                
+                <div className="status-indicator">
+                   <div className="pulse-dot"></div>
+                   <span style={{fontSize: '14px', fontWeight: '500', color: 'var(--text-main)'}}>Server Status: Online</span>
+                </div>
+            </div>
+          </div>
+        </main>
+      </React.Fragment>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<AdminHome />);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Notify | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* === MINIMALIST PURE BLACK THEME === */
+    :root {
+        --bg-color: #000000;
+        --sidebar-bg: #050505;
+        --card-bg: #0a0a0a;
+        --text-main: #ffffff;
+        --text-muted: #888888;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --accent-approve: #10b981; /* Success Green */
+        --accent-decline: #ef4444; /* Error Red */
+        --sidebar-width: 280px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* =========================================
+       TOP NAV & SIDEBAR STYLES (ZERO LAG)
+       ========================================= */
+    .top-nav { width: 100%; padding: 18px 25px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 999; background: rgba(0, 0, 0, 0.9); border-bottom: var(--glass-border); }
+    .menu-trigger { font-size: 20px; cursor: pointer; color: var(--text-main); padding: 8px; border-radius: 8px; transition: background 0.2s; }
+    .menu-trigger:hover { background: rgba(255,255,255,0.1); }
+    .logo { font-weight: 700; letter-spacing: 0.5px; font-size: 18px; text-transform: uppercase; color: var(--text-main); }
+
+    .sidebar { 
+        position: fixed; top: 0; left: 0; transform: translate3d(-100%, 0, 0); width: var(--sidebar-width); height: 100%; 
+        background: var(--sidebar-bg); border-right: 1px solid #1a1a1a; z-index: 1001; transition: transform 0.25s ease-out; 
+        padding: 40px 20px; will-change: transform; 
+    }
+    .sidebar.active { transform: translate3d(0, 0, 0); }
+    
+    .sidebar-overlay { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; 
+        opacity: 0; pointer-events: none; transition: opacity 0.25s ease-out; will-change: opacity; 
+    }
+    .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .nav-btn { width: 100%; padding: 14px 18px; border-radius: 10px; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 15px; margin-bottom: 8px; font-size: 15px; font-weight: 500; text-decoration: none; }
+    .nav-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); transform: translate3d(4px, 0, 0); }
+    .nav-btn.active { background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent); color: var(--text-main); border-left: 3px solid var(--text-main); border-radius: 0 10px 10px 0; }
+    .nav-btn i { font-size: 16px; width: 20px; text-align: center; }
+
+    /* =========================================
+       MAIN CONTENT WRAPPER
+       ========================================= */
+    .main-content {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 20px; width: 100%; max-width: 1100px; margin: 0 auto;
+      animation: slideUp 0.5s ease-out forwards; 
+    }
+    
+    @keyframes slideUp { 
+        from { opacity: 0; transform: translate3d(0, 20px, 0); } 
+        to { opacity: 1; transform: translate3d(0, 0, 0); } 
+    }
+
+    header { text-align: center; margin-bottom: 40px; width: 100%; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+    p.subtitle { color: var(--text-muted); font-size: 16px; word-wrap: break-word; }
+
+    /* Split Layout for Form and List */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      width: 100%;
+    }
+
+    /* Minimalist Dark Cards */
+    .panel-card {
+      background: var(--card-bg); border: var(--glass-border); border-radius: 20px;
+      padding: 30px; position: relative; overflow: hidden;
+    }
+    .panel-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+
+    /* Form Elements */
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .input-field {
+      width: 100%; background: rgba(255,255,255,0.03); border: var(--glass-border);
+      color: var(--text-main); padding: 14px; border-radius: 12px; font-family: inherit; outline: none; transition: border-color 0.2s;
+    }
+    .input-field:focus { border-color: #ffffff; }
+    
+    /* Icon Picker Grid */
+    .icon-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+    }
+    .icon-option {
+      height: 45px; border-radius: 12px; border: var(--glass-border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: 0.2s; font-size: 18px; color: var(--text-muted);
+    }
+    .icon-option:hover { background: rgba(255,255,255,0.05); }
+    .icon-option.selected { background: #ffffff; color: #000000; border-color: #ffffff; }
+
+    /* Buttons */
+    .btn {
+      width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;
+    }
+    .btn-primary { background: #ffffff; color: #000000; margin-top: 10px;}
+    .btn-primary:hover { background: #cccccc; }
+    .btn-cancel { background: transparent; border: 1px solid var(--text-muted); color: var(--text-main); margin-top: 10px;}
+    .btn-cancel:hover { background: rgba(255, 255, 255, 0.1); }
+    .btn:disabled { opacity: 0.5; pointer-events: none; }
+
+    /* List Items */
+    .notif-list { max-height: 500px; overflow-y: auto; padding-right: 5px;}
+    .notif-list::-webkit-scrollbar { width: 6px; }
+    .notif-list::-webkit-scrollbar-track { background: transparent; }
+    .notif-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+    .manage-item {
+      background: rgba(255,255,255,0.02); border: var(--glass-border); border-radius: 14px; padding: 16px;
+      margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s;
+    }
+    .manage-item:hover { background: rgba(255,255,255,0.05); transform: translate3d(5px, 0, 0); }
+    .manage-info h4 { margin: 0 0 5px 0; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 8px;}
+    .manage-info p { margin: 0; font-size: 13px; color: var(--text-muted); word-break: break-all;}
+    .manage-actions { display: flex; gap: 8px; }
+    
+    .action-btn {
+      width: 35px; height: 35px; border-radius: 10px; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: 0.2s;
+    }
+    .btn-edit { background: rgba(255, 255, 255, 0.1); color: var(--text-main); }
+    .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--accent-decline); }
+    .btn-edit:hover, .btn-delete:hover { transform: scale(1.1); filter: brightness(1.2); }
+
+    /* Status Message */
+    .status-msg { padding: 12px; border-radius: 8px; font-size: 14px; text-align: center; margin-top: 15px; animation: popIn 0.3s ease forwards; display: none;}
+    .status-msg.active { display: block; }
+    .status-msg.success { background: rgba(16, 185, 129, 0.1); color: var(--accent-approve); border: 1px solid var(--accent-approve); }
+    .status-msg.error { background: rgba(239, 68, 68, 0.1); color: var(--accent-decline); border: 1px solid var(--accent-decline); }
+
+    /* Empty States */
+    .empty-state { text-align: center; color: var(--text-muted); padding: 40px; }
+    .empty-state i { font-size: 40px; margin-bottom: 15px; opacity: 0.5; }
+    .error-text { color: var(--accent-decline); margin-top: 10px; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Mobile */
+    @media (max-width: 900px) {
+      .content-grid { grid-template-columns: 1fr; }
+      .main-content { padding: 30px 15px; }
+      h1 { font-size: 26px; }
+      .sidebar { width: 85%; }
+      .icon-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 400px) {
+      .icon-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="root" style="width: 100%;"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+      authDomain: "tvnstream-b4497.firebaseapp.com",
+      databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+      projectId: "tvnstream-b4497",
+      storageBucket: "tvnstream-b4497.appspot.com",
+      messagingSenderId: "308384754214",
+      appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.db = getDatabase(app);
+    window.auth = getAuth(app);
+    
+    // Attach to window so React can access them
+    window.fbRef = ref;
+    window.fbOnValue = onValue;
+    window.fbUpdate = update;
+    window.fbPush = push;
+    window.fbRemove = remove;
+    window.fbOnAuthStateChanged = onAuthStateChanged;
+
+    window.firebaseIsReady = true;
+    if (typeof window.mountReactApp === 'function') {
+      window.mountReactApp();
+    }
+  </script>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect } = React;
+
+    const ICONS = [
+      'fa-bell', 'fa-video', 'fa-play-circle', 'fa-music', 'fa-star', 'fa-exclamation-circle',
+      'fa-info-circle', 'fa-fire', 'fa-calendar', 'fa-check-circle', 'fa-heart', 'fa-wrench'
+    ];
+
+    function NotificationAdmin() {
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [user, setUser] = useState(null);
+      const [notifications, setNotifications] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      
+      const [formData, setFormData] = useState({
+        key: '', title: '', message: '', icon: 'fa-bell'
+      });
+      const [status, setStatus] = useState({ show: false, text: '', type: 'success' });
+      const [isSubmitting, setIsSubmitting] = useState(false);
+
+      useEffect(() => {
+        const unsubscribe = window.fbOnAuthStateChanged(window.auth, (currentUser) => {
+          if (currentUser) {
+            setUser(currentUser);
+            loadNotifications();
+          } else {
+            setUser(null);
+            setLoading(false);
+          }
+        });
+        return () => unsubscribe();
+      }, []);
+
+      const loadNotifications = () => {
+        const notifRef = window.fbRef(window.db, "notifications");
+        window.fbOnValue(notifRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            // Convert to array, map key, and reverse to show newest first
+            const items = Object.entries(data)
+              .map(([key, val]) => ({ key, ...val }))
+              .reverse();
+            setNotifications(items);
+          } else {
+            setNotifications([]);
+          }
+          setLoading(false);
+          setError(null);
+        }, (err) => {
+          console.error("Firebase Error:", err);
+          setError("Permission Denied. Your UID is not authorized to read/write notifications.");
+          setLoading(false);
+        });
+      };
+
+      const handleInputChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+      };
+
+      const handleIconSelect = (iconName) => {
+        setFormData({ ...formData, icon: iconName });
+      };
+
+      const showStatus = (text, type = 'success') => {
+        setStatus({ show: true, text, type });
+        setTimeout(() => setStatus({ show: false, text: '', type: 'success' }), 3000);
+      };
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.title || !formData.message) {
+          showStatus("Please fill in all fields", "error");
+          return;
+        }
+
+        setIsSubmitting(true);
+        const payload = {
+          title: formData.title,
+          message: formData.message,
+          icon: formData.icon,
+          timestamp: Date.now()
+        };
+
+        try {
+          if (formData.key) {
+            // Update
+            const editRef = window.fbRef(window.db, `notifications/${formData.key}`);
+            await window.fbUpdate(editRef, payload);
+            showStatus("Notification Updated!");
+          } else {
+            // Create
+            const listRef = window.fbRef(window.db, "notifications");
+            await window.fbPush(listRef, payload);
+            showStatus("Notification Pushed!");
+          }
+          resetForm();
+        } catch (err) {
+          showStatus("Failed to save. Check permissions.", "error");
+        }
+        setIsSubmitting(false);
+      };
+
+      const handleEdit = (notif) => {
+        setFormData({
+          key: notif.key,
+          title: notif.title,
+          message: notif.message,
+          icon: notif.icon || 'fa-bell'
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleDelete = async (key) => {
+        if (window.confirm("Are you sure you want to delete this notification?")) {
+          try {
+            const delRef = window.fbRef(window.db, `notifications/${key}`);
+            await window.fbRemove(delRef);
+            showStatus("Notification deleted!");
+          } catch(err) {
+            showStatus("Failed to delete.", "error");
+          }
+        }
+      };
+
+      const resetForm = () => {
+        setFormData({ key: '', title: '', message: '', icon: 'fa-bell' });
+      };
+
+      return (
+        <React.Fragment>
+          {/* === HEADER / TOP NAV === */}
+          <nav className="top-nav">
+            <div className="menu-trigger" onClick={() => setSidebarOpen(true)}>
+              <i className="fas fa-bars-staggered"></i>
+            </div>
+            <div className="logo">ZONE VAULT</div>
+            <div style={{width: '36px'}}></div>
+          </nav>
+
+          {/* === SIDEBAR === */}
+          <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+          <aside className={`sidebar ${sidebarOpen ? 'active' : ''}`}>
+            <div style={{ marginBottom: '40px', paddingLeft: '15px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>Admin Panel</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Management Suite</p>
+            </div>
+
+            <a href="panel" className="nav-btn">
+              <i className="fas fa-house"></i>
+              <span>Admin Home</span>
+            </a>
+
+  <a href="upload" className="nav-btn">
+    <i className="fas fa-cloud-arrow-up"></i>
+    <span>Upload Video</span>
+  </a>
+            
+            <a href="request_join" className="nav-btn">
+              <i className="fas fa-user-plus"></i>
+              <span>Request Join</span>
+            </a>
+
+            <a href="notif" className="nav-btn active">
+              <i className="fas fa-bullhorn"></i>
+              <span>Notifications</span>
+            </a>
+
+            <a href="generator" className="nav-btn">
+              <i className="fas fa-key"></i>
+              <span>Access Codes</span>
+            </a>
+
+            <a href="page_access" className="nav-btn">
+              <i className="fas fa-shield-halved"></i>
+              <span>Page Access</span>
+            </a>
+
+            <a href="watch_history" className="nav-btn">
+              <i className="fas fa-history"></i>
+              <span>Watch History</span>
+            </a>
+                
+            <a href="user_directory" className="nav-btn">
+              <i className="fas fa-address-book"></i>
+              <span>User Directory</span>
+            </a>
+          </aside>
+
+          {/* === MAIN CONTENT === */}
+          <main className="main-content">
+            <header>
+              <p className="subtitle">
+                {user ? (
+                  <span>Logged in as Admin: <strong>{user.email}</strong></span>
+                ) : (
+                  "Create and manage system-wide push notifications"
+                )}
+              </p>
+            </header>
+
+            {!user && !loading && (
+              <div className="empty-state">
+                <i className="fas fa-lock"></i>
+                <p>You must be logged in to view this page.</p>
+                <p className="error-text">Please go back to the Register/Login page and sign in first.</p>
+              </div>
+            )}
+
+            {user && loading && (
+              <div className="empty-state">
+                <i className="fas fa-spinner fa-spin"></i>
+                <p>Authenticating & Loading data...</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="empty-state">
+                <i className="fas fa-exclamation-triangle" style={{ color: 'var(--accent-decline)' }}></i>
+                <p>Access Blocked</p>
+                <p className="error-text">{error}</p>
+              </div>
+            )}
+
+            {user && !loading && !error && (
+              <div className="content-grid">
+                
+                {/* LEFT: FORM COMPONENT */}
+                <div className="panel-card">
+                  <h2>
+                    <i className={formData.key ? "fas fa-edit" : "fas fa-shield-alt"}></i> 
+                    {formData.key ? "Edit Notification" : "Create Notification"}
+                  </h2>
+
+                  <div className="form-group">
+                    <label className="form-label">Notification Title</label>
+                    <input 
+                      type="text" 
+                      name="title"
+                      className="input-field" 
+                      placeholder="e.g. New Video Added"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Message</label>
+                    <textarea 
+                      name="message"
+                      rows="3" 
+                      className="input-field" 
+                      placeholder="e.g. Check out the new concert..."
+                      value={formData.message}
+                      onChange={handleInputChange}
+                    ></textarea>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Select Icon</label>
+                    <div className="icon-grid">
+                      {ICONS.map(icon => (
+                        <div 
+                          key={icon}
+                          className={`icon-option ${formData.icon === icon ? 'selected' : ''}`}
+                          onClick={() => handleIconSelect(icon)}
+                        >
+                          <i className={`fas ${icon}`}></i>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-paper-plane"></i>}
+                    {formData.key ? 'Update Notification' : 'Push Notification'}
+                  </button>
+
+                  {formData.key && (
+                    <button className="btn btn-cancel" onClick={resetForm} disabled={isSubmitting}>
+                      Cancel Edit
+                    </button>
+                  )}
+
+                  <div className={`status-msg ${status.show ? 'active' : ''} ${status.type}`}>
+                    {status.text}
+                  </div>
+                </div>
+
+                {/* RIGHT: LIST COMPONENT */}
+                <div className="panel-card">
+                  <h2><i className="fas fa-list"></i> Active Notifications</h2>
+                  
+                  {notifications.length === 0 ? (
+                     <div className="empty-state" style={{padding: '20px'}}>
+                        <i className="fas fa-bell-slash" style={{fontSize: '24px'}}></i>
+                        <p style={{fontSize: '14px'}}>No notifications sent yet.</p>
+                     </div>
+                  ) : (
+                    <div className="notif-list">
+                      {notifications.map(notif => (
+                        <div key={notif.key} className="manage-item">
+                          <div className="manage-info">
+                            <h4><i className={`fas ${notif.icon || 'fa-bell'}`}></i> {notif.title}</h4>
+                            <p>{notif.message.length > 40 ? notif.message.substring(0, 40) + '...' : notif.message}</p>
+                          </div>
+                          <div className="manage-actions">
+                            <button className="action-btn btn-edit" onClick={() => handleEdit(notif)} title="Edit">
+                              <i className="fas fa-pencil-alt"></i>
+                            </button>
+                            <button className="action-btn btn-delete" onClick={() => handleDelete(notif.key)} title="Delete">
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+          </main>
+
+        </React.Fragment>
+      );
+    }
+
+    window.mountReactApp = () => {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<NotificationAdmin />);
+    };
+
+    if (window.firebaseIsReady) {
+      window.mountReactApp();
+    }
+  </script>
+
+</body>
+</html>

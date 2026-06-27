@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* === MINIMALIST PURE BLACK THEME === */
+    :root {
+        --bg-color: #000000;
+        --sidebar-bg: #050505;
+        --card-bg: #0a0a0a;
+        --text-main: #ffffff;
+        --text-muted: #888888;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --input-bg: rgba(255, 255, 255, 0.03);
+        --active: #10b981; /* Minimalist Green */
+        --expired: #ef4444; /* Minimalist Red */
+        --used: #eab308; /* Minimalist Yellow */
+        --sidebar-width: 280px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; font-family: 'Outfit', sans-serif; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* === TOP NAV & SIDEBAR (ZERO LAG) === */
+    .top-nav { width: 100%; padding: 18px 25px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 999; background: rgba(0, 0, 0, 0.9); border-bottom: var(--glass-border); }
+    .menu-trigger { font-size: 20px; cursor: pointer; color: var(--text-main); padding: 8px; border-radius: 8px; transition: background 0.2s; }
+    .menu-trigger:hover { background: rgba(255,255,255,0.1); }
+    .logo { font-weight: 700; letter-spacing: 0.5px; font-size: 18px; text-transform: uppercase; color: var(--text-main); }
+
+    .sidebar { 
+        position: fixed; top: 0; left: 0; transform: translate3d(-100%, 0, 0); width: var(--sidebar-width); height: 100%; 
+        background: var(--sidebar-bg); border-right: 1px solid #1a1a1a; z-index: 1001; transition: transform 0.25s ease-out; 
+        padding: 40px 20px; will-change: transform; 
+    }
+    .sidebar.active { transform: translate3d(0, 0, 0); }
+    
+    .sidebar-overlay { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; 
+        opacity: 0; pointer-events: none; transition: opacity 0.25s ease-out; will-change: opacity; 
+    }
+    .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .nav-btn { width: 100%; padding: 14px 18px; border-radius: 10px; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 15px; margin-bottom: 8px; font-size: 15px; font-weight: 500; text-decoration: none; }
+    .nav-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); transform: translate3d(4px, 0, 0); }
+    .nav-btn.active { background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent); color: var(--text-main); border-left: 3px solid var(--text-main); border-radius: 0 10px 10px 0; }
+    .nav-btn i { font-size: 16px; width: 20px; text-align: center; }
+
+    /* === MAIN LAYOUT === */
+    .main-content {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 20px; width: 100%; max-width: 900px; margin: 0 auto;
+      animation: slideUp 0.5s ease-out forwards;
+    }
+    header { text-align: center; margin-bottom: 30px; width: 100%; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+    p.subtitle { color: var(--text-muted); font-size: 16px; word-wrap: break-word; }
+
+    /* === MINIMALIST CARD === */
+    .glass-card {
+      background: var(--card-bg);
+      border: var(--glass-border);
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      overflow: hidden;
+    }
+
+    @keyframes slideUp { 
+      from { opacity: 0; transform: translate3d(0, 20px, 0); } 
+      to { opacity: 1; transform: translate3d(0, 0, 0); } 
+    }
+
+    .section-title { text-align: center; margin-bottom: 20px; }
+    .section-title h2 { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;}
+    
+    /* === INPUTS & BUTTONS === */
+    .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;}
+    input[type="datetime-local"], input[type="number"] { padding: 14px 20px; background: var(--input-bg); border: var(--glass-border); border-radius: 12px; color: var(--text-main); font-size: 14px; transition: 0.2s; font-family: inherit; }
+    input[type="datetime-local"] { flex: 2; min-width: 200px; }
+    input[type="number"] { flex: 1; min-width: 100px; max-width: 150px;}
+    
+    input:focus { border-color: #ffffff; }
+    
+    button { padding: 14px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; background: #ffffff; color: #000000; }
+    button:hover { background: #cccccc; }
+    
+    .btn-danger-outline { background: transparent; color: var(--expired); border: 1px solid var(--expired); padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px;}
+    .btn-danger-outline:hover { background: var(--expired); color: #ffffff; }
+    
+    .btn-copy-all { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid rgba(255,255,255,0.1); margin-top: 15px;}
+    .btn-copy-all:hover { background: rgba(255,255,255,0.1); color: #ffffff; }
+
+    /* === RESULT TEXT & TABLE === */
+    .result-container { 
+        display: none; flex-direction: column; align-items: center; justify-content: center; 
+        margin-top: 10px; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; 
+        border: var(--glass-border);
+    }
+    .result-container.visible { display: flex; animation: popIn 0.3s ease-out forwards; }
+    #resultCode { 
+        font-size: 1.1rem; font-family: monospace; font-weight: bold; color: var(--text-main); 
+        letter-spacing: 1px; white-space: pre-wrap; text-align: center; line-height: 1.6;
+        max-height: 150px; overflow-y: auto; width: 100%;
+    }
+
+    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+    .table-container { overflow-x: auto; background: rgba(255,255,255,0.02); border-radius: 12px; border: var(--glass-border); padding: 10px; max-height: 400px;}
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 16px; text-align: left; border-bottom: var(--glass-border); }
+    th { color: var(--text-muted); font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; background: var(--card-bg);}
+    tr:last-child td { border-bottom: none; }
+    
+    .status-active { color: var(--active); font-weight: 600; }
+    .status-expired { color: var(--expired); font-weight: 600; }
+    .status-used { color: var(--used); font-weight: 600; }
+
+    .code-cell { font-family: monospace; font-size: 15px; display: flex; align-items: center; gap: 8px; color: var(--text-main);}
+    .copy-icon { color: var(--text-muted); cursor: pointer; transition: 0.2s; font-size: 16px; }
+    .copy-icon:hover { color: var(--text-main); transform: scale(1.1); }
+    .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--expired); padding: 6px 12px; font-size: 12px; border-radius: 8px; border: 1px solid transparent; }
+    .btn-delete:hover { background: var(--expired); color: #fff; }
+    
+    /* === EMPTY STATES (Same as request_join) === */
+    .empty-state { text-align: center; color: var(--text-muted); padding: 40px; margin-top: 20px; font-style: normal; }
+    .empty-state i { font-size: 40px; margin-bottom: 15px; opacity: 0.5; color: var(--text-muted); }
+    .empty-state p { font-size: 16px; margin-bottom: 5px; }
+    .error-text { color: var(--expired); margin-top: 10px; font-size: 15px; }
+    .hidden { display: none !important; }
+
+    /* Toast Notification */
+    #toast { visibility: hidden; min-width: 250px; background-color: #ffffff; color: #000000; text-align: center; border-radius: 8px; padding: 12px; position: fixed; z-index: 1000; bottom: 30px; left: 50%; transform: translateX(-50%); font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    #toast.show { visibility: visible; animation: fadein 0.3s, fadeout 0.3s 2.5s forwards; }
+    
+    @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+    @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 30px; opacity: 0; } }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+    @media (max-width: 600px) {
+      .main-content { padding: 30px 15px; }
+      h1 { font-size: 26px; }
+      .glass-card { padding: 30px 20px; }
+      th, td { padding: 12px 8px; }
+      .table-header { flex-direction: column; align-items: flex-start; }
+      .sidebar { width: 85%; }
+      .input-group { flex-direction: column; }
+      input[type="datetime-local"], input[type="number"], button { width: 100%; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="menu-trigger" onclick="toggleSidebar()">
+    <i class="fas fa-bars-staggered"></i>
+  </div>
+  <div class="logo">ZONE VAULT</div>
+  <div style="width: 36px;"></div>
+</nav>
+
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<aside class="sidebar">
+  <div style="margin-bottom: 40px; padding-left: 15px;">
+    <h3 style="font-size: 20px; font-weight: 700; color: #fff;">Admin Panel</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Management Suite</p>
+  </div>
+
+  <a href="panel" class="nav-btn">
+    <i class="fas fa-house"></i>
+    <span>Admin Home</span>
+  </a>
+
+  <a href="upload" className="nav-btn">
+    <i className="fas fa-cloud-arrow-up"></i>
+    <span>Upload Video</span>
+  </a>
+  
+  <a href="request_join" class="nav-btn">
+    <i class="fas fa-user-plus"></i>
+    <span>Request Join</span>
+  </a>
+
+  <a href="notif" class="nav-btn">
+    <i class="fas fa-bullhorn"></i>
+    <span>Notifications</span>
+  </a>
+
+  <a href="admin-generator" class="nav-btn active">
+    <i class="fas fa-key"></i>
+    <span>Access Codes</span>
+  </a>
+
+  <a href="page_access" class="nav-btn">
+    <i class="fas fa-shield-halved"></i>
+    <span>Page Access</span>
+  </a>
+
+  <a href="watch_history" class="nav-btn">
+    <i class="fas fa-history"></i>
+    <span>Watch History</span>
+  </a>
+                  
+  <a href="user_directory" class="nav-btn">
+    <i class="fas fa-address-book"></i>
+    <span>User Directory</span>
+  </a>
+</aside>
+
+<main class="main-content">
+  <header>
+    <p class="subtitle" id="admin-subtitle">Authenticating...</p>
+  </header>
+
+  <div id="auth-state-container" class="empty-state">
+      <i class="fas fa-spinner fa-spin" id="auth-icon"></i>
+      <p id="auth-main-text" style="color: var(--text-main);">Verifying Admin Privileges...</p>
+      <p class="error-text" id="auth-error-text"></p>
+  </div>
+
+  <div class="glass-card hidden" id="app-content">
+      <div>
+        <div class="section-title">
+          <h2>Generate Codes</h2>
+          <p class="subtitle">Create multiple time-limited codes at once.</p>
+        </div>
+        
+        <div class="input-group">
+          <input type="number" id="codeQuantity" placeholder="Qty" min="1" max="50" value="1" title="Number of codes to generate">
+          <input type="datetime-local" id="expiryDate" required title="Expiration Date">
+          <button onclick="generateAndSaveCode()">Generate</button>
+        </div>
+        
+        <div class="result-container" id="resultContainer">
+          <div id="resultCode"></div>
+          <button class="btn-copy-all" onclick="copyMainCode()">
+            <i class="fas fa-copy"></i> Copy All Codes
+          </button>
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: var(--glass-border); margin: 40px 0;">
+
+      <div>
+        <div class="table-header">
+            <div>
+                <h2>Manage Codes</h2>
+                <p class="subtitle" style="margin: 0;">View and manage active/expired codes.</p>
+            </div>
+            <button class="btn-danger-outline" onclick="clearExpiredCodes()">
+                <i class="fas fa-broom"></i> Clean Expired Codes
+            </button>
+        </div>
+        
+        <div class="table-container">
+          <table id="codesTable">
+            <thead>
+              <tr>
+                <th>Access Code</th>
+                <th>Expires On</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--text-muted); font-style: italic;">Loading codes...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+  </div>
+</main>
+
+<div id="toast">Code copied to clipboard!</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+    authDomain: "tvnstream-b4497.firebaseapp.com",
+    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+    projectId: "tvnstream-b4497",
+    storageBucket: "tvnstream-b4497.appspot.com",
+    messagingSenderId: "308384754214",
+    appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+  let lastGeneratedCodes = "";
+
+  window.toggleSidebar = function() {
+    document.querySelector('.sidebar').classList.toggle('active');
+    document.querySelector('.sidebar-overlay').classList.toggle('active');
+  }
+
+  window.showToast = function(message) {
+      const toast = document.getElementById("toast");
+      toast.innerText = message;
+      toast.className = "show";
+      setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+  }
+
+  // === ADMIN VERIFICATION ===
+  onAuthStateChanged(auth, async (user) => {
+    const authStateContainer = document.getElementById('auth-state-container');
+    const appContent = document.getElementById('app-content');
+    const authIcon = document.getElementById('auth-icon');
+    const authText = document.getElementById('auth-main-text');
+    const authError = document.getElementById('auth-error-text');
+    const subtitle = document.getElementById('admin-subtitle');
+
+    if (user) {
+      try {
+        const roleRef = ref(db, `users/${user.uid}/role`);
+        const snapshot = await get(roleRef);
+        
+        if (snapshot.exists() && snapshot.val() === 'admin') {
+          authStateContainer.classList.add('hidden');
+          appContent.classList.remove('hidden');
+          subtitle.innerHTML = `Logged in as Admin: <strong>${user.email}</strong>`;
+          loadCodesTable(); 
+        } else {
+          authIcon.className = 'fas fa-shield-alt';
+          authText.innerText = 'Access Restricted';
+          authError.innerText = 'You do not have administrative privileges.';
+          subtitle.innerText = "Permission Denied.";
+        }
+      } catch (error) {
+        authIcon.className = 'fas fa-exclamation-triangle';
+        authText.innerText = 'Error Verifying Role';
+        authError.innerText = error.message;
+      }
+    } else {
+      authIcon.className = 'fas fa-lock';
+      authText.innerText = 'You must be logged in to view this page.';
+      authError.innerHTML = 'Please go back to the <a href="login.html" style="color: #ffffff; text-decoration: underline;">Login page</a> and sign in first.';
+      subtitle.innerText = "Not Logged In.";
+    }
+  });
+
+  window.copyToClipboard = function(text) {
+      navigator.clipboard.writeText(text).then(() => showToast("Copied to clipboard!"))
+      .catch(err => console.error('Failed to copy: ', err));
+  }
+  window.copyMainCode = function() { if(lastGeneratedCodes) copyToClipboard(lastGeneratedCodes); }
+
+  // === BATCH GENERATE CODES ===
+  window.generateAndSaveCode = async function() {
+    const expiryInput = document.getElementById("expiryDate").value;
+    const quantityInput = parseInt(document.getElementById("codeQuantity").value);
+
+    if (!expiryInput) return alert("Please select an expiration date and time!");
+    if (!quantityInput || quantityInput < 1) return alert("Please enter a valid quantity!");
+
+    const expiryTimestamp = new Date(expiryInput).getTime();
+    const batchUpdates = {};
+    const generatedList = [];
+
+    for (let i = 0; i < quantityInput; i++) {
+        const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const finalCode = `zonevault-${randomString}`;
+        
+        batchUpdates[finalCode] = {
+            expiresAt: expiryTimestamp,
+            createdAt: Date.now(),
+            used: false
+        };
+        generatedList.push(finalCode);
+    }
+
+    try {
+      await update(ref(db, "validCodes"), batchUpdates);
+      
+      lastGeneratedCodes = generatedList.join('\n');
+      document.getElementById("resultCode").innerText = generatedList.join('\n');
+      document.getElementById("resultContainer").classList.add("visible");
+      
+      document.getElementById("expiryDate").value = ''; 
+      document.getElementById("codeQuantity").value = '1';
+      
+      showToast(`Successfully generated ${quantityInput} code(s)!`);
+    } catch (error) {
+      console.error(error);
+      alert("Error saving codes to database: " + error.message);
+    }
+  };
+  
+  // === FETCH & DISPLAY CODES ===
+  function loadCodesTable() {
+    const codesRef = ref(db, "validCodes");
+    onValue(codesRef, (snapshot) => {
+      const tableBody = document.getElementById("tableBody");
+      tableBody.innerHTML = ""; 
+
+      if (!snapshot.exists()) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: var(--text-muted); font-style: italic;">No access codes found. Generate one above.</td></tr>';
+        return;
+      }
+
+      const codesArray = [];
+      snapshot.forEach((child) => { codesArray.push({ id: child.key, ...child.val() }); });
+      
+      codesArray.sort((a, b) => b.expiresAt - a.expiresAt);
+      const currentTime = Date.now();
+
+      codesArray.forEach((codeData) => {
+        const isExpired = currentTime >= codeData.expiresAt;
+        const isUsed = codeData.used === true;
+        
+        let statusClass = "status-active";
+        let statusText = "Active (Unused)";
+        
+        if (isExpired) {
+            statusClass = "status-expired";
+            statusText = isUsed ? `Expired (Was used by ${codeData.usedBy || 'User'})` : "Expired (Unused)";
+        } else if (isUsed) {
+            statusClass = "status-used"; 
+            statusText = `Active (In Use by ${codeData.usedBy || 'User'})`;
+        }
+
+        const dateString = new Date(codeData.expiresAt).toLocaleString();
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="code-cell">
+              ${codeData.id}
+              <i class="fas fa-copy copy-icon" onclick="copyToClipboard('${codeData.id}')" title="Copy code"></i>
+          </td>
+          <td>${dateString}</td>
+          <td class="${statusClass}">${statusText}</td>
+          <td>
+              <button class="btn-delete" onclick="deleteCode('${codeData.id}')" title="Delete">
+                  <i class="fas fa-trash"></i>
+              </button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    });
+  }
+
+  // === DELETE SINGLE CODE ===
+  window.deleteCode = async function(codeId) {
+    if (confirm(`Are you sure you want to delete ${codeId}?`)) {
+      try { await remove(ref(db, "validCodes/" + codeId)); } 
+      catch (error) { alert("Failed to delete code: " + error.message); }
+    }
+  };
+
+  // === CLEAR ONLY EXPIRED CODES ===
+  window.clearExpiredCodes = async function() {
+      if (!confirm("Delete all expired codes? Active users will not be affected.")) return;
+
+      try {
+          const snapshot = await get(ref(db, "validCodes"));
+          if (snapshot.exists()) {
+              let deleteCount = 0;
+              const currentTime = Date.now();
+              const updates = {};
+
+              snapshot.forEach((child) => {
+                  const codeData = child.val();
+                  if (currentTime >= codeData.expiresAt) {
+                      updates[child.key] = null; 
+                      deleteCount++;
+                  }
+              });
+
+              if (deleteCount > 0) {
+                  await update(ref(db, "validCodes"), updates);
+                  showToast(`Successfully deleted ${deleteCount} expired code(s).`);
+              } else {
+                  showToast("No expired codes found to delete.");
+              }
+          }
+      } catch (error) {
+          console.error("Error clearing codes:", error);
+          alert("Failed to clear codes.");
+      }
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Page Access Control | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* === MINIMALIST PURE BLACK THEME === */
+    :root {
+        --bg-color: #000000;
+        --sidebar-bg: #050505;
+        --card-bg: #0a0a0a;
+        --text-main: #ffffff;
+        --text-muted: #888888;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --input-bg: rgba(255, 255, 255, 0.03);
+        --accent-approve: #10b981; /* Minimalist Green */
+        --accent-decline: #ef4444; /* Minimalist Red */
+        --sidebar-width: 280px; 
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* =========================================
+       TOP NAV & SIDEBAR STYLES (ZERO LAG)
+       ========================================= */
+    .top-nav { width: 100%; padding: 18px 25px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 999; background: rgba(0, 0, 0, 0.9); border-bottom: var(--glass-border); }
+    .menu-trigger { font-size: 20px; cursor: pointer; color: var(--text-main); padding: 8px; border-radius: 8px; transition: background 0.2s; }
+    .menu-trigger:hover { background: rgba(255,255,255,0.1); }
+    .logo { font-weight: 700; letter-spacing: 0.5px; font-size: 18px; text-transform: uppercase; color: var(--text-main); }
+
+    .sidebar { 
+        position: fixed; top: 0; left: 0; transform: translate3d(-100%, 0, 0); width: var(--sidebar-width); height: 100%; 
+        background: var(--sidebar-bg); border-right: 1px solid #1a1a1a; z-index: 1001; transition: transform 0.25s ease-out; 
+        padding: 40px 20px; will-change: transform; 
+    }
+    .sidebar.active { transform: translate3d(0, 0, 0); }
+    
+    .sidebar-overlay { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; 
+        opacity: 0; pointer-events: none; transition: opacity 0.25s ease-out; will-change: opacity; 
+    }
+    .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .nav-btn { width: 100%; padding: 14px 18px; border-radius: 10px; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 15px; margin-bottom: 8px; font-size: 15px; font-weight: 500; text-decoration: none; }
+    .nav-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); transform: translate3d(4px, 0, 0); }
+    .nav-btn.active { background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent); color: var(--text-main); border-left: 3px solid var(--text-main); border-radius: 0 10px 10px 0; }
+    .nav-btn i { font-size: 16px; width: 20px; text-align: center; }
+
+    /* =========================================
+       MAIN CONTENT WRAPPER
+       ========================================= */
+    .main-content {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 20px; width: 100%; max-width: 1100px; margin: 0 auto;
+      animation: slideUp 0.5s ease-out forwards;
+    }
+
+    @keyframes slideUp { 
+      from { opacity: 0; transform: translate3d(0, 20px, 0); } 
+      to { opacity: 1; transform: translate3d(0, 0, 0); } 
+    }
+
+    /* Header */
+    header { position: relative; text-align: center; margin-bottom: 40px; width: 100%; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+    p.subtitle { color: var(--text-muted); font-size: 16px; word-wrap: break-word; }
+
+    /* Top Right Plus Button */
+    .add-btn-top-right {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: var(--glass-border);
+      color: var(--text-main);
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s ease;
+    }
+    .add-btn-top-right:hover {
+      background: #ffffff;
+      color: #000000;
+      transform: scale(1.1) rotate(90deg);
+    }
+
+    /* Layout Grids */
+    .requests-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      width: 100%;
+    }
+
+    /* Minimalist Dark Cards (Pages) */
+    .glass-card {
+      background: var(--card-bg);
+      border: var(--glass-border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+    .glass-card:hover { transform: translate3d(0, -5px, 0); border-color: rgba(255,255,255,0.2); }
+
+    .card-img { width: 100%; height: 150px; object-fit: cover; border-bottom: var(--glass-border); }
+    .card-content { padding: 20px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    .card-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .edit-btn { background: rgba(255, 255, 255, 0.05); border: var(--glass-border); color: var(--text-muted); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; }
+    .edit-btn:hover { background: #ffffff; color: #000000; }
+
+    .card-content h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; line-height: 1.3; color: var(--text-main); }
+    .card-content small { color: var(--text-muted); font-size: 12px; font-family: monospace; word-break: break-all; }
+
+    /* Modal Styles - ZERO LAG */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85); 
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease-out; padding: 20px;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
+    .modal-card {
+      background: var(--card-bg); border: 1px solid #1a1a1a;
+      border-radius: 24px; padding: 30px; width: 100%; max-width: 500px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      transform: translate3d(0, 15px, 0); 
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .modal-overlay.active .modal-card { transform: translate3d(0, 0, 0); }
+
+    .input-icon-group { position: relative; margin: 10px 0; }
+    .input-icon-group i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .custom-input {
+      width: 100%; padding: 14px 16px 14px 44px;
+      background: var(--input-bg); border: var(--glass-border);
+      border-radius: 12px; color: var(--text-main); font-size: 14px; outline: none; transition: 0.3s;
+    }
+    .custom-input:focus { border-color: #ffffff; }
+
+    .user-list { flex: 1; overflow-y: auto; margin-bottom: 20px; padding-right: 5px; }
+    .user-list::-webkit-scrollbar { width: 6px; }
+    .user-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+    .user-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+    .user-row { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px; transition: background 0.2s;
+    }
+    .user-row:hover { background: rgba(255,255,255,0.02); }
+
+    .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .3s; border-radius: 34px; border: var(--glass-border); }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--text-muted); transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: rgba(16, 185, 129, 0.2); border-color: var(--accent-approve); }
+    input:checked + .slider:before { transform: translateX(20px); background-color: var(--accent-approve); }
+
+    .btn {
+      width: 100%; padding: 14px; border-radius: 50px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer; color: #000000;
+      background: #ffffff; transition: all 0.2s; margin-top: 10px;
+    }
+    .btn:hover { background: #cccccc; }
+    .btn-cancel { background: transparent; color: var(--text-main); border: 1px solid var(--text-muted); }
+    .btn-cancel:hover { background: rgba(255,255,255,0.05); }
+
+    .empty-state { text-align: center; color: var(--text-muted); padding: 40px; margin-top: 20px; font-style: normal; }
+    .empty-state i { font-size: 40px; margin-bottom: 15px; opacity: 0.5; color: var(--text-muted); }
+    .empty-state p { font-size: 16px; margin-bottom: 5px; }
+    .error-text { color: var(--accent-decline); margin-top: 10px; font-weight: 500; }
+
+    @media (max-width: 600px) {
+      .main-content { padding: 30px 15px; }
+      h1 { font-size: 26px; margin-right: 40px; } 
+      .requests-grid { grid-template-columns: 1fr; }
+      .modal-card { padding: 25px 20px; }
+      .add-btn-top-right { width: 40px; height: 40px; font-size: 16px; }
+      .sidebar { width: 85%; }
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="root" style="width: 100%;"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+  <script type="module">
+    // ADDED `get` here to fetch old data during ID migration
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, onValue, set, off, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+      authDomain: "tvnstream-b4497.firebaseapp.com",
+      databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+      projectId: "tvnstream-b4497",
+      storageBucket: "tvnstream-b4497.appspot.com",
+      messagingSenderId: "308384754214",
+      appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.db = getDatabase(app);
+    window.auth = getAuth(app);
+    window.fbRef = ref;
+    window.fbOnValue = onValue;
+    window.fbSet = set;
+    window.fbOff = off;
+    window.fbGet = get; // Exposed get method
+    window.fbOnAuthStateChanged = onAuthStateChanged;
+
+    window.firebaseIsReady = true;
+    if (typeof window.mountReactApp === 'function') window.mountReactApp();
+  </script>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useMemo } = React;
+
+    const PAGE_CATEGORIES = [
+      { id: "wendy_world_tour", name: "2025-26 WENDY 1st WORLD TOUR [W:EALIVE] ENCORE", image: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1772344056/2025-26_WENDY_1st_WORLD_TOUR_W_EALIVE_ENCORE_yb3aws.png" },
+      { id: "cxmdoubleup", name: "CxM [DOUBLE UP] LIVE PARTY in INCHEON", image: "https://uploads.onecompiler.io/43ddry4jt/449datfub/1765871658770_cxm_doubleup_ONLINE_pc.jpg" },
+      { id: "fukuokashow", name: "SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" },
+      { id: "jpnnewtour", name: "SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Osaka Show", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" }
+    ];
+
+    function PageAccessApp() {
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [isAdmin, setIsAdmin] = useState(false);
+      
+      const [dynamicPages, setDynamicPages] = useState([]);
+      const [allUsers, setAllUsers] = useState({});
+      const [usersError, setUsersError] = useState(null);
+      
+      const [selectedPage, setSelectedPage] = useState(null);
+      const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+      
+      const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+      // Added originalId to track if the Node ID changed
+      const [pageToEdit, setPageToEdit] = useState({ id: "", originalId: "", name: "", image: "", filename: "" });
+
+      const [permissions, setPermissions] = useState({});
+      const [searchTerm, setSearchTerm] = useState("");
+
+      const [newPage, setNewPage] = useState({ id: "", name: "", image: "", filename: "" });
+
+      useEffect(() => {
+        const unsubscribeAuth = window.fbOnAuthStateChanged(window.auth, (currentUser) => {
+          setUser(currentUser);
+          if (currentUser) {
+            const myProfileRef = window.fbRef(window.db, `users/${currentUser.uid}`);
+            window.fbOnValue(myProfileRef, (snap) => {
+              const myData = snap.val();
+              if (myData && myData.role === 'admin') {
+                setIsAdmin(true);
+                setUsersError(null);
+                
+                const pagesRef = window.fbRef(window.db, 'pages');
+                window.fbOnValue(pagesRef, (pagesSnap) => {
+                  const data = pagesSnap.val() || {};
+                  setDynamicPages(Object.values(data));
+                });
+
+                const allUsersRef = window.fbRef(window.db, 'users');
+                window.fbOnValue(allUsersRef, (usersSnap) => {
+                  setAllUsers(usersSnap.val() || {});
+                });
+              } else {
+                setIsAdmin(false);
+                setUsersError(`Permission Denied: You do not have administrative privileges.`);
+              }
+              setAuthLoading(false);
+            });
+          } else {
+            setAuthLoading(false);
+            setIsAdmin(false);
+            setAllUsers({});
+          }
+        });
+        return () => unsubscribeAuth();
+      }, []);
+
+      useEffect(() => {
+        if (!selectedPage || !isAdmin) return;
+        const permsRef = window.fbRef(window.db, `page_access/${selectedPage.id}`);
+        const listener = window.fbOnValue(permsRef, (snapshot) => {
+          setPermissions(snapshot.val() || {});
+        });
+        return () => window.fbOff(permsRef, 'value', listener);
+      }, [selectedPage, isAdmin]);
+
+      const handleToggleAccess = (uid, currentAccess) => {
+        if (!selectedPage) return;
+        const newAccess = !currentAccess;
+        const accessRef = window.fbRef(window.db, `page_access/${selectedPage.id}/${uid}`);
+        
+        setPermissions(prev => ({ ...prev, [uid]: newAccess }));
+        window.fbSet(accessRef, newAccess).catch(err => {
+          alert(`Error saving permission.`);
+          setPermissions(prev => ({ ...prev, [uid]: currentAccess }));
+        });
+      };
+
+      const handleCreatePage = () => {
+        if (!newPage.id || !newPage.name) {
+           return alert("Node ID and Display Name are required!");
+        }
+        const safeId = newPage.id.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        const newPageRef = window.fbRef(window.db, `pages/${safeId}`);
+        window.fbSet(newPageRef, {
+          id: safeId,
+          name: newPage.name,
+          image: newPage.image || "https://placehold.co/600x400/121212/555?text=No+Image",
+          filename: newPage.filename || ""
+        }).then(() => {
+          setIsAddModalOpen(false);
+          setNewPage({ id: "", name: "", image: "", filename: "" });
+        }).catch(err => {
+          alert("Error creating page. Check console.");
+          console.error(err);
+        });
+      };
+
+      const handleOpenEdit = (e, page) => {
+        e.stopPropagation();
+        setPageToEdit({
+          id: page.id || "",
+          originalId: page.id || "", // Capture the old ID here
+          name: page.name || "",
+          image: page.image || "",
+          filename: page.filename || ""
+        });
+        setIsEditModalOpen(true);
+      };
+
+      const handleUpdatePage = () => {
+        if (!pageToEdit.name || !pageToEdit.id) {
+           return alert("Node ID and Display Name are required!");
+        }
+        const isStaticPage = PAGE_CATEGORIES.find(p => p.id === pageToEdit.originalId);
+        if (isStaticPage) {
+            alert("Cannot edit hardcoded static categories.");
+            return;
+        }
+
+        const safeNewId = pageToEdit.id.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+        if (pageToEdit.originalId !== safeNewId) {
+          // If the ID was changed, we must migrate the old data and access list to the new ID
+          const oldPageRef = window.fbRef(window.db, `pages/${pageToEdit.originalId}`);
+          const newPageRef = window.fbRef(window.db, `pages/${safeNewId}`);
+          
+          const oldAccessRef = window.fbRef(window.db, `page_access/${pageToEdit.originalId}`);
+          const newAccessRef = window.fbRef(window.db, `page_access/${safeNewId}`);
+
+          window.fbGet(oldAccessRef).then((snap) => {
+            const oldAccessData = snap.val();
+            
+            // 1. Create new page
+            const p1 = window.fbSet(newPageRef, {
+              id: safeNewId,
+              name: pageToEdit.name,
+              image: pageToEdit.image || "https://placehold.co/600x400/121212/555?text=No+Image",
+              filename: pageToEdit.filename || ""
+            });
+            
+            // 2. Move old access data to new access ref
+            const p2 = oldAccessData ? window.fbSet(newAccessRef, oldAccessData) : Promise.resolve();
+
+            Promise.all([p1, p2]).then(() => {
+              // 3. Delete old records
+              window.fbSet(oldPageRef, null);
+              window.fbSet(oldAccessRef, null);
+
+              setIsEditModalOpen(false);
+              setPageToEdit({ id: "", originalId: "", name: "", image: "", filename: "" });
+            }).catch(err => {
+              alert("Error moving data to new ID. Check console.");
+              console.error(err);
+            });
+          });
+
+        } else {
+          // Normal update (ID didn't change)
+          const pageRef = window.fbRef(window.db, `pages/${safeNewId}`);
+          window.fbSet(pageRef, {
+            id: safeNewId,
+            name: pageToEdit.name,
+            image: pageToEdit.image || "https://placehold.co/600x400/121212/555?text=No+Image",
+            filename: pageToEdit.filename || ""
+          }).then(() => {
+            setIsEditModalOpen(false);
+            setPageToEdit({ id: "", originalId: "", name: "", image: "", filename: "" });
+          }).catch(err => {
+            alert("Error updating page. Check console.");
+            console.error(err);
+          });
+        }
+      };
+
+      const filteredUsers = useMemo(() => {
+        return Object.entries(allUsers).filter(([uid, data]) => {
+          const searchString = `${data.name || ''} ${data.email || uid}`.toLowerCase();
+          return searchString.includes(searchTerm.toLowerCase());
+        });
+      }, [allUsers, searchTerm]);
+
+      const allDisplayPages = [...PAGE_CATEGORIES, ...dynamicPages];
+
+      return (
+        <React.Fragment>
+
+          <nav className="top-nav">
+            <div className="menu-trigger" onClick={() => setSidebarOpen(true)}>
+              <i className="fas fa-bars-staggered"></i>
+            </div>
+            <div className="logo">ZONE VAULT</div>
+            <div style={{width: '36px'}}></div>
+          </nav>
+
+          <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+          <aside className={`sidebar ${sidebarOpen ? 'active' : ''}`}>
+            <div style={{ marginBottom: '40px', paddingLeft: '15px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>Admin Panel</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Management Suite</p>
+            </div>
+
+            <a href="panel" className="nav-btn">
+              <i className="fas fa-house"></i>
+              <span>Admin Home</span>
+            </a>
+
+            <a href="upload" className="nav-btn"> 
+              <i className="fas fa-cloud-arrow-up"></i>
+              <span>Upload Video</span>
+            </a>
+            
+            <a href="request_join" className="nav-btn">
+              <i className="fas fa-user-plus"></i>
+              <span>Request Join</span>
+            </a>
+
+            <a href="notif" className="nav-btn">
+              <i className="fas fa-bullhorn"></i>
+              <span>Notifications</span>
+            </a>
+
+            <a href="generator" className="nav-btn">
+              <i className="fas fa-key"></i>
+              <span>Access Codes</span>
+            </a>
+
+            <a href="page_access" className="nav-btn active">
+              <i className="fas fa-shield-halved"></i>
+              <span>Page Access</span>
+            </a>
+
+            <a href="watch_history" className="nav-btn">
+              <i className="fas fa-history"></i>
+              <span>Watch History</span>
+            </a>
+              
+            <a href="user_directory" className="nav-btn">
+              <i className="fas fa-address-book"></i>
+              <span>User Directory</span>
+            </a>
+          </aside>
+
+          <main className="main-content">
+            <header>
+              <p className="subtitle">
+                {user && isAdmin ? (
+                  <span>Logged in as Admin: <strong>{user.email}</strong></span>
+                ) : (
+                  "Manage user permissions for Vault nodes"
+                )}
+              </p>
+              
+              {user && !authLoading && !usersError && isAdmin && (
+                <button className="add-btn-top-right" onClick={() => setIsAddModalOpen(true)} title="Add New Page">
+                  <i className="fas fa-plus"></i>
+                </button>
+              )}
+            </header>
+
+            {!user && !authLoading && (
+              <div className="empty-state">
+                <i className="fas fa-lock"></i>
+                <p>You must be logged in to view this page.</p>
+                <p className="error-text">Please go back to the Login page and sign in first.</p>
+              </div>
+            )}
+
+            {user && authLoading && (
+              <div className="empty-state">
+                <i className="fas fa-spinner fa-spin"></i>
+                <p>Authenticating & Loading data...</p>
+              </div>
+            )}
+
+            {usersError && !authLoading && (
+              <div className="empty-state">
+                <i className="fas fa-exclamation-triangle" style={{ color: 'var(--accent-decline)' }}></i>
+                <p>Access Blocked</p>
+                <p className="error-text">{usersError}</p>
+              </div>
+            )}
+
+            {user && !authLoading && !usersError && isAdmin && (
+              <div className="requests-grid">
+                {allDisplayPages.map(page => {
+                  const isStatic = PAGE_CATEGORIES.some(p => p.id === page.id);
+                  return (
+                  <div 
+                    key={page.id} 
+                    className="glass-card" 
+                    onClick={() => setSelectedPage(page)}
+                  >
+                    <img src={page.image} className="card-img" alt={page.name} onError={(e) => { e.target.src="https://placehold.co/600x400/121212/555?text=No+Image" }}/>
+                    <div className="card-content">
+                      <div className="card-header-row">
+                        <div>
+                          <h3>{page.name}</h3>
+                          <small>Node: {page.id}</small>
+                        </div>
+                        {!isStatic && (
+                          <button className="edit-btn" onClick={(e) => handleOpenEdit(e, page)} title="Edit Node Details">
+                            <i className="fas fa-pen"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )})}
+              </div>
+            )}
+          </main>
+
+          {/* === MODAL 1: ACCESS CONTROL === */}
+          <div className={`modal-overlay ${selectedPage ? 'active' : ''}`}>
+            {selectedPage && (
+              <div className="modal-card">
+                <div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px', color: 'var(--text-main)' }}>
+                    Access: {selectedPage.name}
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'monospace' }}>
+                    Database: page_access/{selectedPage.id}
+                  </p>
+                </div>
+
+                <div className="input-icon-group">
+                  <i className="fas fa-search"></i>
+                  <input 
+                    type="text" 
+                    className="custom-input" 
+                    placeholder="Search by name or email..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <div className="user-list">
+                  {filteredUsers.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                      No users found.
+                    </div>
+                  ) : (
+                    filteredUsers.map(([uid, userData]) => {
+                      const hasAccess = permissions[uid] === true;
+                      return (
+                        <div key={uid} className="user-row">
+                          <div className="user-info">
+                            <strong style={{color:"var(--text-main)", fontSize:"15px", display:"block", marginBottom:"3px"}}>{userData.name || 'Unknown User'}</strong>
+                            <small style={{color:"var(--text-muted)", fontSize:"12px"}}>{userData.email || uid}</small>
+                          </div>
+                          <label className="switch">
+                            <input type="checkbox" checked={hasAccess} onChange={() => handleToggleAccess(uid, hasAccess)} />
+                            <span className="slider"></span>
+                          </label>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <button className="btn" onClick={() => setSelectedPage(null)}>Close Panel</button>
+              </div>
+            )}
+          </div>
+
+          {/* === MODAL 2: ADD NEW PAGE === */}
+          <div className={`modal-overlay ${isAddModalOpen ? 'active' : ''}`}>
+             <div className="modal-card" style={{maxHeight: 'none'}}>
+                <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '20px', color: 'var(--text-main)' }}>
+                  Create New Page
+                </h3>
+                
+                <div className="input-icon-group">
+                  <i className="fas fa-fingerprint"></i>
+                  <input type="text" className="custom-input" placeholder="Node ID (e.g. jpnnewtour)" 
+                         value={newPage.id} onChange={(e) => setNewPage({...newPage, id: e.target.value})} />
+                </div>
+                
+                <div className="input-icon-group">
+                  <i className="fas fa-heading"></i>
+                  <input type="text" className="custom-input" placeholder="Display Name (Event Title)" 
+                         value={newPage.name} onChange={(e) => setNewPage({...newPage, name: e.target.value})} />
+                </div>
+
+                <div className="input-icon-group">
+                  <i className="fas fa-image"></i>
+                  <input type="text" className="custom-input" placeholder="Image URL (Optional)" 
+                         value={newPage.image} onChange={(e) => setNewPage({...newPage, image: e.target.value})} />
+                </div>
+                
+                <div className="input-icon-group" style={{marginBottom: "30px"}}>
+                  <i className="fas fa-link"></i>
+                  <input type="text" className="custom-input" placeholder="Filename / URL Path (Optional)" 
+                         value={newPage.filename} onChange={(e) => setNewPage({...newPage, filename: e.target.value})} />
+                </div>
+
+                <button className="btn" onClick={handleCreatePage}>Save to Database</button>
+                <button className="btn btn-cancel" onClick={() => setIsAddModalOpen(false)}>Cancel</button>
+             </div>
+          </div>
+
+          {/* === MODAL 3: EDIT PAGE === */}
+          <div className={`modal-overlay ${isEditModalOpen ? 'active' : ''}`}>
+             <div className="modal-card" style={{maxHeight: 'none'}}>
+                <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '20px', color: 'var(--text-main)' }}>
+                  Edit Node Details
+                </h3>
+                
+                <div className="input-icon-group">
+                  <i className="fas fa-fingerprint"></i>
+                  {/* Pwede nang palitan ang Node ID ngayon */}
+                  <input type="text" className="custom-input" placeholder="Node ID" 
+                         value={pageToEdit.id} onChange={(e) => setPageToEdit({...pageToEdit, id: e.target.value})} />
+                </div>
+                
+                <div className="input-icon-group">
+                  <i className="fas fa-heading"></i>
+                  <input type="text" className="custom-input" placeholder="Display Name (Event Title)" 
+                         value={pageToEdit.name} onChange={(e) => setPageToEdit({...pageToEdit, name: e.target.value})} />
+                </div>
+
+                <div className="input-icon-group">
+                  <i className="fas fa-image"></i>
+                  <input type="text" className="custom-input" placeholder="Image URL (Optional)" 
+                         value={pageToEdit.image} onChange={(e) => setPageToEdit({...pageToEdit, image: e.target.value})} />
+                </div>
+                
+                <div className="input-icon-group" style={{marginBottom: "30px"}}>
+                  <i className="fas fa-link"></i>
+                  <input type="text" className="custom-input" placeholder="Filename / URL Path (Optional)" 
+                         value={pageToEdit.filename} onChange={(e) => setPageToEdit({...pageToEdit, filename: e.target.value})} />
+                </div>
+
+                <button className="btn" onClick={handleUpdatePage}>Update Details</button>
+                <button className="btn btn-cancel" onClick={() => setIsEditModalOpen(false)}>Cancel</button>
+             </div>
+          </div>
+
+        </React.Fragment>
+      );
+    }
+
+    window.mountReactApp = () => {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<PageAccessApp />);
+    };
+    if (window.firebaseIsReady) window.mountReactApp();
+  </script>
+</body>
+</html>

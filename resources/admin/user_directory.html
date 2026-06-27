@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Directory | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* === MINIMALIST PURE BLACK THEME === */
+    :root {
+        --bg-color: #000000;
+        --sidebar-bg: #050505;
+        --card-bg: #0a0a0a;
+        --text-main: #ffffff;
+        --text-muted: #888888;
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --input-bg: rgba(255, 255, 255, 0.03);
+        --accent-approve: #10b981; /* Minimalist Green */
+        --accent-decline: #ef4444; /* Minimalist Red */
+        --accent-pending: #f59e0b; /* Minimalist Yellow */
+        --sidebar-width: 280px; 
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* === TOP NAV & SIDEBAR STYLES (ZERO LAG) === */
+    .top-nav { width: 100%; padding: 18px 25px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 999; background: rgba(0, 0, 0, 0.9); border-bottom: var(--glass-border); }
+    .menu-trigger { font-size: 20px; cursor: pointer; color: var(--text-main); padding: 8px; border-radius: 8px; transition: background 0.2s; }
+    .menu-trigger:hover { background: rgba(255,255,255,0.1); }
+    .logo { font-weight: 700; letter-spacing: 0.5px; font-size: 18px; text-transform: uppercase; color: var(--text-main); }
+
+    .sidebar { 
+        position: fixed; top: 0; left: 0; transform: translate3d(-100%, 0, 0); width: var(--sidebar-width); height: 100%; 
+        background: var(--sidebar-bg); border-right: 1px solid #1a1a1a; z-index: 1001; transition: transform 0.25s ease-out; 
+        padding: 40px 20px; will-change: transform; 
+    }
+    .sidebar.active { transform: translate3d(0, 0, 0); }
+    
+    .sidebar-overlay { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; 
+        opacity: 0; pointer-events: none; transition: opacity 0.25s ease-out; will-change: opacity; 
+    }
+    .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .nav-btn { width: 100%; padding: 14px 18px; border-radius: 10px; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 15px; margin-bottom: 8px; font-size: 15px; font-weight: 500; text-decoration: none; }
+    .nav-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); transform: translate3d(4px, 0, 0); }
+    .nav-btn.active { background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent); color: var(--text-main); border-left: 3px solid var(--text-main); border-radius: 0 10px 10px 0; }
+    .nav-btn i { font-size: 16px; width: 20px; text-align: center; }
+
+    /* === MAIN CONTENT === */
+    .main-content {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 20px; width: 100%; max-width: 1200px; margin: 0 auto;
+      position: relative;
+      animation: slideUp 0.5s ease-out forwards;
+    }
+
+    @keyframes slideUp { 
+      from { opacity: 0; transform: translate3d(0, 20px, 0); } 
+      to { opacity: 1; transform: translate3d(0, 0, 0); } 
+    }
+
+    header { position: relative; text-align: center; margin-bottom: 40px; width: 100%; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+    p.subtitle { color: var(--text-muted); font-size: 16px; word-wrap: break-word; margin-bottom: 15px; }
+    
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+    .badge-approved { background: rgba(16, 185, 129, 0.1); color: var(--accent-approve); border: 1px solid rgba(16, 185, 129, 0.2); }
+    .badge-pending { background: rgba(245, 158, 11, 0.1); color: var(--accent-pending); border: 1px solid rgba(245, 158, 11, 0.2); }
+    .badge-rejected { background: rgba(239, 68, 68, 0.1); color: var(--accent-decline); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+    /* Controls: Search & Tabs */
+    .controls-container {
+      width: 100%; display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; align-items: center;
+    }
+
+    .search-wrapper {
+      position: relative; width: 100%; max-width: 600px;
+    }
+    .search-wrapper i {
+      position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px;
+    }
+    .search-input {
+      width: 100%; padding: 14px 20px 14px 50px; background: rgba(255, 255, 255, 0.02);
+      border: var(--glass-border); border-radius: 50px; color: var(--text-main); font-size: 15px;
+      outline: none; transition: 0.3s;
+    }
+    .search-input:focus { border-color: #ffffff; background: rgba(255, 255, 255, 0.05); }
+
+    .tabs {
+      display: flex; background: rgba(255, 255, 255, 0.02); border: var(--glass-border);
+      border-radius: 50px; padding: 5px; gap: 5px;
+    }
+    .tab-btn {
+      padding: 10px 25px; border: none; background: transparent; color: var(--text-muted);
+      border-radius: 40px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s;
+    }
+    .tab-btn.active { background: #ffffff; color: #000000; }
+    .tab-btn:hover:not(.active) { color: var(--text-main); background: rgba(255,255,255,0.05); }
+
+    /* Bulk Action Bar */
+    .bulk-action-bar {
+      width: 100%; max-width: 800px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translate3d(0, -10px, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+    .bulk-text { font-size: 14px; font-weight: 600; color: #ffffff; }
+    .btn-bulk-delete {
+      background: var(--accent-decline); color: #ffffff; border: none; border-radius: 8px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-bulk-delete:hover { background: #dc2626; transform: translate3d(0, -2px, 0); }
+
+    /* Scrollable Container */
+    .scroll-container {
+      width: 100%; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.01);
+      border: var(--glass-border); border-radius: 24px; padding: 20px; 
+    }
+    .scroll-container::-webkit-scrollbar { width: 8px; }
+    .scroll-container::-webkit-scrollbar-track { background: transparent; border-radius: 10px; }
+    .scroll-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    .scroll-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* Directory Grid */
+    .directory-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; width: 100%;
+    }
+
+    /* Cards */
+    .info-card {
+      background: var(--card-bg); border: var(--glass-border); border-radius: 20px;
+      padding: 20px; display: flex; flex-direction: column; gap: 15px; 
+      transition: transform 0.2s, border-color 0.2s; position: relative;
+    }
+    .info-card:hover { transform: translate3d(0, -3px, 0); border-color: rgba(255,255,255,0.15); }
+    .info-card.selected { border-color: var(--accent-decline); background: rgba(239, 68, 68, 0.03); }
+
+    .custom-checkbox {
+      appearance: none; width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 6px; background: rgba(255,255,255,0.02); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: 0.2s; outline: none;
+    }
+    .custom-checkbox:checked { background: var(--accent-decline); border-color: var(--accent-decline); }
+    .custom-checkbox:checked::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: white; font-size: 12px; }
+
+    .card-header-flex { display: flex; align-items: center; gap: 15px; }
+    
+    .profile-pic {
+      width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+      border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); flex-shrink: 0;
+    }
+    .avatar-placeholder {
+      width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--text-muted); flex-shrink: 0;
+    }
+
+    .user-primary-info { display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+    .info-name { font-size: 17px; font-weight: 700; color: var(--text-main); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+    .info-email { font-size: 12px; color: var(--text-muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+
+    .card-details {
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03);
+      border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .detail-row { display: flex; flex-direction: column; gap: 2px; }
+    .detail-label { font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
+    .detail-value { font-size: 13px; color: var(--text-main); word-break: break-all; }
+    .detail-value.uid-font { font-family: monospace; color: var(--text-muted); }
+
+    .card-actions {
+      display: flex; justify-content: flex-end; margin-top: 5px;
+      padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .btn-delete {
+      background: rgba(239, 68, 68, 0.1); color: var(--accent-decline);
+      border: 1px solid transparent; border-radius: 8px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: 0.2s; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-delete:hover { background: var(--accent-decline); color: #ffffff; }
+
+    .btn-select-all {
+      background: transparent; border: 1px solid rgba(255,255,255,0.2); color: var(--text-main);
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: 0.2s;
+      margin-bottom: 15px; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-select-all:hover { background: rgba(255,255,255,0.05); }
+
+    /* === UNIFORM EMPTY STATES (No Box Background) === */
+    .empty-state { text-align: center; color: var(--text-muted); padding: 40px; margin-top: 20px; font-style: normal; grid-column: 1 / -1; width: 100%;}
+    .empty-state i { font-size: 40px; margin-bottom: 15px; opacity: 0.5; color: var(--text-muted); }
+    .empty-state p { font-size: 16px; margin-bottom: 5px; }
+    .error-text { color: var(--accent-decline); margin-top: 10px; font-weight: 500; }
+
+    @media (max-width: 600px) {
+      .main-content { padding: 30px 15px; }
+      h1 { font-size: 26px; } 
+      .directory-grid { grid-template-columns: 1fr; }
+      .scroll-container { max-height: 65vh; padding: 15px; }
+      .bulk-action-bar { flex-direction: column; gap: 10px; text-align: center; }
+      .sidebar { width: 85%; }
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="root" style="width: 100%;"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, onValue, off, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+      authDomain: "tvnstream-b4497.firebaseapp.com",
+      databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+      projectId: "tvnstream-b4497",
+      storageBucket: "tvnstream-b4497.appspot.com",
+      messagingSenderId: "308384754214",
+      appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.db = getDatabase(app);
+    window.auth = getAuth(app);
+    window.fbRef = ref;
+    window.fbOnValue = onValue;
+    window.fbOff = off;
+    window.fbRemove = remove; 
+    window.fbOnAuthStateChanged = onAuthStateChanged;
+
+    window.firebaseIsReady = true;
+    if (typeof window.mountReactApp === 'function') window.mountReactApp();
+  </script>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useMemo } = React;
+
+    function UserDirectoryApp() {
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [isAdmin, setIsAdmin] = useState(false);
+      
+      const [usersData, setUsersData] = useState({});
+      const [requestsData, setRequestsData] = useState({});
+      
+      const [searchTerm, setSearchTerm] = useState("");
+      const [activeTab, setActiveTab] = useState("users");
+
+      const [selectedUsers, setSelectedUsers] = useState([]);
+      const [selectedRequests, setSelectedRequests] = useState([]);
+
+      useEffect(() => {
+        setSelectedUsers([]);
+        setSelectedRequests([]);
+      }, [activeTab, searchTerm]);
+
+      useEffect(() => {
+        const unsubscribeAuth = window.fbOnAuthStateChanged(window.auth, (currentUser) => {
+          setUser(currentUser);
+          if (currentUser) {
+            const myProfileRef = window.fbRef(window.db, `users/${currentUser.uid}`);
+            window.fbOnValue(myProfileRef, (snap) => {
+              const myData = snap.val();
+              if (myData && myData.role === 'admin') {
+                setIsAdmin(true);
+                
+                const usersRef = window.fbRef(window.db, 'users');
+                window.fbOnValue(usersRef, (usersSnap) => setUsersData(usersSnap.val() || {}));
+
+                const requestsRef = window.fbRef(window.db, 'joinRequests');
+                window.fbOnValue(requestsRef, (reqSnap) => setRequestsData(reqSnap.val() || {}));
+
+              } else {
+                setIsAdmin(false);
+              }
+              setAuthLoading(false);
+            });
+          } else {
+            setAuthLoading(false);
+            setIsAdmin(false);
+          }
+        });
+        return () => unsubscribeAuth();
+      }, []);
+
+      const filteredUsers = useMemo(() => {
+        const searchLower = searchTerm.toLowerCase();
+        return Object.entries(usersData)
+          .map(([uid, data]) => ({ uid, ...data }))
+          .filter(u => (u.name || "").toLowerCase().includes(searchLower) || 
+                       (u.email || "").toLowerCase().includes(searchLower) || 
+                       u.uid.toLowerCase().includes(searchLower));
+      }, [usersData, searchTerm]);
+
+      const filteredRequests = useMemo(() => {
+        const searchLower = searchTerm.toLowerCase();
+        return Object.entries(requestsData)
+          .map(([uid, data]) => ({ uid, ...data }))
+          .filter(r => (r.name || "").toLowerCase().includes(searchLower) || 
+                       (r.email || "").toLowerCase().includes(searchLower) || 
+                       r.uid.toLowerCase().includes(searchLower) || 
+                       (r.reason || "").toLowerCase().includes(searchLower));
+      }, [requestsData, searchTerm]);
+
+      const handleDeleteUser = async (uid, name) => {
+        if (window.confirm(`Delete user profile for ${name || uid}?`)) {
+          try {
+            await window.fbRemove(window.fbRef(window.db, `users/${uid}`));
+            setSelectedUsers(prev => prev.filter(id => id !== uid));
+          } catch (error) { alert("Failed to delete: " + error.message); }
+        }
+      };
+
+      const handleDeleteRequest = async (uid, name) => {
+        if (window.confirm(`Delete join request for ${name || uid}?`)) {
+          try {
+            await window.fbRemove(window.fbRef(window.db, `joinRequests/${uid}`));
+            setSelectedRequests(prev => prev.filter(id => id !== uid));
+          } catch (error) { alert("Failed to delete: " + error.message); }
+        }
+      };
+
+      const handleBulkDeleteUsers = async () => {
+        if (window.confirm(`Are you sure you want to delete ${selectedUsers.length} selected users?`)) {
+          try {
+            await Promise.all(selectedUsers.map(uid => window.fbRemove(window.fbRef(window.db, `users/${uid}`))));
+            setSelectedUsers([]);
+          } catch (error) { alert("Failed to bulk delete: " + error.message); }
+        }
+      };
+
+      const handleBulkDeleteRequests = async () => {
+        if (window.confirm(`Are you sure you want to delete ${selectedRequests.length} selected requests?`)) {
+          try {
+            await Promise.all(selectedRequests.map(uid => window.fbRemove(window.fbRef(window.db, `joinRequests/${uid}`))));
+            setSelectedRequests([]);
+          } catch (error) { alert("Failed to bulk delete: " + error.message); }
+        }
+      };
+
+      const toggleUserSelection = (uid) => {
+        setSelectedUsers(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+      };
+
+      const toggleRequestSelection = (uid) => {
+        setSelectedRequests(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+      };
+
+      const handleSelectAllUsers = () => {
+        if (selectedUsers.length === filteredUsers.length) {
+          setSelectedUsers([]); 
+        } else {
+          setSelectedUsers(filteredUsers.map(u => u.uid)); 
+        }
+      };
+
+      const handleSelectAllRequests = () => {
+        if (selectedRequests.length === filteredRequests.length) {
+          setSelectedRequests([]);
+        } else {
+          setSelectedRequests(filteredRequests.map(r => r.uid));
+        }
+      };
+
+      const getStatusBadge = (status) => {
+        const statLower = (status || "").toLowerCase();
+        if (statLower === 'approved') return 'badge-approved';
+        if (statLower === 'rejected') return 'badge-rejected';
+        return 'badge-pending';
+      };
+
+      return (
+        <React.Fragment>
+          {/* === HEADER / TOP NAV === */}
+          <nav className="top-nav">
+            <div className="menu-trigger" onClick={() => setSidebarOpen(true)}>
+              <i className="fas fa-bars-staggered"></i>
+            </div>
+            <div className="logo">ZONE VAULT</div>
+            <div style={{width: '36px'}}></div>
+          </nav>
+
+          {/* === SIDEBAR === */}
+          <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`} onClick={() => setSidebarOpen(false)}></div>
+          <aside className={`sidebar ${sidebarOpen ? 'active' : ''}`}>
+            <div style={{ marginBottom: '40px', paddingLeft: '15px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#fff' }}>Admin Panel</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Management Suite</p>
+            </div>
+            <a href="panel" className="nav-btn"><i className="fas fa-house"></i><span>Admin Home</span></a>
+            <a href="upload" className="nav-btn"><i className="fas fa-cloud-arrow-up"></i><span>Upload Video</span></a>
+            <a href="request_join" className="nav-btn"><i className="fas fa-user-plus"></i><span>Request Join</span></a>
+            <a href="notif" className="nav-btn"><i className="fas fa-bullhorn"></i><span>Notifications</span></a>
+            <a href="generator" className="nav-btn"><i className="fas fa-key"></i><span>Access Codes</span></a>
+            <a href="page_access" className="nav-btn"><i className="fas fa-shield-halved"></i><span>Page Access</span></a>
+            <a href="watch_history" className="nav-btn"><i className="fas fa-history"></i><span>Watch History</span></a>
+            <a href="user_directory" className="nav-btn active"><i className="fas fa-address-book"></i><span>User Directory</span></a>
+          </aside>
+
+          {/* === MAIN CONTENT === */}
+          <main className="main-content">
+            <header>
+              <p className="subtitle">
+                {user && isAdmin ? (
+                  <span>Logged in as Admin: <strong>{user.email}</strong></span>
+                ) : (
+                  "Manage registered users and join requests"
+                )}
+              </p>
+            </header>
+
+            {/* Empty State: Not Logged In */}
+            {!user && !authLoading && (
+              <div className="empty-state">
+                <i className="fas fa-lock"></i>
+                <p>You must be logged in to view this page.</p>
+                <p className="error-text">Please go back to the Login page and sign in first.</p>
+              </div>
+            )}
+
+            {/* Empty State: Loading */}
+            {user && authLoading && (
+              <div className="empty-state">
+                <i className="fas fa-spinner fa-spin"></i>
+                <p>Authenticating & Loading data...</p>
+              </div>
+            )}
+
+            {/* Empty State: Access Blocked / Not an Admin */}
+            {user && !authLoading && !isAdmin && (
+              <div className="empty-state">
+                <i className="fas fa-shield-lock" style={{ color: 'var(--accent-decline)' }}></i>
+                <h2 style={{ color: 'var(--accent-decline)', marginBottom: '5px', marginTop: '10px' }}>Access Denied</h2>
+                <p>You need admin privileges to view this page.</p>
+              </div>
+            )}
+
+            {/* Directory Interface (Only visible to Admins) */}
+            {user && !authLoading && isAdmin && (
+              <>
+                <div className="controls-container">
+                  <div className="search-wrapper">
+                    <i className="fas fa-search"></i>
+                    <input 
+                      type="text" 
+                      className="search-input" 
+                      placeholder="Search by name, email, or UID..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="tabs">
+                    <button className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+                      <i className="fas fa-users" style={{marginRight: '8px'}}></i>
+                      Registered ({filteredUsers.length})
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
+                      <i className="fas fa-envelope-open-text" style={{marginRight: '8px'}}></i>
+                      Requests ({filteredRequests.length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* === BULK ACTION FLOATING BAR === */}
+                {activeTab === 'users' && selectedUsers.length > 0 && (
+                  <div className="bulk-action-bar">
+                    <span className="bulk-text">{selectedUsers.length} user(s) selected</span>
+                    <button className="btn-bulk-delete" onClick={handleBulkDeleteUsers}>
+                      <i className="fas fa-trash-can"></i> Delete Selected
+                    </button>
+                  </div>
+                )}
+                
+                {activeTab === 'requests' && selectedRequests.length > 0 && (
+                  <div className="bulk-action-bar">
+                    <span className="bulk-text">{selectedRequests.length} request(s) selected</span>
+                    <button className="btn-bulk-delete" onClick={handleBulkDeleteRequests}>
+                      <i className="fas fa-trash-can"></i> Delete Selected
+                    </button>
+                  </div>
+                )}
+
+                <div className="scroll-container">
+                  
+                  {/* === USERS TAB === */}
+                  {activeTab === 'users' && (
+                    <>
+                      {filteredUsers.length > 0 && (
+                        <button className="btn-select-all" onClick={handleSelectAllUsers}>
+                          <i className={`fas ${selectedUsers.length === filteredUsers.length ? 'fa-check-square' : 'fa-square'}`}></i> 
+                          {selectedUsers.length === filteredUsers.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                      )}
+                      <div className="directory-grid">
+                        {filteredUsers.length === 0 ? (
+                          <div className="empty-state">
+                            <i className="fas fa-user-slash"></i>
+                            <h2 style={{color: 'var(--text-main)', fontSize: '20px', marginBottom: '5px'}}>No Users Found</h2>
+                          </div>
+                        ) : (
+                          filteredUsers.map((u) => {
+                            const isSelected = selectedUsers.includes(u.uid);
+                            return (
+                              <div className={`info-card ${isSelected ? 'selected' : ''}`} key={u.uid} onClick={() => toggleUserSelection(u.uid)} style={{cursor: 'pointer'}}>
+                                <div className="card-header-flex">
+                                  {/* NEW CHECKBOX */}
+                                  <input type="checkbox" className="custom-checkbox" checked={isSelected} readOnly onClick={(e) => e.stopPropagation()} onChange={() => toggleUserSelection(u.uid)} />
+                                  
+                                  {u.profilePicture ? (
+                                    <img src={u.profilePicture} alt={u.name} className="profile-pic" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}/>
+                                  ) : null}
+                                  <div className="avatar-placeholder" style={{ display: u.profilePicture ? 'none' : 'flex' }}>
+                                    <i className="fas fa-user"></i>
+                                  </div>
+                                  
+                                  <div className="user-primary-info">
+                                    <span className="info-name" title={u.name}>{u.name || 'Unknown Name'}</span>
+                                    <span className="info-email" title={u.email}>{u.email || 'No email provided'}</span>
+                                  </div>
+                                </div>
+
+                                <div className="card-details">
+                                  <div className="detail-row">
+                                    <span className="detail-label">User ID (UID)</span>
+                                    <span className="detail-value uid-font">{u.uid}</span>
+                                  </div>
+                                  {u.bio && (
+                                    <div className="detail-row" style={{marginTop: '4px'}}>
+                                      <span className="detail-label">Bio</span>
+                                      <span className="detail-value" style={{color: 'var(--text-muted)'}}>"{u.bio}"</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="card-actions" onClick={(e) => e.stopPropagation()}>
+                                  <button className="btn-delete" onClick={() => handleDeleteUser(u.uid, u.name)}>
+                                    <i className="fas fa-trash-can"></i> Delete
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* === REQUESTS TAB === */}
+                  {activeTab === 'requests' && (
+                    <>
+                      {filteredRequests.length > 0 && (
+                        <button className="btn-select-all" onClick={handleSelectAllRequests}>
+                          <i className={`fas ${selectedRequests.length === filteredRequests.length ? 'fa-check-square' : 'fa-square'}`}></i> 
+                          {selectedRequests.length === filteredRequests.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                      )}
+                      <div className="directory-grid">
+                        {filteredRequests.length === 0 ? (
+                          <div className="empty-state">
+                            <i className="fas fa-inbox"></i>
+                            <h2 style={{color: 'var(--text-main)', fontSize: '20px', marginBottom: '5px'}}>No Requests Found</h2>
+                          </div>
+                        ) : (
+                          filteredRequests.map((r) => {
+                            const isSelected = selectedRequests.includes(r.uid);
+                            return (
+                              <div className={`info-card ${isSelected ? 'selected' : ''}`} key={r.uid} onClick={() => toggleRequestSelection(r.uid)} style={{cursor: 'pointer'}}>
+                                <div className="card-header-flex" style={{justifyContent: 'flex-start'}}>
+                                  {/* NEW CHECKBOX */}
+                                  <input type="checkbox" className="custom-checkbox" checked={isSelected} readOnly onClick={(e) => e.stopPropagation()} onChange={() => toggleRequestSelection(r.uid)} />
+                                  
+                                  <div className="user-primary-info">
+                                    <span className="info-name" title={r.name}>{r.name || 'Unknown'}</span>
+                                    <span className="info-email" title={r.email}>{r.email || 'No email provided'}</span>
+                                  </div>
+                                  <span className={`status-badge ${getStatusBadge(r.status)}`} style={{marginLeft: 'auto'}}>
+                                    {r.status || 'Pending'}
+                                  </span>
+                                </div>
+
+                                <div className="card-details">
+                                  <div className="detail-row">
+                                    <span className="detail-label">User ID (UID)</span>
+                                    <span className="detail-value uid-font">{r.uid}</span>
+                                  </div>
+                                  <div className="detail-row" style={{marginTop: '4px'}}>
+                                    <span className="detail-label">Reason Code</span>
+                                    <span className="detail-value" style={{fontWeight: '500'}}>{r.reason || 'N/A'}</span>
+                                  </div>
+                                </div>
+                                
+                                <div className="card-actions" onClick={(e) => e.stopPropagation()}>
+                                  <button className="btn-delete" onClick={() => handleDeleteRequest(r.uid, r.name)}>
+                                    <i className="fas fa-trash-can"></i> Delete
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })
+                        )}
+                      </div>
+                    </>
+                  )}
+                  
+                </div>
+              </>
+            )}
+          </main>
+        </React.Fragment>
+      );
+    }
+
+    window.mountReactApp = () => {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<UserDirectoryApp />);
+    };
+    if (window.firebaseIsReady) window.mountReactApp();
+  </script>
+</body>
+</html>

@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Videos | Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script> 
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050505">
+
+  <meta name="apple-mobile-web-app-title" content="Zone Vault">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" sizes="192x192" href="favicon-new.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="favicon-new.png">
+  <link rel="apple-touch-startup-image" href="splash.png">
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1B2RJ659GL');
+  </script>
+
+  <script>
+    (function() {
+        function applyTheme(theme) {
+            if (theme === 'light' || theme === '#ffffff' || theme === 'white') {
+                document.documentElement.classList.add('light-mode');
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f0f2f5');
+            } else {
+                document.documentElement.classList.remove('light-mode');
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#050505');
+            }
+        }
+        const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme');
+        if (savedTheme) { applyTheme(savedTheme); } 
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) { applyTheme('light'); }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'zoneTheme' || e.key === 'zoneVaultTheme') { applyTheme(e.newValue); }
+        });
+    })();
+  </script>
+
+<style>
+    /* =========================================
+       1. VARIABLES & THEME DEFINITIONS
+       ========================================= */
+    :root {
+        /* Default DARK Theme */
+        --bg-color: #050505;
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --card-bg: rgba(20, 20, 20, 0.6);
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --accent: #ffffff;
+        --playlist-hover: rgba(255, 255, 255, 0.1);
+        --icon-color: #fff;
+    }
+
+    /* LIGHT Theme Override */
+    html.light-mode {
+        --bg-color: #f0f2f5;
+        --text-main: #1a1a1a;
+        --text-muted: #65676b;
+        --card-bg: rgba(255, 255, 255, 0.85);
+        --glass-border: 1px solid rgba(0, 0, 0, 0.05);
+        --accent: #000000;
+        --playlist-hover: rgba(0, 0, 0, 0.05);
+        --icon-color: #000;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* === LANDSCAPE FIX FOR MOBILE (Cinematic Mode) === */
+    @media (max-width: 900px) and (orientation: landscape) {
+        body {
+            padding: 0;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            background: #000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; }
+        .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .glass-card { border: none !important; background: transparent !important; box-shadow: none !important; width: 100%; border-radius: 0 !important; }
+        /* Hide UI elements in landscape */
+        #poster-container, h2, #playlist, .center-logo, .back-btn { display: none !important; }
+        #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; }
+        .art-video-player { width: 100% !important; height: 100% !important; }
+    }
+
+    /* Noise Texture Overlay */
+    .noise-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none; z-index: -1;
+    }
+
+    /* =========================================
+       2. LAYOUT
+       ========================================= */
+    .center-logo { display: flex; justify-content: center; margin-bottom: 20px; }
+    .center-logo img { width: 50px; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); border-radius: 12px; }
+
+    .main-layout {
+        max-width: 1400px; width: 100%; margin: 0 auto;
+        display: flex; flex-direction: column; gap: 20px;
+    }
+
+    /* Glass Card Style */
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border: var(--glass-border);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+        display: flex; flex-direction: column;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* Video Section */
+    .video-wrapper-left { flex: 3; width: 100%; }
+      
+    #poster-container {
+        width: 100%; aspect-ratio: 16/9;
+        background-size: cover; background-position: center;
+        background-image: url("https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/disney.png"); 
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        position: relative; border-radius: 12px;
+        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.3);
+    }
+
+    #poster-overlay {
+        background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 15px 30px; border-radius: 50px;
+        color: white; font-weight: 600; font-size: 16px;
+        pointer-events: none; text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* ARTPLAYER CONTAINER */
+    #player-container { 
+        display: none; 
+        width: 100%; 
+        aspect-ratio: 16/9;
+        border-radius: 12px; 
+        overflow: hidden; 
+        position: relative;
+        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
+        touch-action: none;
+    }
+      
+    .art-video-player { width: 100%; height: 100%; }
+
+    /* Fix for mobile touch */
+    .art-layer-mobile { pointer-events: auto !important; }
+
+    /* Titles */
+    h2 { font-size: 20px; font-weight: 600; margin: 20px 10px 10px; color: var(--text-main); }
+    h3.playlist-header { 
+        font-size: 14px; font-weight: 700; color: var(--text-muted); 
+        text-transform: uppercase; letter-spacing: 1.5px; padding: 20px; margin: 0;
+        border-bottom: var(--glass-border);
+    }
+
+    /* Playlist Section */
+    #playlist { flex: 1; min-width: 300px; width: 100%; }
+    #playlist-items { 
+        padding: 15px; 
+        max-height: 500px; 
+        overflow-y: auto; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 10px; 
+    }
+      
+    /* Scrollbar for playlist */
+    #playlist-items::-webkit-scrollbar { width: 6px; }
+    #playlist-items::-webkit-scrollbar-track { background: transparent; }
+    #playlist-items::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; opacity: 0.2; }
+
+    /* Playlist Items */
+    .playlist-item {
+        display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px;
+        background: transparent; border: 1px solid transparent;
+        transition: all 0.2s ease; cursor: pointer;
+    }
+    .playlist-item:hover { 
+        background: var(--playlist-hover); 
+        transform: translateY(-2px); 
+    }
+    .playlist-item.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+
+    .playlist-item img { width: 100px; height: 56px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .playlist-text { display: flex; flex-direction: column; }
+    .playlist-title { font-size: 13px; font-weight: 500; color: var(--text-main); line-height: 1.4; }
+    .playlist-status { font-size: 10px; font-weight: 700; color: #ff4444; margin-top: 4px; letter-spacing: 0.5px; }
+
+    /* Desktop Layout */
+    @media (min-width: 1000px) {
+        .main-layout { flex-direction: row; align-items: flex-start; }
+        .video-wrapper-left { margin-right: 0; }
+        #playlist { margin-top: 0; height: auto; }
+        .glass-card { height: auto; }
+        #playlist .glass-card { max-height: calc(100vh - 100px); }
+    }
+
+    /* Back Button */
+    .back-btn {
+        position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px;
+        background: var(--card-bg); backdrop-filter: blur(10px);
+        border: var(--glass-border); border-radius: 50%;
+        display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100;
+        cursor: pointer; text-decoration: none;
+    }
+    .back-btn:hover { background: var(--text-main); transform: scale(1.1); }
+    .back-btn svg { stroke: var(--text-main); transition: stroke 0.3s; }
+    .back-btn:hover svg { stroke: var(--bg-color); }
+
+    /* Access Denied Modal */
+    .access-denied-modal {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.9); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 11000; flex-direction: column; text-align: center;
+        backdrop-filter: blur(15px); padding: 20px; opacity: 0;
+        animation: fadeIn 0.5s forwards;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+      
+    .access-denied-modal button { 
+        margin-top: 20px; padding: 10px 25px; border-radius: 50px; 
+        background: transparent; border: 2px solid white; color: white; cursor: pointer;
+        font-weight: bold; transition: 0.3s;
+    }
+    .access-denied-modal button:hover { background: white; color: black; }
+
+    /* === SKIP INTRO BUTTON STYLE === */
+    .skip-intro-layer {
+        position: absolute;
+        bottom: 80px; /* Moves it above the bottom control bar */
+        right: 30px;
+        padding: 10px 20px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 4px;
+        cursor: pointer;
+        display: none; /* Hidden by default */
+        z-index: 90;
+        transition: background 0.2s, transform 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .skip-intro-layer:hover {
+        background: rgba(0, 0, 0, 0.9);
+        border-color: #fff;
+        transform: scale(1.05);
+    }
+    
+    /* Adjust for mobile landscape to ensure visibility */
+    @media (max-width: 900px) and (orientation: landscape) {
+        .skip-intro-layer {
+            bottom: 60px;
+            right: 40px; /* Safe area from edge */
+            font-size: 13px;
+            padding: 8px 16px;
+        }
+    }
+      
+  </style>
+</head>
+
+<body>
+
+<div class="noise-overlay"></div>
+
+<div class="center-logo">
+  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
+</div>
+
+<div class="main-layout">
+
+  <div class="video-wrapper-left">
+    <div class="glass-card video-card-container" style="padding: 0;">
+        
+        <div id="poster-container">
+          <div id="poster-overlay">Select an Episode</div>
+        </div>
+
+        <div id="player-container">
+           <div id="artplayer" class="art-video-player"></div>
+        </div>
+
+        <h2 id="main-title">Select Episode</h2>
+      
+    </div>
+  </div>
+
+  <div id="playlist">
+    <div class="glass-card">
+        <h3 class="playlist-header">Other Episodes</h3>
+        <div id="playlist-items">
+           </div>
+    </div>
+  </div>
+
+</div> 
+
+<a href="javascript:history.back()" class="back-btn">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
+</a>
+
+<script>
+// --- 1. CONFIG & PLAYLIST DATA ---
+// Added 'introEnd' to specify when the intro ends in seconds.
+// You can change '85' to whatever specific second you want the skip to jump to.
+const playlistData = [
+  { 
+    id: "1", 
+    title: "SEVENTEEN TOUR AGAIN DISNEY+", 
+    image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/disney.png",
+  }
+];
+
+const playlistContainer = document.getElementById('playlist-items');
+const posterContainer = document.getElementById('poster-container');
+const playerContainer = document.getElementById('player-container');
+const mainTitle = document.getElementById('main-title');
+window.currentEpData = null;
+let art = null; 
+
+// --- 2. FIREBASE SETUP ---
+const firebaseConfig = {
+  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+  authDomain: "tvnstream-b4497.firebaseapp.com",
+  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+  projectId: "tvnstream-b4497",
+  storageBucket: "tvnstream-b4497.appspot.com",
+  messagingSenderId: "308384754214",
+  appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+// --- 3. ARTPLAYER & LOGIC (INDEPENDENT HISTORY) ---
+function loadAndPlayEpisode(epId, updateUrl = true) {
+    // 1. Destroy old player immediately
+    if (art) {
+        art.destroy(false);
+        art = null;
+    }
+
+    const ep = playlistData.find(item => item.id === epId);
+    if (!ep) return;
+
+    // Date Locking Logic
+    const today = new Date();
+    if (ep.date) {
+        const releaseDate = new Date(ep.date);
+        if (releaseDate > today) {
+            alert(`This episode is not yet available.\nRelease Date: ${ep.date}`);
+            return; 
+        }
+    }
+
+    if (updateUrl) {
+        const newUrl = window.location.pathname + '?v=' + ep.id;
+        history.pushState({id: ep.id}, '', newUrl);
+    }
+
+    window.currentEpData = ep;
+    posterContainer.style.display = "none";
+    playerContainer.style.display = "block";
+
+    // --- IDENTIFY PAGE NAME FOR UNIQUE HISTORY ---
+    let pageIdentifier = window.location.pathname.split("/").pop().replace(".html", "");
+    if (!pageIdentifier || pageIdentifier === "") pageIdentifier = "videos"; 
+    
+    // Create Unique Key: VideoID_PageName
+    const uniqueHistoryKey = `${ep.id}_${pageIdentifier}`;
+
+    // Get Intro End Time (Default to 0 if not set)
+    const introEndTime = ep.introEnd || 0;
+    let hasSkippedIntro = false; // Flag to track if user clicked skip
+
+    // FETCH FROM YOUR ORIGINAL DB PATH
+    db.ref(`touragain/${ep.id}`).once('value').then(snapshot => {
+      const data = snapshot.val();
+      if(!data || !data.url) { alert("Video unavailable"); return; }
+
+      // Subtitles
+      let artSubtitles = [];
+      if (data.subtitles) {
+          Object.entries(data.subtitles).forEach(([lang, url]) => {
+              artSubtitles.push({
+                  html: lang.toUpperCase(),
+                  url: url,
+                  default: lang === 'en'
+              });
+          });
+      }
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      // INIT ARTPLAYER
+      art = new Artplayer({
+          container: '#artplayer',
+          url: data.url,
+          title: data.title || ep.title,
+          poster: ep.image,
+          volume: 0.5,
+          isLive: false,
+          muted: false,
+          autoplay: true,
+          autoOrientation: true,
+          lock: true,
+          fastForward: true,
+          fullscreen: true,
+          fullscreenWeb: true,
+          miniProgressBar: true,
+          mutex: true,
+          backdrop: true,
+          playsInline: true,
+          autoPlayback: true,
+          airplay: true,
+          theme: '#ff0057',
+          // === SKIP INTRO LAYER ===
+          layers: [
+            {
+                name: 'skipIntro',
+                html: 'Skip Intro',
+                style: {
+                    // Styles are now handled by CSS class .skip-intro-layer but Artplayer renders inline.
+                    // We apply inline styles here to ensure it works within Artplayer's shadow/container,
+                    // but we also rely on the CSS block for hover effects if class is attached.
+                    position: 'absolute',
+                    bottom: '80px', 
+                    right: '30px',
+                    padding: '10px 20px',
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '1px solid rgba(255,255,255,0.4)',
+                    color: 'white',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    display: 'none', // Hidden initially
+                    zIndex: '50',
+                    fontSize: '14px',
+                    textTransform: 'uppercase'
+                },
+                click: function () {
+                    // Logic when button is clicked
+                    this.seek = introEndTime;
+                    this.notice.show = 'Intro Skipped';
+                    hasSkippedIntro = true; // Mark as skipped
+                    this.layers.skipIntro.style.display = 'none'; // Hide button
+                }
+            }
+          ],
+          subtitle: {
+              url: artSubtitles.find(s => s.default)?.url || '',
+              type: 'vtt',
+              encoding: 'utf-8',
+              style: {
+                  color: '#fff',
+                  fontSize: isMobile ? '16px' : '18px', 
+                  textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000',
+                  background: 'none',
+                  marginBottom: isMobile ? '20px' : '10px'
+              }
+          },
+          moreVideoAttr: {
+              playsInline: true,
+              'webkit-playsinline': true,
+              'x5-video-player-type': 'h5',
+              'x5-video-player-fullscreen': 'true',
+              'x5-video-orientation': 'landscape'
+          },
+          customType: {
+              m3u8: function (video, url) {
+                  if (Hls.isSupported()) {
+                      const hls = new Hls();
+                      hls.loadSource(url);
+                      hls.attachMedia(video);
+                  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                      video.src = url;
+                  }
+              },
+          },
+      });
+
+      // === LOGIC TO SHOW/HIDE SKIP BUTTON ===
+      if (introEndTime > 0) {
+        art.on('video:timeupdate', () => {
+            // Only show if:
+            // 1. User has NOT clicked skip yet (hasSkippedIntro is false)
+            // 2. Current time is greater than 0
+            // 3. Current time is LESS than intro end time
+            if (!hasSkippedIntro && art.currentTime > 0 && art.currentTime < introEndTime) {
+                art.layers.skipIntro.style.display = 'block';
+            } else {
+                art.layers.skipIntro.style.display = 'none';
+            }
+        });
+      }
+
+      if(artSubtitles.length > 0) {
+          art.setting.add({
+              html: 'Subtitles',
+              width: 200,
+              selector: artSubtitles.map(s => {
+                  return { html: s.html, url: s.url, default: s.default };
+              }),
+              onSelect: function (item) {
+                  art.subtitle.switch(item.url, { name: item.html });
+                  return item.html;
+              },
+          });
+      }
+
+      // --- RESUME LOGIC (USING UNIQUE KEY) ---
+      const user = auth.currentUser;
+      if (user) {
+          db.ref('watchHistory/' + user.uid + '/' + uniqueHistoryKey).once('value').then(snap => {
+              const saved = snap.val();
+              if (saved && saved.currentTime > 0) {
+                  art.on('ready', () => {
+                      art.seek = saved.currentTime;
+                      // If resumed past the intro, ensure button is hidden
+                      if(saved.currentTime > introEndTime) {
+                         hasSkippedIntro = true;
+                      }
+                      art.play();
+                      art.notice.show = 'Resumed video';
+                  });
+              }
+          });
+      }
+
+      // --- SAVE HISTORY LOGIC (USING UNIQUE KEY) ---
+      let lastSave = 0;
+      art.on('video:timeupdate', () => {
+          const now = Date.now();
+          if (auth.currentUser && art && !art.video.paused && now - lastSave > 5000) {
+              const historyData = {
+                  id: ep.id,
+                  title: window.currentEpData.title,
+                  image: window.currentEpData.image,
+                  currentTime: art.currentTime,
+                  duration: art.duration || 0,
+                  timestamp: now,
+                  page: pageIdentifier
+              };
+              db.ref('watchHistory/' + auth.currentUser.uid + '/' + uniqueHistoryKey).update(historyData);
+              lastSave = now;
+          }
+      });
+
+      // Update Title
+      if(data.title) mainTitle.textContent = data.title;
+      else mainTitle.textContent = ep.title;
+      
+    }).catch(err => console.error(err));
+}
+
+// Browser Back Button
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.id) loadAndPlayEpisode(event.state.id, false);
+    else { 
+        posterContainer.style.display = "flex"; 
+        playerContainer.style.display = "none"; 
+        if(art) art.pause(); 
+    }
+});
+
+// Render Playlist
+playlistData.forEach(ep => {
+  const epDiv = document.createElement('div');
+  epDiv.className = 'playlist-item';
+
+  const today = new Date();
+  let isLocked = false;
+  if (ep.date) {
+      const releaseDate = new Date(ep.date);
+      if (releaseDate > today) isLocked = true;
+  }
+  if (isLocked) epDiv.classList.add('locked');
+
+  const img = document.createElement('img'); img.src = ep.image; img.loading="lazy";
+  
+  const textDiv = document.createElement('div'); textDiv.className = "playlist-text";
+  
+  const title = document.createElement('span'); title.className = "playlist-title"; title.textContent = ep.title;
+  textDiv.appendChild(title);
+
+  if (ep.status) {
+      const statusSpan = document.createElement('span');
+      statusSpan.className = "playlist-status";
+      statusSpan.textContent = ep.status;
+      textDiv.appendChild(statusSpan);
+      
+      if(ep.status === "NOT AVAILABLE") { epDiv.style.opacity = "0.6"; }
+  }
+
+  epDiv.appendChild(img); epDiv.appendChild(textDiv);
+  epDiv.addEventListener('click', () => loadAndPlayEpisode(ep.id, true));
+  playlistContainer.appendChild(epDiv);
+});
+
+// Check URL on Load
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('v');
+    if (videoId) {
+        setTimeout(() => loadAndPlayEpisode(videoId, false), 500);
+    }
+});
+</script>
+
+<script>
+  const allowedPaths = [
+    '/index.html',
+    '/home.html',
+    '/nanabnb.html',
+    '/newtour.html',
+    '/hxwfanconcert.html',
+    '/svtholiday.html',
+    '/arenatour.html',
+    '/svtjapanconcert.html',
+    '/touragain.html',
+    '/gallery.html',
+    '/profile.html',
+    '/soon.html'
+  ];
+
+  const currentPage = window.location.pathname;
+
+  // Check if user already has internalAccess flag
+  let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
+
+  // Check if user came from an allowed page
+  const referrer = document.referrer;
+  const refPath = referrer ? new URL(referrer).pathname : null;
+  const cameFromAllowedPage = refPath && allowedPaths.includes(refPath);
+
+  // Grant internalAccess if coming from allowed page
+  if (cameFromAllowedPage) {
+    sessionStorage.setItem('internalAccess', 'true');
+    hasInternalAccess = true;
+  }
+
+  // Allow access if user already has internalAccess or is on index page
+  const isIndexPage = currentPage.endsWith('index.html') || currentPage === '/';
+  if (!hasInternalAccess && !isIndexPage) {
+    showAccessDeniedModal();
+  }
+
+  function showAccessDeniedModal() {
+    const modal = document.createElement('div');
+    modal.className = 'access-denied-modal';
+    modal.innerHTML = `
+      <strong style="font-size: 24px; margin-bottom: 10px;">🚫 Access Denied</strong>
+      <div>You cannot access this page directly.<br>
+      Please go through the homepage or allowed sections.</div>
+      <div id="redirectTimer" style="margin-top:10px;">Redirecting in 3 seconds...</div>
+      <button onclick="goBack()">Go Back</button>
+    `;
+    document.body.appendChild(modal);
+
+    let countdown = 3;
+    const timer = document.getElementById('redirectTimer');
+    const interval = setInterval(() => {
+      countdown--;
+      timer.textContent = `Redirecting in ${countdown} seconds...`;
+      if (countdown <= 0) {
+        clearInterval(interval);
+        window.location.href = "index.html";
+      }
+    }, 1000);
+  }
+
+  function goBack() {
+    window.history.back();
+  }
+</script>
+
+</body>
+</html>

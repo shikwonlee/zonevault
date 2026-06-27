@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Events | Zone Vault</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+<link rel="icon" href="favicon-new.png" type="image/png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script> 
+
+<style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE (MODERN SOLID)
+       ========================================= */
+    :root {
+        --bg-color: #09090b; 
+        --card-bg: #18181b;  
+        --border-color: #27272a; 
+        --hover-bg: #27272a;
+        --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.6);
+
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --admin-color: #ef4444; 
+        --input-bg: #27272a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+
+    body {
+        background-color: var(--bg-color); color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+        margin: 0; padding: 0 0 40px 0; min-height: 100vh;
+    }
+
+    /* =========================================
+       2. TOP NAVIGATION
+       ========================================= */
+    .top-nav { 
+        display: flex; justify-content: space-between; align-items: center; 
+        padding: 16px 30px; border-bottom: 1px solid var(--border-color); 
+        background: var(--card-bg); margin-bottom: 30px;
+    }
+    .top-nav img { height: 28px; border-radius: 6px; }
+    
+    .user-badge { 
+        background: var(--input-bg); padding: 8px 16px; border-radius: 8px; 
+        font-size: 13px; font-weight: 600; border: 1px solid var(--border-color);
+        display: flex; align-items: center; gap: 8px; cursor: pointer;
+        transition: all 0.2s ease; color: var(--text-main);
+    }
+    .user-badge:hover { background: var(--hover-bg); transform: translateY(-1px); box-shadow: var(--shadow-subtle); border-color: var(--text-muted); }
+    .user-badge i.fa-user-circle { color: var(--status-online, #22c55e); font-size: 16px; }
+
+    /* =========================================
+       3. EVENTS GRID
+       ========================================= */
+    .events-grid { 
+        max-width: 1400px; margin: 0 auto; display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+        gap: 24px; padding: 0 30px; 
+    }
+    
+    .event-card { 
+        background: var(--card-bg); padding: 16px; border-radius: 16px; 
+        border: 1px solid var(--border-color); transition: 0.3s; 
+        overflow: hidden; display: flex; flex-direction: column; 
+        box-shadow: var(--shadow-subtle);
+    }
+    .event-card:hover { border-color: var(--text-muted); transform: translateY(-5px); box-shadow: var(--shadow-float); }
+    
+    .card-img-wrapper { 
+        position: relative; width: calc(100% + 32px); margin-left: -16px; margin-top: -16px; 
+        aspect-ratio: 16/9; overflow: hidden; border-radius: 16px 16px 0 0; 
+        border-bottom: 1px solid var(--border-color);
+    }
+    .event-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .event-card:hover img { transform: scale(1.05); }
+
+    .live-badge { 
+        position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.8); 
+        border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 700; 
+        text-transform: uppercase; color: #fff; border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .event-info { padding: 16px 0 0 0; flex: 1; display: flex; flex-direction: column; }
+    .event-type { font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;}
+    .event-type::before { content:''; display:inline-block; width: 8px; height: 8px; background: var(--admin-color); border-radius: 50%; animation: pulse 1.5s infinite;}
+    @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.5; transform: scale(0.8); } }
+    
+    .card-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; line-height: 1.4; color: var(--text-main);}
+    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: auto; }
+    .card-date { font-size: 12px; color: var(--text-muted); }
+    .card-date strong { color: var(--text-main); font-size: 13px; display: block; margin-top: 4px; }
+    
+    .enter-btn { 
+        background: var(--text-main); color: var(--bg-color); border: none; 
+        padding: 10px 18px; border-radius: 8px; font-weight: 700; 
+        cursor: pointer; transition: 0.2s; font-size: 13px; font-family: inherit;
+    }
+    .enter-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+    /* =========================================
+       4. MODALS (SECURITY & PROFILE)
+       ========================================= */
+    #security-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: var(--bg-color); z-index: 9999; 
+        display: flex; align-items: center; justify-content: center;
+    }
+    #security-overlay p { font-size: 16px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 10px; }
+
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 10000; display: none; 
+        align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { opacity: 1; display: flex; }
+    
+    .modal-box {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        padding: 0; border-radius: 16px; width: 92%; max-width: 400px; 
+        color: var(--text-main); box-shadow: var(--shadow-float); position: relative;
+        transform: translateY(10px); transition: transform 0.2s ease;
+    }
+    .modal-overlay.active .modal-box { transform: translateY(0); }
+
+    .modal-header {
+        padding: 20px 25px; border-bottom: 1px solid var(--border-color);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+    .close-modal { 
+        background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted); 
+        width: 32px; height: 32px; border-radius: 50%; font-size: 16px; 
+        cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .close-modal:hover { background: var(--hover-bg); color: var(--text-main); }
+
+    .modal-body { padding: 25px; display: flex; flex-direction: column; }
+    
+    .input-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+    .styled-input { 
+        width: 100%; padding: 14px; border-radius: 8px; background: var(--input-bg); 
+        border: 1px solid var(--border-color); color: var(--text-main); 
+        outline: none; font-family: inherit; font-size: 14px; margin-bottom: 20px; transition: 0.2s;
+    }
+    .styled-input:focus { border-color: var(--text-muted); }
+
+    .btn-save {
+        background: var(--text-main); color: var(--bg-color); border: none; 
+        padding: 14px; border-radius: 8px; font-weight: 700; font-family: inherit;
+        cursor: pointer; transition: 0.2s; font-size: 14px;
+    }
+    .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    @media (max-width: 768px) {
+        .top-nav { padding: 15px 20px; margin-bottom: 20px; }
+        .events-grid { padding: 0 20px; grid-template-columns: 1fr; }
+    }
+</style>
+</head>
+<body>
+
+<div id="security-overlay">
+    <p><i class="fas fa-circle-notch fa-spin" style="color: var(--text-main);"></i> Checking authorization...</p>
+</div>
+
+<div id="profileModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Edit Profile</div>
+            <button class="close-modal" onclick="closeProfileModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <label class="input-label">Display Name</label>
+            <input type="text" id="profileNameInput" class="styled-input" placeholder="Enter display name">
+            <button class="btn-save" id="saveProfileBtn" onclick="saveProfileName()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div class="top-nav">
+    <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
+    <div class="user-badge" onclick="openProfileModal()">
+        <i class="fas fa-user-circle"></i> 
+        <span id="welcome-msg-text">Loading...</span> 
+        <i class="fas fa-caret-down" style="font-size: 12px; margin-left: 4px; color: var(--text-muted);"></i>
+    </div>
+</div>
+
+<div class="events-grid" id="events-list"></div>
+
+<script>
+// Prevent Right-Click
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAeaQVRzcL9qvGRKpqGyPKolTMltieN3zU",
+  authDomain: "notif-bfe68.firebaseapp.com",
+  databaseURL: "https://notif-bfe68-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "notif-bfe68",
+  storageBucket: "notif-bfe68.firebasestorage.app",
+  messagingSenderId: "417377105074",
+  appId: "1:417377105074:web:bf27cd8dbbf0cc101005ab"
+};
+firebase.initializeApp(firebaseConfig);
+
+const dbRealtime = firebase.database();
+let storedUser = localStorage.getItem("zone_vault_user");
+
+// --- INITIALIZATION & SECURITY CHECK ---
+if (!storedUser) { 
+    window.location.href = "index.html"; 
+} else {
+    // Check if approved
+    dbRealtime.ref("approved_users/" + storedUser).once("value").then((snapshot) => {
+        if (snapshot.exists()) {
+            document.getElementById("security-overlay").style.display = "none";
+            loadUserProfile(); // Fetch the custom display name
+            loadLiveEvents();
+        } else {
+            alert("This account is not approved. Redirecting...");
+            window.location.href = "index.html"; 
+        }
+    }).catch((error) => {
+        console.error("Database Error:", error);
+        alert("Error verifying account. Please try again.");
+    });
+}
+
+// --- PROFILE LOGIC ---
+function loadUserProfile() {
+    // We store display names in a separate 'user_profiles' node to avoid messing up admin validation
+    dbRealtime.ref("user_profiles/" + storedUser).once("value").then((snap) => {
+        let displayName = storedUser; // Default fallback is their auth ID
+        
+        if (snap.exists() && snap.val().displayName) {
+            displayName = snap.val().displayName;
+        }
+        
+        document.getElementById("welcome-msg-text").innerText = displayName;
+        document.getElementById("profileNameInput").value = displayName;
+    });
+}
+
+function openProfileModal() {
+    document.getElementById('profileModal').classList.add('active');
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').classList.remove('active');
+}
+
+function saveProfileName() {
+    const newName = document.getElementById('profileNameInput').value.trim();
+    const btn = document.getElementById('saveProfileBtn');
+    
+    if (!newName) {
+        alert("Name cannot be empty.");
+        return;
+    }
+
+    btn.innerText = "Saving...";
+    btn.style.opacity = "0.7";
+    btn.disabled = true;
+
+    dbRealtime.ref("user_profiles/" + storedUser).update({
+        displayName: newName
+    }).then(() => {
+        document.getElementById("welcome-msg-text").innerText = newName;
+        btn.innerText = "Save Changes";
+        btn.style.opacity = "1";
+        btn.disabled = false;
+        closeProfileModal();
+    }).catch((error) => {
+        console.error(error);
+        alert("Error saving profile.");
+        btn.innerText = "Save Changes";
+        btn.style.opacity = "1";
+        btn.disabled = false;
+    });
+}
+
+// --- LIVE EVENTS LOGIC ---
+function loadLiveEvents() {
+    dbRealtime.ref('live_events').on('value', (snapshot) => {
+        const container = document.getElementById("events-list");
+        container.innerHTML = "";
+        
+        if (!snapshot.exists()) {
+            container.innerHTML = '<p style="color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 40px; border: 1px dashed var(--border-color); border-radius: 16px;">No live events currently scheduled.</p>';
+            return;
+        }
+
+        snapshot.forEach((child) => {
+            const ev = child.val();
+            const id = child.key;
+            const targetPage = ev.player_page || 'live_stream.html';
+            
+            const card = document.createElement("div");
+            card.className = "event-card";
+            card.innerHTML = `
+                <div class="card-img-wrapper">
+                    <img src="${ev.image}" alt="Event Poster">
+                    <div class="live-badge">LIVE</div>
+                </div>
+                <div class="event-info">
+                    <div class="event-type">LIVE</div>
+                    <div class="card-title">${ev.title}</div>
+                    <div class="card-bottom">
+                        <div class="card-date">Scheduled:<br><strong>${ev.date} at ${ev.time}</strong></div>
+                        <button class="enter-btn" onclick="checkEventAccessAndEnter('${id}', '${targetPage}')">ENTER EVENT</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    });
+}
+
+function checkEventAccessAndEnter(eventId, targetPage) {
+    dbRealtime.ref(`event_access/${eventId}/${storedUser}`).once('value').then((snap) => {
+        if (snap.val() === true) {
+            window.location.href = `${targetPage}?v=${eventId}&u=${storedUser}`;
+        } else {
+            alert(`You do not have a ticket/access to view this specific event.\nPlease contact administration.`);
+        }
+    });
+}
+</script>
+</body>
+</html>

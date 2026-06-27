@@ -136,8 +136,8 @@
        ========================================= */
     .artplayer-watermark {
         position: absolute;
-        top: 20px; /* Desktop: Ibinaba pa ng kaunti (from 25px) */
-        right: 2px; /* Desktop: Ibinalik pa-right (from 15px) */
+        top: 25px; /* Desktop: Ibinaba ng kaunti */
+        right: 15px; /* Desktop: Ibinalik sa original na gilid */
         width: 55px; /* SIZE FOR DESKTOP */
         opacity: 0.4;
         pointer-events: none;
@@ -150,15 +150,15 @@
     @media (max-width: 768px) {
         .artplayer-watermark {
             width: 30px; 
-            top: 10px; /* Mobile: Itinaas pa ng kaunti */
-            right: 50px; /* Mobile: Dagdag margin sa right para hindi siksik */
+            top: 5px; /* Mobile: Itinaas ng kaunti */
+            right: 25px; /* Mobile: Nilagyan ng margin sa right para umusog pa-left */
         }
     }
 
     /* MARGIN ADJUSTMENT WHEN FULLSCREEN IS ACTIVE */
     .artplayer-watermark.is-fullscreen {
         top: 30px;
-        right: 90px; /* Right margin para pumasok sa loob at tumawid sa black bars */
+        right: 80px; /* Right margin para pumasok sa loob at tumawid sa black bars */
     }
 
     /* Extra safe margin for Mobile Landscape Fullscreen (iPhones with notches) */

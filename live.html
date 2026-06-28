@@ -17,40 +17,35 @@
        1. VARIABLES & THEME ENGINE (MODERN SOLID)
        ========================================= */
     :root {
-        /* SOLID DARK THEME (MATTE) */
         --bg-color: #09090b; 
         --card-bg: #18181b;  
         --border-color: #27272a; 
         --hover-bg: #27272a;
         --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
         --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.6);
-
         --text-main: #ffffff;
         --text-muted: #a1a1aa;
-        
         --accent: #ffffff;
         --status-online: #22c55e;
         --admin-color: #ef4444; 
         --youtube-red: #ff0000;
-        
         --sidebar-width-collapsed: 64px; 
         --sidebar-width-expanded: 220px; 
-        
         --input-bg: #27272a;
+        --link-color: #3b82f6;
     }
 
     body.light-mode {
-        /* SOLID LIGHT THEME (MATTE) */
         --bg-color: #f4f4f5;
         --card-bg: #ffffff;
         --border-color: #e4e4e7;
         --hover-bg: #f4f4f5;
         --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
         --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.08);
-
         --text-main: #18181b;
         --text-muted: #71717a;
         --input-bg: #f4f4f5;
+        --link-color: #2563eb;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -156,69 +151,99 @@
     .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
     /* =========================================
-       4. LIVE CARD GRID (SOLID STYLES)
+       4. NEW LIVESTREAM NOTICE STYLES
        ========================================= */
-    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-top: 40px; }
+    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-top: 40px; display: flex; justify-content: center; align-items: center; min-height: 80vh;}
     
-    .page-title {
-        font-size: 28px; font-weight: 800; margin-bottom: 20px; padding: 0 40px;
-        text-transform: uppercase; letter-spacing: 1px; color: var(--text-main);
+    .notice-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 50px 40px;
+        max-width: 650px;
+        width: 90%;
+        text-align: center;
+        box-shadow: var(--shadow-float);
+        animation: fadeIn 0.4s ease;
     }
-    
-    /* ---- LIVE BROADCAST DIVIDER ---- */
-    .live-divider {
-        display: flex; align-items: center; padding: 0 40px; margin-top: 40px; margin-bottom: 25px; width: 100%;
+    .notice-box h2 {
+        font-size: 26px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        color: var(--text-main);
+        letter-spacing: 0.5px;
     }
-    .live-divider span {
-        font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
-        color: var(--text-muted); margin-right: 15px; white-space: nowrap;
+    .notice-box p {
+        font-size: 16px;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 20px;
     }
-    .live-divider .line {
-        flex-grow: 1; height: 1px; background: linear-gradient(to right, var(--border-color), transparent);
+    .notice-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--hover-bg);
+        color: var(--link-color);
+        padding: 14px 28px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 16px;
+        margin: 15px 0 25px;
+        border: 1px solid var(--border-color);
+        transition: 0.3s;
+        cursor: pointer;
     }
-
-    /* Grid Layouts */
-    .grid-container {
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
-        gap: 20px; padding: 0 40px; animation: fadeIn 0.4s ease;
-    }
-
-    .video-card {
-        background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
-        overflow: hidden; display: flex; flex-direction: column;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; position: relative;
+    .notice-link:hover {
+        background: var(--border-color);
+        transform: translateY(-3px);
         box-shadow: var(--shadow-subtle);
     }
-    .video-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-float); border-color: var(--text-muted); }
-
-    .thumb-wrapper {
-        position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden;
-        border-bottom: 1px solid var(--border-color);
+    .notice-footer {
+        font-weight: 600;
+        color: var(--text-main);
     }
-    .thumb-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
-    .video-card:hover .thumb-wrapper img { transform: scale(1.05); }
 
-    .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+    /* LINK CONFIRMATION MODAL */
+    .link-modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        display: none; align-items: center; justify-content: center;
+        z-index: 10001;
+        backdrop-filter: blur(4px);
+    }
+    .link-modal-overlay.active { display: flex; animation: fadeIn 0.2s ease forwards;}
     
-    .video-meta { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600;}
-    .video-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; line-height: 1.4; flex-grow: 1; }
-    .video-hashtags { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; opacity: 0.8; }
-
-    .card-actions { margin-top: auto; }
-    
-    .btn-watch {
-        background: var(--text-main); color: var(--bg-color);
-        border: none; padding: 12px; border-radius: 8px;
-        font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s ease; width: 100%;
-        text-transform: uppercase; letter-spacing: 0.5px; font-family: inherit;
+    .link-modal-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        padding: 35px 30px;
+        border-radius: 16px;
+        max-width: 380px;
+        width: 90%;
+        text-align: center;
+        box-shadow: var(--shadow-float);
     }
-    .btn-watch:hover { opacity: 0.9; transform: translateY(-1px); }
-
-    .countdown-badge {
-        position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8);
-        color: white; font-size: 11px; padding: 4px 10px; border-radius: 6px;
-        border: 1px solid rgba(255,255,255,0.2); font-weight: 600;
+    .link-modal-card h3 { 
+        font-size: 20px; 
+        margin-bottom: 15px; 
+        color: var(--text-main); 
     }
+    .link-modal-card p { 
+        font-size: 14px; 
+        color: var(--text-muted); 
+        line-height: 1.5; 
+        margin-bottom: 25px; 
+    }
+    .link-btn-group { display: flex; gap: 12px; justify-content: center; }
+    .link-btn {
+        padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; font-size: 14px; flex: 1;
+    }
+    .btn-cancel { background: var(--hover-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-cancel:hover { background: var(--border-color); }
+    .btn-confirm { background: var(--text-main); color: var(--bg-color); }
+    .btn-confirm:hover { opacity: 0.9; transform: translateY(-2px); }
 
     /* ACCESS DENIED */
     .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 10000; }
@@ -278,8 +303,6 @@
         }
         
         .main-wrapper { padding-top: 80px; padding-bottom: 40px; }
-        .page-title, .grid-container, .live-divider { padding: 0 20px; } 
-        .grid-container { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -393,16 +416,28 @@
 </div>
 
 <div class="main-wrapper fade-in">
-    <h1 class="page-title">Live Events</h1>
-
-    <div id="grid" class="grid-container"></div>
-
-    <div class="live-divider">
-        <span>Live Broadcast</span>
-        <div class="line"></div>
+    <div class="notice-box">
+        <h2>📢 Livestream Notice</h2>
+        <p>To provide a smoother, faster, and more reliable viewing experience, all livestream events have been moved to our new dedicated livestream page.</p>
+        
+        <a class="notice-link" onclick="showLinkModal()">
+            🔗 New Live Page: stream.zonevault.live
+        </a>
+        
+        <p>Starting today, all upcoming livestreams will be available on our new livestream page.</p>
+        <div class="notice-footer">Thank you for choosing Zone Vault! 💙</div>
     </div>
+</div>
 
-    <div id="grid-broadcast" class="grid-container"></div>
+<div id="linkConfirmModal" class="link-modal-overlay">
+    <div class="link-modal-card">
+        <h3>Open External Link?</h3>
+        <p>You are about to leave this page and navigate to our new dedicated livestream site. Do you want to continue?</p>
+        <div class="link-btn-group">
+            <button class="link-btn btn-cancel" onclick="closeLinkModal()">Cancel</button>
+            <button class="link-btn btn-confirm" onclick="confirmLink()">Yes, open it</button>
+        </div>
+    </div>
 </div>
 
 <script type="module" src="/js/live.js"></script>

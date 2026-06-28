@@ -29,7 +29,6 @@ onValue(maintenanceRef, (snapshot) => {
     const currentPage = window.location.pathname;
 
     if (isUnderMaintenance === true && !currentPage.includes('maintenance')) {
-        // BAGO: I-save kung nasaan sila bago mag-maintenance
         sessionStorage.setItem('returnPage', window.location.href);
         window.location.href = 'maintenance';
     } 
@@ -53,7 +52,7 @@ function updateDynamicURL(uid, role, status) {
 }
 
 // ==========================================
-// 3. UI THEMES & TOGGLES
+// 3. UI THEMES, TOGGLES & MODALS
 // ==========================================
 function initTheme() {
     const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
@@ -74,6 +73,19 @@ window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
         signOut(auth).then(() => window.location.replace("index"));
     }
+}
+
+// --- NEW LINK MODAL LOGIC ---
+window.showLinkModal = function() {
+    document.getElementById('linkConfirmModal').classList.add('active');
+}
+window.closeLinkModal = function() {
+    document.getElementById('linkConfirmModal').classList.remove('active');
+}
+window.confirmLink = function() {
+    closeLinkModal();
+    // Opens the new site in a new tab
+    window.open('https://stream.zonevault.live/', '_blank');
 }
 
 // ==========================================
@@ -129,111 +141,7 @@ window.toggleNotifModal = function() {
 }
 
 // ==========================================
-// 5. LIVE EVENT DATA & RENDER
-// ==========================================
-const liveData = [
-  {
-      id: "v10", 
-      thumb: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", 
-      category: "LIVE", 
-      title: "DAY 1 - DxS [Serenade] ON STAGE - INCHEON", 
-      hashtags: "April 17, 18 & 19 2026", 
-      link: "live_stream/dxs_serenade_on_stage_incheon"
-  },
-  {
-      id: "v9", 
-      thumb: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/9_s7stpb.png", 
-      category: "LIVE", 
-      title: "SEVENTEEN WORLD TOUR [NEW_] ENCORE", 
-      hashtags: "April 04 & 05 2026", 
-      link: "live_stream/seventeen_world_tour_new_tour_encore"
-  }
-];
-
-const broadcastData = [
-  {
-      id: "b1", 
-      thumb: "https://uploads.onecompiler.io/43ddry4jt/44d9cktck/tbs-channel-1-jp.png", 
-      category: "JAPAN TV CHANNEL", 
-      title: "TBS Channel 1", 
-      hashtags: "", 
-      link: "livebroadcast/live1"
-  },
-  {
-      id: "b2", 
-      thumb: "https://uploads.onecompiler.io/43ddry4jt/44d98kevu/Screenshot%202026-02-11%20115433.png", 
-      category: "KOREAN TV CHANNEL", 
-      title: "MBC", 
-      hashtags: "", 
-      link: "livebroadcast/live2"
-  },
-  {
-      id: "b3", 
-      thumb: "https://uploads.onecompiler.io/43ddry4jt/44d98kevu/download.webp", 
-      category: "KOREAN TV CHANNEL", 
-      title: "Channel A", 
-      hashtags: "", 
-      link: "livebroadcast/live3"
-  }
-];
-
-const grid = document.getElementById("grid");
-const gridBroadcast = document.getElementById("grid-broadcast");
-
-function renderGrid(container, items, btnLabel = "ENTER EVENT") {
-    if(!container) return;
-    container.innerHTML = "";
-    if(items.length === 0) {
-        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">No events found.</div>';
-        return;
-    }
-     
-    items.forEach(item => {
-        const el = document.createElement("div");
-        el.className = "video-card";
-        
-        el.innerHTML = `
-          <div class="thumb-wrapper">
-            <img src="${item.thumb}" loading="lazy" alt="${item.title}">
-            <div class="countdown-badge" data-date="${item.releaseDate || ''}"></div>
-          </div>
-          <div class="card-body">
-            <div class="video-meta">${item.category}</div>
-            <div class="video-title">${item.title}</div>
-            <div class="video-hashtags">${item.hashtags}</div>
-            <div class="card-actions">
-                <button class="btn-watch" onclick="window.location.href='${item.link}'">${btnLabel}</button>
-            </div>
-          </div>
-        `;
-        container.appendChild(el);
-    });
-    startCountdown();
-}
-
-function startCountdown() {
-    document.querySelectorAll(".countdown-badge").forEach(elem => {
-        const dateStr = elem.dataset.date;
-        if (!dateStr) { elem.style.display='none'; return; }
-        const endDate = new Date(dateStr);
-        
-        const update = () => {
-            const now = new Date();
-            const diff = endDate - now;
-            if (diff <= 0) { elem.textContent = "Available Now"; return; }
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            elem.textContent = `${days}d left`;
-        };
-        update();
-    });
-}
-
-// Initial Render for BOTH grids
-renderGrid(grid, liveData, "ENTER EVENT");
-renderGrid(gridBroadcast, broadcastData, "WATCH NOW");
-
-// ==========================================
-// 6. AUTH & SECURITY LOGIC
+// 5. AUTH & SECURITY LOGIC
 // ==========================================
 window.isKickedOut = false; // Initialize flag for security modal
 

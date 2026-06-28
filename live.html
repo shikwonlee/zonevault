@@ -420,7 +420,7 @@
         <h2>📢 Livestream Notice</h2>
         <p>To provide a smoother, faster, and more reliable viewing experience, all livestream events have been moved to our new dedicated livestream page.</p>
         
-        <a class="notice-link" onclick="showLinkModal()">
+        <a id="open-link-trigger" class="notice-link">
             🔗 New Live Page: stream.zonevault.live
         </a>
         
@@ -434,8 +434,8 @@
         <h3>Open External Link?</h3>
         <p>You are about to leave this page and navigate to our new dedicated livestream site. Do you want to continue?</p>
         <div class="link-btn-group">
-            <button class="link-btn btn-cancel" onclick="closeLinkModal()">Cancel</button>
-            <button class="link-btn btn-confirm" onclick="confirmLink()">Yes, open it</button>
+            <button id="cancel-link-btn" class="link-btn btn-cancel">Cancel</button>
+            <button id="confirm-link-btn" class="link-btn btn-confirm">Yes, open it</button>
         </div>
     </div>
 </div>

@@ -14,7 +14,7 @@
 
   <style>
     /* =========================================
-       1. VARIABLES & THEME ENGINE
+       1. VARIABLES & THEME ENGINE (MODERN SOLID)
        ========================================= */
     :root {
         --bg-color: #09090b; 
@@ -160,7 +160,7 @@
         border: 1px solid var(--border-color);
         border-radius: 16px;
         padding: 50px 40px;
-        max-width: 650px;
+        max-width: 550px;
         width: 90%;
         text-align: center;
         box-shadow: var(--shadow-float);
@@ -169,42 +169,50 @@
     .notice-box h2 {
         font-size: 26px;
         font-weight: 800;
-        margin-bottom: 15px;
+        margin-bottom: 25px;
         color: var(--text-main);
         letter-spacing: 0.5px;
     }
+
+    /* THE NEW LINK BOX STYLING */
+    .link-container {
+        background: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        padding: 16px 20px;
+        border-radius: 12px;
+        margin: 0 auto 30px auto;
+        cursor: pointer;
+        display: block;
+        max-width: 380px;
+        transition: 0.2s ease;
+        text-decoration: none;
+    }
+    .link-container:hover {
+        border-color: var(--text-muted);
+        transform: translateY(-2px);
+    }
+    .link-title {
+        color: var(--text-main);
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .link-url {
+        color: var(--link-color);
+        font-size: 16px;
+        font-weight: 700;
+    }
+
     .notice-box p {
         font-size: 16px;
         color: var(--text-muted);
         line-height: 1.6;
         margin-bottom: 20px;
     }
-    .notice-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        background: var(--hover-bg);
-        color: var(--link-color);
-        padding: 14px 28px;
-        border-radius: 12px;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 16px;
-        margin: 0 0 25px; /* Adjusted margin to push it below the title */
-        border: 1px solid var(--border-color);
-        transition: 0.3s;
-        cursor: pointer;
-        user-select: none; /* Prevents text highlighting on double click */
-    }
-    .notice-link:hover {
-        background: var(--border-color);
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-subtle);
-    }
     .notice-footer {
-        font-weight: 600;
+        font-weight: 700;
         color: var(--text-main);
+        margin-top: 10px;
     }
 
     /* LINK CONFIRMATION MODAL */
@@ -417,13 +425,18 @@
     </div>
 </div>
 
+<!-- =========================================
+     NEW LIVESTREAM NOTICE
+     ========================================= -->
 <div class="main-wrapper fade-in">
     <div class="notice-box">
         <h2>📢 Livestream Notice</h2>
         
-        <a id="open-link-trigger" href="javascript:void(0)" class="notice-link">
-            New Live Page: stream.zonevault.live
-        </a>
+        <!-- The Clickable Link Box is now placed at the top as requested -->
+        <div class="link-container" onclick="showLinkModal()">
+            <div class="link-title">🔗 New Live Page:</div>
+            <div class="link-url">stream.zonevault.live</div>
+        </div>
 
         <p>To provide a smoother, faster, and more reliable viewing experience, all livestream events have been moved to our new dedicated livestream page.</p>
         <p>Starting today, all upcoming livestreams will be available on our new livestream page.</p>
@@ -431,16 +444,33 @@
     </div>
 </div>
 
+<!-- =========================================
+     EXTERNAL LINK CONFIRMATION MODAL
+     ========================================= -->
 <div id="linkConfirmModal" class="link-modal-overlay">
     <div class="link-modal-card">
         <h3>Open External Link?</h3>
         <p>You are about to leave this page and navigate to our new dedicated livestream site. Do you want to continue?</p>
         <div class="link-btn-group">
-            <button id="cancel-link-btn" class="link-btn btn-cancel">Cancel</button>
-            <button id="confirm-link-btn" class="link-btn btn-confirm">Yes, open it</button>
+            <button class="link-btn btn-cancel" onclick="closeLinkModal()">Cancel</button>
+            <button class="link-btn btn-confirm" onclick="confirmLink()">Yes, open it</button>
         </div>
     </div>
 </div>
+
+<!-- BULLETPROOF INLINE SCRIPT FOR THE MODAL -->
+<script>
+    function showLinkModal() {
+        document.getElementById('linkConfirmModal').classList.add('active');
+    }
+    function closeLinkModal() {
+        document.getElementById('linkConfirmModal').classList.remove('active');
+    }
+    function confirmLink() {
+        document.getElementById('linkConfirmModal').classList.remove('active');
+        window.open('https://stream.zonevault.live/', '_blank');
+    }
+</script>
 
 <script type="module" src="/js/live.js"></script>
 

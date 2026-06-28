@@ -78,32 +78,35 @@ window.logout = function() {
 // ==========================================
 // --- NEW LINK MODAL LOGIC (FIXED) ---
 // ==========================================
-const linkTrigger = document.getElementById('open-link-trigger');
-const cancelLinkBtn = document.getElementById('cancel-link-btn');
-const confirmLinkBtn = document.getElementById('confirm-link-btn');
-const linkModal = document.getElementById('linkConfirmModal');
+document.addEventListener("DOMContentLoaded", () => {
+    const linkTrigger = document.getElementById('open-link-trigger');
+    const cancelLinkBtn = document.getElementById('cancel-link-btn');
+    const confirmLinkBtn = document.getElementById('confirm-link-btn');
+    const linkModal = document.getElementById('linkConfirmModal');
 
-// 1. Open the modal when the link is clicked
-if (linkTrigger) {
-    linkTrigger.addEventListener('click', () => {
-        linkModal.classList.add('active');
-    });
-}
+    // Open the modal when the link is clicked
+    if (linkTrigger && linkModal) {
+        linkTrigger.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevents default link behavior just in case
+            linkModal.classList.add('active');
+        });
+    }
 
-// 2. Close the modal when 'Cancel' is clicked
-if (cancelLinkBtn) {
-    cancelLinkBtn.addEventListener('click', () => {
-        linkModal.classList.remove('active');
-    });
-}
+    // Close the modal when 'Cancel' is clicked
+    if (cancelLinkBtn && linkModal) {
+        cancelLinkBtn.addEventListener('click', () => {
+            linkModal.classList.remove('active');
+        });
+    }
 
-// 3. Open the new tab when 'Yes' is clicked
-if (confirmLinkBtn) {
-    confirmLinkBtn.addEventListener('click', () => {
-        linkModal.classList.remove('active');
-        window.open('https://stream.zonevault.live/', '_blank');
-    });
-}
+    // Open the new tab when 'Yes' is clicked
+    if (confirmLinkBtn && linkModal) {
+        confirmLinkBtn.addEventListener('click', () => {
+            linkModal.classList.remove('active');
+            window.open('https://stream.zonevault.live/', '_blank');
+        });
+    }
+});
 
 // ==========================================
 // 4. NOTIFICATIONS

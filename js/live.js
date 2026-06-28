@@ -75,17 +75,34 @@ window.logout = function() {
     }
 }
 
-// --- NEW LINK MODAL LOGIC ---
-window.showLinkModal = function() {
-    document.getElementById('linkConfirmModal').classList.add('active');
+// ==========================================
+// --- NEW LINK MODAL LOGIC (FIXED) ---
+// ==========================================
+const linkTrigger = document.getElementById('open-link-trigger');
+const cancelLinkBtn = document.getElementById('cancel-link-btn');
+const confirmLinkBtn = document.getElementById('confirm-link-btn');
+const linkModal = document.getElementById('linkConfirmModal');
+
+// 1. Open the modal when the link is clicked
+if (linkTrigger) {
+    linkTrigger.addEventListener('click', () => {
+        linkModal.classList.add('active');
+    });
 }
-window.closeLinkModal = function() {
-    document.getElementById('linkConfirmModal').classList.remove('active');
+
+// 2. Close the modal when 'Cancel' is clicked
+if (cancelLinkBtn) {
+    cancelLinkBtn.addEventListener('click', () => {
+        linkModal.classList.remove('active');
+    });
 }
-window.confirmLink = function() {
-    closeLinkModal();
-    // Opens the new site in a new tab
-    window.open('https://stream.zonevault.live/', '_blank');
+
+// 3. Open the new tab when 'Yes' is clicked
+if (confirmLinkBtn) {
+    confirmLinkBtn.addEventListener('click', () => {
+        linkModal.classList.remove('active');
+        window.open('https://stream.zonevault.live/', '_blank');
+    });
 }
 
 // ==========================================

@@ -52,7 +52,7 @@ function updateDynamicURL(uid, role, status) {
 }
 
 // ==========================================
-// 3. UI THEMES, TOGGLES & MODALS
+// 3. UI THEMES & TOGGLES
 // ==========================================
 function initTheme() {
     const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
@@ -74,39 +74,6 @@ window.logout = function() {
         signOut(auth).then(() => window.location.replace("index"));
     }
 }
-
-// ==========================================
-// --- NEW LINK MODAL LOGIC (FIXED) ---
-// ==========================================
-document.addEventListener("DOMContentLoaded", () => {
-    const linkTrigger = document.getElementById('open-link-trigger');
-    const cancelLinkBtn = document.getElementById('cancel-link-btn');
-    const confirmLinkBtn = document.getElementById('confirm-link-btn');
-    const linkModal = document.getElementById('linkConfirmModal');
-
-    // Open the modal when the link is clicked
-    if (linkTrigger && linkModal) {
-        linkTrigger.addEventListener('click', (e) => {
-            e.preventDefault(); // Prevents default link behavior just in case
-            linkModal.classList.add('active');
-        });
-    }
-
-    // Close the modal when 'Cancel' is clicked
-    if (cancelLinkBtn && linkModal) {
-        cancelLinkBtn.addEventListener('click', () => {
-            linkModal.classList.remove('active');
-        });
-    }
-
-    // Open the new tab when 'Yes' is clicked
-    if (confirmLinkBtn && linkModal) {
-        confirmLinkBtn.addEventListener('click', () => {
-            linkModal.classList.remove('active');
-            window.open('https://stream.zonevault.live/', '_blank');
-        });
-    }
-});
 
 // ==========================================
 // 4. NOTIFICATIONS

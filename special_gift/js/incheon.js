@@ -153,26 +153,26 @@ function showAccessDeniedModal() {
 //  is reused directly for previewing AND downloading)
 // ==========================================
 const images = [
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20SeungcheoL.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Joshua.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Jun.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Dk.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Mingyu.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20The8.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Seungkwan.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Vernon.png",
-    "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Dino.png"
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20SeungcheoL.png", link: "https://drive.usercontent.google.com/download?id=1OG3WFMM3_wVHYgwAKs8g-vD6JOMjePv4&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Joshua.png", link: "https://drive.usercontent.google.com/download?id=1uRA1BOzoyWB0HuUB0vY53YtNALAF2RuE&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Jun.png", link: "https://drive.usercontent.google.com/download?id=12w_pB2MSM6b_hr9WkxLv0QkqUZyJgz0E&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Dk.png", link: "https://drive.usercontent.google.com/download?id=1alWIYhSIWVyLjZacZToQ9gC2GlX9S1q3&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Mingyu.png", link: "https://drive.usercontent.google.com/download?id=1Cwix_pCLX0WQZhYageQFiUPkCrt1UQFs&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20The8.png", link: "https://drive.usercontent.google.com/download?id=1vJpEknyO9qW6LgNJ2_JB3oX3QYtXD0jF&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Seungkwan.png", link: "https://drive.usercontent.google.com/download?id=15ERl4v3WbiAZNM_GCOVzakIZOkTcxSRR&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Vernon.png", link: "https://drive.usercontent.google.com/download?id=1o_UJBprWKYfPj8m0J3Sm6Sy0jFH4MsR6&export=download" },
+    { src: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20Dino.png", link: "https://drive.usercontent.google.com/download?id=19y3lzbjIkZ0BaacQIyLmwl3cvleMAKvc&export=download" }
 ];
 
 function renderGallery() {
     const container = document.getElementById('grid-category');
     if(!container) return;
     container.innerHTML = "";
-    images.forEach((src, index) => {
+    images.forEach((item, index) => {
         const div = document.createElement("div");
         div.className = "gallery-item";
-        const filename = decodeURIComponent(src).split('/').pop().replace(/\.(jpg|png|jpeg)/i, '');
-        div.innerHTML = `<img src="${src}" alt="${filename}" loading="lazy">`;
+        const filename = decodeURIComponent(item.src).split('/').pop().replace(/\.(jpg|png|jpeg)/i, '');
+        div.innerHTML = `<img src="${item.src}" alt="${filename}" loading="lazy">`;
         div.onclick = () => window.openLightbox(index);
         container.appendChild(div);
     });
@@ -183,9 +183,9 @@ function renderThumbnails() {
     const thumbContainer = document.getElementById('lightbox-thumbs');
     if(!thumbContainer) return;
     thumbContainer.innerHTML = '';
-    images.forEach((src, index) => {
+    images.forEach((item, index) => {
         const img = document.createElement('img');
-        img.src = src;
+        img.src = item.src;
         img.className = 'lb-thumb';
         img.id = `thumb-${index}`;
         img.onclick = () => window.openLightbox(index);
@@ -289,28 +289,19 @@ if(lightbox) {
     });
 }
 
-window.downloadImage = async function() {
-    // Uses the image's own Cloudinary / GitHub link directly (no Google Drive).
-    // Cross-origin images ignore the plain `download` attribute (the browser
-    // just opens them in a new tab instead), so fetch the bytes as a blob and
-    // download that instead - this forces an actual file download.
-    const src = images[currentImageIndex];
-    const filename = decodeURIComponent(src).split('/').pop() || "ZoneVault_Image.jpg";
-    try {
-        const response = await fetch(src, { mode: 'cors' });
-        if (!response.ok) throw new Error('Fetch failed: ' + response.status);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-        console.error('Direct download blocked, opening image in a new tab instead:', err);
-        window.open(src, '_blank');
+window.downloadImage = function() {
+    // Uses the Google Drive direct-download link for this image instead of
+    // fetching the file ourselves. This avoids the CORS / opaque-response /
+    // service-worker interference entirely - Drive handles the download on
+    // its own page, which the browser then saves normally on any device
+    // (phone or desktop), matching how collection.js already does it.
+    const item = images[currentImageIndex];
+    if (item.link) {
+        window.open(item.link, '_blank');
+    } else {
+        // No Drive link available for this image - fall back to opening
+        // the image file itself.
+        window.open(item.src, '_blank');
     }
 }
 
@@ -318,8 +309,8 @@ function updateLightboxImage() {
     if (currentImageIndex < 0) currentImageIndex = images.length - 1;
     else if (currentImageIndex >= images.length) currentImageIndex = 0;
     resetZoom(); 
-    const src = images[currentImageIndex];
-    if(lightboxImg) lightboxImg.src = src;
+    const item = images[currentImageIndex];
+    if(lightboxImg) lightboxImg.src = item.src;
     highlightThumbnail(currentImageIndex);
 }
 

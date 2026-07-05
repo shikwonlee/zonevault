@@ -221,50 +221,70 @@ function loadPlayer(index) {
     const container = document.getElementById('video-player-container');
     if (!container) return;
 
-    art = new Artplayer({
-        container: '#video-player-container',
-        url: item.src,
-        type: 'm3u8',
-        theme: '#ffffff',
-        autoplay: true,
-        autoSize: false,
-        autoMini: false,
-        loop: false,
-        flip: false,
-        playbackRate: false,
-        aspectRatio: false,
-        setting: true,
-        hotkey: true,
-        pip: false,
-        mutex: true,
-        fullscreen: false,      // disable browser fullscreen button
-        fullscreenWeb: false,   // disable web fullscreen button
-        subtitleOffset: false,
-        miniProgressBar: false,
-        playsInline: true,
-        lang: 'en',
-        // Volume control is built into ArtPlayer's default controls (icon + slider)
-        volume: 0.7,
-        customType: {
-            m3u8: function (video, url) {
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(url);
-                    hls.attachMedia(video);
-                    video.hls = hls;
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = url;
-                }
+    try {
+        art = new Artplayer({
+            container: '#video-player-container',
+            url: item.src,
+            type: 'm3u8',
+            theme: '#ffffff',
+            autoplay: true,
+            autoSize: false,
+            autoMini: false,
+            loop: false,
+            flip: false,
+            playbackRate: false,
+            aspectRatio: false,
+            setting: true,
+            hotkey: true,
+            pip: false,
+            mutex: true,
+            fullscreen: false,      // disable browser fullscreen button
+            fullscreenWeb: false,   // disable web fullscreen button
+            subtitleOffset: false,
+            miniProgressBar: false,
+            playsInline: true,
+            lang: 'en',
+            volume: 0.7,
+            customType: {
+                m3u8: function (video, url, art) {
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(url);
+                        hls.attachMedia(video);
+                        video.hls = hls;
+
+                        // Build the quality options straight from the HLS manifest's
+                        // own bitrate levels, and expose them as a "Quality" entry
+                        // inside ArtPlayer's settings (gear) panel.
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                            const levelOptions = hls.levels.map((level, i) => ({
+                                html: level.height ? `${level.height}p` : `Level ${i + 1}`,
+                                value: i,
+                            }));
+                            levelOptions.unshift({ html: 'Auto', value: -1, default: true });
+
+                            art.setting.add({
+                                html: 'Quality',
+                                width: 200,
+                                tooltip: 'Auto',
+                                icon: '<i class="fas fa-sliders-h" style="color:#fff;"></i>',
+                                selector: levelOptions,
+                                onSelect: function (selectedItem) {
+                                    hls.currentLevel = selectedItem.value;
+                                    return selectedItem.html;
+                                },
+                            });
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = url;
+                    }
+                },
             },
-        },
-        plugins: [
-            artplayerPluginHlsQualityControl({
-                title: 'Quality',
-                auto: 'Auto',
-                setting: true, // show quality option inside the settings/quality button
-            }),
-        ],
-    });
+        });
+    } catch (err) {
+        console.error('ArtPlayer failed to initialize:', err);
+        container.innerHTML = `<div style="color:#fff; padding:20px; text-align:center;">Video failed to load. Please try again.</div>`;
+    }
 }
 
 window.downloadVideo = function() {

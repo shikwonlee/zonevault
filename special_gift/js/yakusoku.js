@@ -162,7 +162,7 @@ const images = [
     { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783266524/photo_2026-07-05_23-05-46_xf6phq.jpg", link: "#" },
     { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783266524/photo_2026-07-05_23-05-51_qhhh5v.jpg", link: "#" },
     { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783266524/photo_2026-07-05_23-05-53_ffqvfc.jpg", link: "#" },
-    { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783266525/photo_2026-07-05_23-05-38_boo3sw.jpg", link: "#" },
+    { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783266525/photo_2026-07-05_23-05-38_boo3sw.jpg", link: "#" }
 ];
 
 function renderGallery() {

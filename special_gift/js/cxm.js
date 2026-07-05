@@ -284,27 +284,47 @@ if(lightbox) {
 
 window.downloadImage = async function() {
     // Uses the image's own Cloudinary / GitHub link directly (no Google Drive).
-    // Cross-origin images ignore the plain `download` attribute (the browser
-    // just opens them in a new tab instead), so fetch the bytes as a blob and
-    // download that instead - this forces an actual file download.
     const src = images[currentImageIndex];
     const filename = decodeURIComponent(src).split('/').pop() || "ZoneVault_Image.jpg";
+
+    let blob;
     try {
         const response = await fetch(src, { mode: 'cors' });
         if (!response.ok) throw new Error('Fetch failed: ' + response.status);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
+        blob = await response.blob();
     } catch (err) {
-        console.error('Direct download blocked, opening image in a new tab instead:', err);
+        // Could not fetch the bytes (network/CORS issue) - last resort, open the
+        // image directly so the person can at least long-press / save manually.
+        console.error('Could not fetch image for download:', err);
         window.open(src, '_blank');
+        return;
     }
+
+    // On phones (especially iOS Safari) the browser ignores the `download`
+    // attribute for images and just opens them in a new tab instead of saving
+    // them. The native Share Sheet is the reliable way to get a real
+    // "Save Image / Save to Photos" option on mobile, so use it when available.
+    const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share({ files: [file], title: filename });
+            return;
+        } catch (shareErr) {
+            if (shareErr && shareErr.name === 'AbortError') return; // person cancelled the share sheet
+            // otherwise fall through and try a direct download below
+        }
+    }
+
+    // Desktop (and any mobile browser without the Share Sheet API): save the
+    // blob straight to the device's Downloads folder.
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
 }
 
 function updateLightboxImage() {

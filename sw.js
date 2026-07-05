@@ -1,7 +1,7 @@
 // ==========================================
 // 1. CONFIGURATION & CACHING
 // ==========================================
-const CACHE_NAME = 'zonevault-v233'; // BUMPED VERSION TO FORCE REFRESH (v207 -> v208)
+const CACHE_NAME = 'zonevault-v250'; // BUMPED VERSION TO FORCE REFRESH (v207 -> v208)
 const urlsToCache = [
   './',
   './index.html',

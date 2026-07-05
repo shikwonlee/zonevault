@@ -153,7 +153,7 @@ function showAccessDeniedModal() {
 //  is reused directly for previewing AND downloading)
 // ==========================================
 const images = [
-    { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783267073/DXS_SERENADE_DK_SPECIAL_GIFT_aosirx.png: "#" },
+    { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783267073/DXS_SERENADE_DK_SPECIAL_GIFT_aosirx.png", link "#" },
     { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783267073/DXS_SERENADE_SEUNGKWAN_SPECIAL_GIFTS_nvooyg.png", link: "#" }
 ];
 

@@ -204,10 +204,12 @@ function showAccessDeniedModal() {
 // ==========================================
 const categoryMenu = [
     { title: "2026 SVT 10TH FAN MEETING ", href: "/special_gift/caratland_2026", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783219918/8f5acef9e251a0dcbc61d351b16a947d12e03aa275cfddc18fa9e0b568b14526_jzaen9.jpg" },
+    { title: "SVT [NEW_] ENCORE ", href: "/special_gift/new_encore", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783260162/Screenshot_2026-07-05_220228_zduqgo.png" },
     { title: "CXM [DOUBLE UP] LIVE PARTY", href: "/special_gift/cxm", thumb: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169310/photo_2026-02-15_23-28-20_rvbfv2.jpg" },
     { title: "FUKUOKA SHOW SPECIAL GIFTS", href: "/special_gift/fukuoka", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_fukuokanewtour/%5BFUKUOKA%20SHOW%5D%20Group.jpg" },
     { title: "OSAKA SHOW SPECIAL GIFTS", href: "/special_gift/osaka", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_osakanewtour/%5BOSAKA%20TOUR%5D%20Group.jpg" },
     { title: "INCHEON SPECIAL GIFTS", href: "/special_gift/incheon", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20SeungcheoL.png" },
+    { title: "WARNING GWANGJU SPECIAL GIFTS", href: "/special_gift/hoshixwoozi", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783259446/4b31a01d9c7706e49171fe247c099d8a31fb0ea0ebfc6c3a4e7452b6680aa9761_goqrhd.png" },
     { title: "WARNING SEOUL SPECIAL GIFTS", href: "/special_gift/warning", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_warninginseoul/%5BWARNING%5D%20Spacial%20Gifts%20Hoshi.png" },
     { title: "HOLIDAY FANMEETING GIFTS", href: "/special_gift/holiday", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_holiday/%5BHOLIDAY%5D%20Spacial%20Gifts%20%20Groups.jpg" },
     { title: "RIGHT HERE WORLD TOUR GIFTS", href: "/special_gift/righthere", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_righthere/%5BRIGHT%20HERE%5D%20Spacial%20Gifts%20Seungcheol.jpg" }

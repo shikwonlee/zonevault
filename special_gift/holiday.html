@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>HOLIDAY FANMEETING GIFTS | Zone Vault</title>
+  <title>OSAKA SHOW SPECIAL GIFTS | Zone Vault</title>
    
   <link rel="icon" href="/favicon-new.png" type="image/png" />
   <link rel="manifest" href="/manifest.json">
@@ -193,17 +193,21 @@
     }
     .cat-title-overlay h3 { margin: 0; font-size: 16px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    /* IMAGE GALLERIES */
+    /* IMAGE GALLERIES - sized per each image's own aspect ratio (no forced square crop) */
     .collection-section { animation: fadeIn 0.4s ease; padding: 0 40px; }
-    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+    .gallery-grid {
+        display: flex; flex-wrap: wrap; gap: 15px;
+        justify-content: center; /* centers each row, and centers a lone image */
+    }
 
     .gallery-item {
-        position: relative; aspect-ratio: 1/1; border-radius: 12px;
+        position: relative; border-radius: 12px; height: 260px;
         overflow: hidden; cursor: pointer; border: 1px solid var(--border-color);
         background: var(--card-bg); transition: transform 0.2s ease, border-color 0.2s ease;
+        display: flex; align-items: center; justify-content: center;
     }
     .gallery-item:hover { transform: scale(1.03); border-color: var(--text-main); z-index: 2; box-shadow: var(--shadow-subtle); }
-    .gallery-item img { width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: opacity 0.3s; }
+    .gallery-item img { height: 100%; width: auto; max-width: 100%; object-fit: contain; display: block; transition: opacity 0.3s; }
 
     /* LIGHTBOX (SOLID / DARK) */
     .lightbox-overlay {
@@ -292,7 +296,8 @@
         
         .category-menu-grid, .collection-section { padding: 0 20px; }
         .page-title { padding: 0 20px; font-size: 24px; }
-        .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .gallery-grid { gap: 10px; }
+        .gallery-item { height: 160px; }
         .cat-card { aspect-ratio: 4/3; }
     }
 
@@ -312,10 +317,6 @@
          <span>ZONE VAULT</span>
     </div>
     <div style="display: flex; gap: 10px; pointer-events: auto;">
-        <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">
-            <i class="fas fa-bell"></i>
-            <span id="notif-badge-mobile" class="badge"></span>
-        </a>
         <button class="header-btn" onclick="toggleMobileSidebar()">
             <i class="fas fa-bars"></i>
         </button>
@@ -397,25 +398,10 @@
     </div>
 </aside>
 
-<a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">
-    <i class="fas fa-bell"></i>
-    <span id="notif-badge" class="badge"></span>
-</a>
-
-<div id="notifModal" class="notif-modal">
-    <div class="notif-header">
-        <span>Notifications</span>
-        <i class="fas fa-check-double" style="cursor:pointer;" title="Mark all read"></i>
-    </div>
-    <div id="notif-list">
-        <div class="notif-empty">Loading notifications...</div>
-    </div>
-</div>
-
 
 <div class="main-wrapper fade-in">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 40px;">
-        <h1 class="page-title" style="padding:0; margin:0;">SEVENTEEN 2025 JAPAN FANMEETING 'HOLIDAY' SPECIAL GIFTS</h1>
+        <h1 class="page-title" style="padding:0; margin:0;">SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Osaka Show SPECIAL GIFTS</h1>
         <a href="/collection" class="back-to-cat-btn" style="display: inline-flex;">
             <i class="fas fa-arrow-left"></i> Back to Collections
         </a>
@@ -444,7 +430,7 @@
     </div>
 </div>
 
-<script type="module" src="/special_gift/js/holiday.js"></script>
+<script type="module" src="/special_gift/js/osaka.js"></script>
 
 </body>
 </html>

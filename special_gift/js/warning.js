@@ -82,59 +82,7 @@ window.logout = function() {
 }
 
 // ==========================================
-// 4. NOTIFICATIONS
-// ==========================================
-const notifList = document.getElementById('notif-list');
-let latestNotifTimestamp = 0;
-const notifQuery = query(ref(db, 'notifications'), limitToLast(10));
-
-onValue(notifQuery, snapshot => {
-    if(!notifList) return;
-    notifList.innerHTML = ''; 
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        const notifs = Object.values(data).reverse(); 
-        
-        notifs.forEach(n => {
-            const item = document.createElement('div');
-            item.className = 'notif-item';
-            item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
-            notifList.appendChild(item);
-            if(n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
-        });
-
-        const lastRead = localStorage.getItem('lastReadNotif') || 0;
-        const badgeDesktop = document.getElementById('notif-badge');
-        const badgeMobile = document.getElementById('notif-badge-mobile');
-        
-        if (latestNotifTimestamp > lastRead) {
-            if(badgeDesktop) badgeDesktop.classList.add('active');
-            if(badgeMobile) badgeMobile.classList.add('active');
-        } else {
-            if(badgeDesktop) badgeDesktop.classList.remove('active');
-            if(badgeMobile) badgeMobile.classList.remove('active');
-        }
-    } else {
-        notifList.innerHTML = '<div class="notif-empty">No new notifications</div>';
-    }
-});
-
-window.toggleNotifModal = function() {
-    const modal = document.getElementById('notifModal');
-    const badgeDesktop = document.getElementById('notif-badge');
-    const badgeMobile = document.getElementById('notif-badge-mobile');
-    
-    if(!modal) return;
-    modal.classList.toggle('active');
-    if (modal.classList.contains('active')) {
-        if(badgeDesktop) badgeDesktop.classList.remove('active');
-        if(badgeMobile) badgeMobile.classList.remove('active');
-        localStorage.setItem('lastReadNotif', latestNotifTimestamp);
-    }
-}
-
-// ==========================================
-// 5. AUTH & SECURITY LOGIC
+// 4. AUTH & SECURITY LOGIC
 // ==========================================
 onAuthStateChanged(auth, user => {
     if(user) {
@@ -334,17 +282,29 @@ if(lightbox) {
     });
 }
 
-window.downloadImage = function() {
-    // Uses the image's own Cloudinary / GitHub link directly (no Google Drive)
+window.downloadImage = async function() {
+    // Uses the image's own Cloudinary / GitHub link directly (no Google Drive).
+    // Cross-origin images ignore the plain `download` attribute (the browser
+    // just opens them in a new tab instead), so fetch the bytes as a blob and
+    // download that instead - this forces an actual file download.
     const src = images[currentImageIndex];
     const filename = decodeURIComponent(src).split('/').pop() || "ZoneVault_Image.jpg";
-    const link = document.createElement('a');
-    link.href = src;
-    link.download = filename;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+        const response = await fetch(src, { mode: 'cors' });
+        if (!response.ok) throw new Error('Fetch failed: ' + response.status);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+        console.error('Direct download blocked, opening image in a new tab instead:', err);
+        window.open(src, '_blank');
+    }
 }
 
 function updateLightboxImage() {

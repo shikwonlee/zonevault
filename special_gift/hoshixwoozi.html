@@ -14,8 +14,7 @@
 
   <!-- ArtPlayer -->
   <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/artplayer-plugin-hls-quality-control@latest/dist/artplayer-plugin-hls-quality-control.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 
   <style>
 
@@ -141,12 +140,13 @@
     /* VIDEO GALLERY */
     .collection-section { animation: fadeIn 0.4s ease; padding: 0 40px; }
     .gallery-grid {
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 20px;
+        display: flex; flex-wrap: wrap; gap: 20px;
+        justify-content: center; /* centers each row, and centers a lone video */
     }
 
     .video-card {
         position: relative; border-radius: 14px; aspect-ratio: 16/9;
+        width: 380px; max-width: 100%;
         overflow: hidden; cursor: pointer; border: 1px solid var(--border-color);
         background: #000; transition: transform 0.2s ease, border-color 0.2s ease;
         display: flex; align-items: center; justify-content: center;
@@ -255,7 +255,8 @@
         
         .category-menu-grid, .collection-section { padding: 0 20px; }
         .page-title { padding: 0 20px; font-size: 24px; }
-        .gallery-grid { gap: 12px; grid-template-columns: 1fr; }
+        .gallery-grid { gap: 12px; }
+        .video-card { width: 100%; }
     }
 
   </style>
@@ -358,7 +359,7 @@
 
 <div class="main-wrapper fade-in">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 40px;">
-        <h1 class="page-title" style="padding:0; margin:0;">HXW FAN CONCERT WARNING GWANGJU WOOZI SPECIAL GIFT</h1>
+        <h1 class="page-title" style="padding:0; margin:0;">HXW FAN CONCERT WARNING GWANGJU WOOZI SPECIAL GIFT DAY PASS SPECIAL GIFTS</h1>
         <a href="/videos" class="back-to-cat-btn">
             <i class="fas fa-arrow-left"></i> Back to Videos
         </a>

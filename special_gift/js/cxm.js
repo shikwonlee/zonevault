@@ -153,19 +153,19 @@ function showAccessDeniedModal() {
 //  is reused directly for previewing AND downloading)
 // ==========================================
 const images = [
-    "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169310/photo_2026-02-15_23-28-20_rvbfv2.jpg",
-    "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169288/Screenshot_2026-02-15_232110_fwjqhu.png"
+    { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169310/photo_2026-02-15_23-28-20_rvbfv2.jpg", link: "https://drive.usercontent.google.com/download?id=1lPYWBjmosBZrMQXdfYVlOsBZwCm5WRdn&export=download" },
+    { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169288/Screenshot_2026-02-15_232110_fwjqhu.png", link: "https://drive.usercontent.google.com/download?id=1JhRIFNVGpTUvvxV71HrcA-YeR7mNY5wy&export=download" }
 ];
 
 function renderGallery() {
     const container = document.getElementById('grid-category');
     if(!container) return;
     container.innerHTML = "";
-    images.forEach((src, index) => {
+    images.forEach((item, index) => {
         const div = document.createElement("div");
         div.className = "gallery-item";
-        const filename = decodeURIComponent(src).split('/').pop().replace(/\.(jpg|png|jpeg)/i, '');
-        div.innerHTML = `<img src="${src}" alt="${filename}" loading="lazy">`;
+        const filename = decodeURIComponent(item.src).split('/').pop().replace(/\.(jpg|png|jpeg)/i, '');
+        div.innerHTML = `<img src="${item.src}" alt="${filename}" loading="lazy">`;
         div.onclick = () => window.openLightbox(index);
         container.appendChild(div);
     });
@@ -176,9 +176,9 @@ function renderThumbnails() {
     const thumbContainer = document.getElementById('lightbox-thumbs');
     if(!thumbContainer) return;
     thumbContainer.innerHTML = '';
-    images.forEach((src, index) => {
+    images.forEach((item, index) => {
         const img = document.createElement('img');
-        img.src = src;
+        img.src = item.src;
         img.className = 'lb-thumb';
         img.id = `thumb-${index}`;
         img.onclick = () => window.openLightbox(index);
@@ -282,57 +282,28 @@ if(lightbox) {
     });
 }
 
-window.downloadImage = async function() {
-    // Uses the image's own Cloudinary / GitHub link directly (no Google Drive).
-    const src = images[currentImageIndex];
-    const filename = decodeURIComponent(src).split('/').pop() || "ZoneVault_Image.jpg";
-
-    let blob;
-    try {
-        const response = await fetch(src, { mode: 'cors' });
-        if (!response.ok) throw new Error('Fetch failed: ' + response.status);
-        blob = await response.blob();
-    } catch (err) {
-        // Could not fetch the bytes (network/CORS issue) - last resort, open the
-        // image directly so the person can at least long-press / save manually.
-        console.error('Could not fetch image for download:', err);
-        window.open(src, '_blank');
-        return;
+window.downloadImage = function() {
+    // Uses the Google Drive direct-download link for this image instead of
+    // fetching the file ourselves. This avoids the CORS / opaque-response /
+    // service-worker interference entirely - Drive handles the download on
+    // its own page, which the browser then saves normally on any device
+    // (phone or desktop), matching how collection.js already does it.
+    const item = images[currentImageIndex];
+    if (item.link) {
+        window.open(item.link, '_blank');
+    } else {
+        // No Drive link available for this image - fall back to opening
+        // the image file itself.
+        window.open(item.src, '_blank');
     }
-
-    // On phones (especially iOS Safari) the browser ignores the `download`
-    // attribute for images and just opens them in a new tab instead of saving
-    // them. The native Share Sheet is the reliable way to get a real
-    // "Save Image / Save to Photos" option on mobile, so use it when available.
-    const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-            await navigator.share({ files: [file], title: filename });
-            return;
-        } catch (shareErr) {
-            if (shareErr && shareErr.name === 'AbortError') return; // person cancelled the share sheet
-            // otherwise fall through and try a direct download below
-        }
-    }
-
-    // Desktop (and any mobile browser without the Share Sheet API): save the
-    // blob straight to the device's Downloads folder.
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(blobUrl);
 }
 
 function updateLightboxImage() {
     if (currentImageIndex < 0) currentImageIndex = images.length - 1;
     else if (currentImageIndex >= images.length) currentImageIndex = 0;
     resetZoom(); 
-    const src = images[currentImageIndex];
-    if(lightboxImg) lightboxImg.src = src;
+    const item = images[currentImageIndex];
+    if(lightboxImg) lightboxImg.src = item.src;
     highlightThumbnail(currentImageIndex);
 }
 

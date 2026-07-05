@@ -203,9 +203,11 @@ function showAccessDeniedModal() {
 // 6. CATEGORY MENU (each card links to its own page)
 // ==========================================
 const categoryMenu = [
-    { title: "2026 SVT 10TH FAN MEETING ", href: "/special_gift/caratland_2026", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783219918/8f5acef9e251a0dcbc61d351b16a947d12e03aa275cfddc18fa9e0b568b14526_jzaen9.jpg" },
-    { title: "SVT [NEW_] ENCORE ", href: "/special_gift/new_encore", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783260162/Screenshot_2026-07-05_220228_zduqgo.png" },
-    { title: "CXM [DOUBLE UP] LIVE PARTY", href: "/special_gift/cxm", thumb: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169310/photo_2026-02-15_23-28-20_rvbfv2.jpg" },
+    { title: "SEVENTEEN in CARATLAND SPECIAL GIFTS ", href: "/special_gift/caratland_2026", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783219918/8f5acef9e251a0dcbc61d351b16a947d12e03aa275cfddc18fa9e0b568b14526_jzaen9.jpg" },
+    { title: "SEVENTEEN 'YAKUSOKU' Osaka SPECIAL GIFTS ", href: "/special_gift/yakusoku", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783266525/photo_2026-07-05_23-05-40_nuly3c.jpg" },
+    { title: "DxS SERENADE SPECIAL GIFTS ", href: "/special_gift/dxs_serenade", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783267073/DXS_SERENADE_DK_SPECIAL_GIFT_aosirx.png" },
+    { title: "SVT [NEW_] ENCORE SPECIAL GIFTS", href: "/special_gift/new_encore", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783260162/Screenshot_2026-07-05_220228_zduqgo.png" },
+    { title: "CXM [DOUBLE UP] LIVE PARTY SPECIAL GIFTS", href: "/special_gift/cxm", thumb: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169310/photo_2026-02-15_23-28-20_rvbfv2.jpg" },
     { title: "FUKUOKA SHOW SPECIAL GIFTS", href: "/special_gift/fukuoka", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_fukuokanewtour/%5BFUKUOKA%20SHOW%5D%20Group.jpg" },
     { title: "OSAKA SHOW SPECIAL GIFTS", href: "/special_gift/osaka", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_osakanewtour/%5BOSAKA%20TOUR%5D%20Group.jpg" },
     { title: "INCHEON SPECIAL GIFTS", href: "/special_gift/incheon", thumb: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20SeungcheoL.png" },

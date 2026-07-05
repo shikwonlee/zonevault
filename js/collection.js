@@ -128,13 +128,12 @@ onAuthStateChanged(auth, user => {
 
 // 6. COLLECTION DIRECTORY ROUTING
 const collectionsDir = [
-    
     { category: "CXM [DOUBLE UP] LIVE PARTY", url: "/special_gift/cxm", coverImage: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771169310/photo_2026-02-15_23-28-20_rvbfv2.jpg" },
     { category: "FUKUOKA SHOW SPECIAL GIFTS", url: "/special_gift/fukuoka", coverImage: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_fukuokanewtour/%5BFUKUOKA%20SHOW%5D%20Group.jpg" },
     { category: "OSAKA SHOW SPECIAL GIFTS", url: "/special_gift/osaka", coverImage: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_osakanewtour/%5BOSAKA%20TOUR%5D%20Group.jpg" },
     { category: "INCHEON SPECIAL GIFTS", url: "/special_gift/incheon", coverImage: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_newtour/%5BNEW%20TOUR%5D%20Spacial%20Gifts%20%20SeungcheoL.png" },
     { category: "WARNING SEOUL SPECIAL GIFTS", url: "/special_gift/warning", coverImage: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_warninginseoul/%5BWARNING%5D%20Spacial%20Gifts%20Hoshi.png" },
-    { category: "HOLIDAY FANMEETING GIFTS", url: "/special_gift/oliday", coverImage: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_holiday/%5BHOLIDAY%5D%20Spacial%20Gifts%20%20Groups.jpg" },
+    { category: "HOLIDAY FANMEETING GIFTS", url: "/special_gift/holiday", coverImage: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_holiday/%5BHOLIDAY%5D%20Spacial%20Gifts%20%20Groups.jpg" },
     { category: "RIGHT HERE WORLD TOUR GIFTS", url: "/special_gift/right-here", coverImage: "https://raw.githubusercontent.com/svtzoneph/gallery/refs/heads/main/images/special_gift_righthere/%5BRIGHT%20HERE%5D%20Spacial%20Gifts%20Seungcheol.jpg" }
 ];
 

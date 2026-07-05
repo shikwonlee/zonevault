@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>FUKUOKA SHOW SPECIAL GIFTS | Zone Vault</title>
+   
+  <link rel="icon" href="/favicon-new.png" type="image/png" />
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+
+    :root {
+        /* SOLID DARK THEME (MATTE) */
+        --bg-color: #09090b; 
+        --card-bg: #18181b;  
+        --border-color: #27272a; 
+        --hover-bg: #27272a;
+        --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.6);
+
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        
+        --accent: #ffffff;
+        --status-online: #22c55e;
+        --admin-color: #ef4444; 
+        --youtube-red: #ff0000;
+        
+        --sidebar-width-collapsed: 64px; 
+        --sidebar-width-expanded: 220px; 
+        
+        --input-bg: #27272a;
+    }
+
+    body.light-mode {
+        /* SOLID LIGHT THEME (MATTE) */
+        --bg-color: #f4f4f5;
+        --card-bg: #ffffff;
+        --border-color: #e4e4e7;
+        --hover-bg: #f4f4f5;
+        --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+        --text-main: #18181b;
+        --text-muted: #71717a;
+        --input-bg: #f4f4f5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
+
+    body { 
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        overflow-x: hidden;
+        padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
+        position: relative;
+    }
+    
+    body.no-scroll { overflow: hidden; }
+
+    .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================
+       2. SOLID SIDEBAR & MENUS 
+       ========================================= */
+    .sidebar-desktop {
+        position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
+        border-radius: 16px; width: var(--sidebar-width-collapsed);
+        background: var(--card-bg);
+        border: 1px solid var(--border-color); 
+        box-shadow: var(--shadow-subtle);
+        z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden; display: flex; flex-direction: column;
+        will-change: width; -webkit-transform: translateZ(0);
+    }
+    .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
+
+    .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
+
+    .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; }
+    .sidebar-brand img { width: 24px; height: 24px; object-fit: contain; z-index: 2; }
+    .sidebar-brand span { position: absolute; left: 50px; opacity: 0; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; color: var(--text-main); transition: opacity 0.2s ease; pointer-events: none; text-transform: uppercase; }
+    .sidebar-desktop:hover .sidebar-brand { justify-content: flex-start; padding-left: 20px; }
+    .sidebar-desktop:hover .sidebar-brand span { opacity: 1; pointer-events: auto; }
+
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
+    .nav-link { display: flex; align-items: center; height: 40px; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; font-size: 13px; font-weight: 500; width: 100%; justify-content: center; position: relative; cursor: pointer; border-radius: 8px; }
+    .nav-link i { font-size: 16px; min-width: 20px; text-align: center; transition: color 0.3s; }
+    .nav-text { display: none; white-space: nowrap; margin-left: 12px; opacity: 0; transition: opacity 0.2s; }
+    .sidebar-desktop:hover .nav-link { justify-content: flex-start; padding-left: 12px; }
+    .sidebar-desktop:hover .nav-text { display: block; opacity: 1; transition-delay: 0.1s; }
+    
+    .nav-link:hover { background: var(--hover-bg); color: var(--text-main); }
+    .nav-link.active { color: var(--text-main); background: var(--hover-bg); font-weight: 600; }
+
+    .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
+    .text-danger { color: var(--admin-color) !important; font-weight: 600; }
+    .text-danger i { color: var(--admin-color) !important; }
+
+    .sidebar-user { display: flex; align-items: center; justify-content: center; padding: 10px; cursor: pointer; transition: 0.2s; margin-top: 5px; border-top: 1px solid var(--border-color); border-radius: 8px; }
+    .sidebar-user:hover { background: var(--hover-bg); }
+    .sidebar-user img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
+    .sidebar-user-info { display: none; margin-left: 10px; }
+    .sidebar-desktop:hover .sidebar-user { justify-content: flex-start; padding-left: 10px; border-top: none; }
+    .sidebar-desktop:hover .sidebar-user-info { display: block; }
+    .sidebar-username { font-size: 13px; font-weight: 600; color: var(--text-main); }
+    .sidebar-useremail { font-size: 10px; color: var(--text-muted); }
+
+    /* =========================================
+       3. MODERN BUTTONS & MODAL (NO BLUR)
+       ========================================= */
+    .hero-notif-btn, .header-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-subtle); 
+        color: var(--text-main);
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
+    }
+    
+    .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
+    .header-btn { width: 40px; height: 40px; border-radius: 50%; font-size: 16px; pointer-events: auto; position: relative; }
+    
+    .hero-notif-btn:hover, .header-btn:hover { background: var(--hover-bg); transform: translateY(-2px); box-shadow: var(--shadow-float); }
+    
+    .hero-notif-btn .badge, .header-btn .badge { 
+        position: absolute; top: 0px; right: 0px; width: 12px; height: 12px; 
+        background: var(--admin-color); border-radius: 50%; border: 2px solid var(--card-bg); display: none; 
+    }
+    .hero-notif-btn .badge.active, .header-btn .badge.active { display: block; }
+
+    .notif-modal { 
+        position: absolute !important; top: 85px; right: 40px; width: 340px; max-height: 400px; 
+        background: var(--card-bg); border: 1px solid var(--border-color); 
+        box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
+    }
+    .notif-modal.active { display: flex; animation: dropDown 0.2s ease; }
+    @keyframes dropDown { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
+    
+    .notif-header { padding: 16px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
+    .notif-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 14px; align-items: flex-start; transition: 0.2s; }
+    .notif-item:hover { background: var(--hover-bg); }
+    .notif-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-main); flex-shrink: 0; }
+    .notif-content h5 { font-size: 14px; color: var(--text-main); margin-bottom: 4px; }
+    .notif-content p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+    .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+    /* =========================================
+       5. COLLECTION LAYOUT (SOLID STYLES)
+       ========================================= */
+    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-top: 40px;}
+    
+    .page-title {
+        font-size: 28px; font-weight: 800; margin-bottom: 20px; padding: 0 40px;
+        text-transform: uppercase; letter-spacing: 1px; color: var(--text-main);
+    }
+
+    .back-to-cat-btn {
+        display: none; align-items: center; gap: 8px;
+        background: transparent; color: var(--text-muted); border: none;
+        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    .back-to-cat-btn:hover { color: var(--text-main); }
+
+    /* CATEGORY GRID */
+    .category-menu-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px; padding: 0 40px; animation: fadeIn 0.4s ease;
+    }
+
+    .cat-card {
+        background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
+        overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 16/9;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        box-shadow: var(--shadow-subtle);
+        text-decoration: none; display: block;
+    }
+    .cat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-float); border-color: var(--text-muted); }
+    .cat-card img { width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform 0.5s; filter: brightness(0.7); }
+    .cat-card:hover img { transform: scale(1.05); filter: brightness(0.5); }
+    .cat-title-overlay {
+        position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px;
+        background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    }
+    .cat-title-overlay h3 { margin: 0; font-size: 16px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* IMAGE GALLERIES */
+    .collection-section { animation: fadeIn 0.4s ease; padding: 0 40px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+
+    .gallery-item {
+        position: relative; aspect-ratio: 1/1; border-radius: 12px;
+        overflow: hidden; cursor: pointer; border: 1px solid var(--border-color);
+        background: var(--card-bg); transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .gallery-item:hover { transform: scale(1.03); border-color: var(--text-main); z-index: 2; box-shadow: var(--shadow-subtle); }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: opacity 0.3s; }
+
+    /* LIGHTBOX (SOLID / DARK) */
+    .lightbox-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.3s ease;
+    }
+    .lightbox-overlay.active { display: flex; opacity: 1; }
+    .lightbox-content-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; overflow: hidden; padding-bottom: 80px; }
+    .lightbox-content {
+        max-width: 95vw; max-height: 80vh; object-fit: contain;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8); border-radius: 4px;
+        transition: transform 0.2s ease-out; transform-origin: center center; cursor: zoom-in;
+    }
+    .lightbox-content.zoomed { cursor: grab; }
+    .lightbox-content.zoomed:active { cursor: grabbing; }
+
+    .lightbox-thumbs {
+        position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+        display: flex; gap: 10px; max-width: 90%; overflow-x: auto;
+        padding: 10px; background: var(--card-bg); border-radius: 16px;
+        border: 1px solid var(--border-color); box-shadow: var(--shadow-float);
+        z-index: 20005; scrollbar-width: none; 
+    }
+    .lightbox-thumbs::-webkit-scrollbar { display: none; }
+    .lb-thumb { width: 50px; height: 50px; object-fit: cover; object-position: center top; border-radius: 8px; cursor: pointer; opacity: 0.5; transition: 0.2s; border: 2px solid transparent; flex-shrink: 0; }
+    .lb-thumb:hover { opacity: 0.8; }
+    .lb-thumb.active { opacity: 1; border-color: var(--text-main); transform: scale(1.1); }
+
+    .lightbox-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 20003; }
+    .lightbox-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 16px; box-shadow: var(--shadow-subtle); }
+    .lightbox-btn:hover { background: var(--hover-bg); transform: scale(1.1); }
+
+    /* Toasts & Modals */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); color: var(--text-main); padding: 14px 28px; border-radius: 50px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.4s ease; }
+    .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
+    
+    .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 10000; }
+    .access-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 50px; border-radius: 16px; text-align: center; color: var(--text-main); max-width: 420px; width: 90%; box-shadow: var(--shadow-float); }
+    .access-icon-box { width: 70px; height: 70px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 28px; border-top: 1px solid rgba(239, 68, 68, 0.2); }
+    .access-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .access-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
+    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+    /* =========================================
+       6. MOBILE RESPONSIVENESS
+       ========================================= */
+    .mobile-header { 
+        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
+        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; background: transparent; border: none; pointer-events: none; 
+    }
+    
+    .mobile-logo-container { 
+        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 16px; pointer-events: auto; 
+        background: transparent; border: none; box-shadow: none; padding: 0;
+        letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+    }
+    .mobile-logo-img { height: 26px; width: auto; }
+
+    .mobile-sidebar-menu { 
+        position: fixed; top: 0; left: 0; width: 280px; height: 100vh; height: 100dvh; 
+        background: var(--card-bg); border-right: 1px solid var(--border-color);
+        box-shadow: var(--shadow-float);
+        z-index: 10000; transform: translateX(-100%); -webkit-transform: translateX(-100%) translateZ(0);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+        will-change: transform; display: flex; flex-direction: column; overflow: hidden; 
+    }
+    .mobile-sidebar-menu.open { transform: translateX(0); -webkit-transform: translateX(0) translateZ(0); }
+    .mobile-sidebar-menu .sidebar-container { overflow-y: auto; padding: 20px 15px; }
+    .mobile-sidebar-menu .sidebar-container::-webkit-scrollbar { display: none; }
+
+    @media (max-width: 900px) {
+        .sidebar-desktop { display: none; }
+        .mobile-header { display: flex; }
+        body { padding-left: 0; }
+        
+        .hero-notif-btn { display: none !important; }
+        .main-wrapper { padding-top: 80px; } 
+        
+        .notif-modal { 
+            position: fixed !important; top: 75px !important; right: 15px !important; 
+            width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; 
+        }
+        
+        .category-menu-grid, .collection-section { padding: 0 20px; }
+        .page-title { padding: 0 20px; font-size: 24px; }
+        .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .cat-card { aspect-ratio: 4/3; }
+    }
+
+  </style>
+</head>
+<body>
+
+
+<div id="toast" class="toast">
+    <i class="fas fa-check-circle" style="color:var(--status-online);"></i>
+    <span>Welcome to Collections</span>
+</div>
+
+<div class="mobile-header">
+    <div class="mobile-logo-container">
+         <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
+         <span>ZONE VAULT</span>
+    </div>
+    <div style="display: flex; gap: 10px; pointer-events: auto;">
+        <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">
+            <i class="fas fa-bell"></i>
+            <span id="notif-badge-mobile" class="badge"></span>
+        </a>
+        <button class="header-btn" onclick="toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+</div>
+
+<div id="mobileSidebar" class="mobile-sidebar-menu">
+    <div class="sidebar-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px 20px 5px;">
+            <div class="sidebar-brand" style="justify-content: flex-start; margin-bottom: 0; height: auto;">
+                <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo" style="width:24px; height:24px;">
+                <span style="opacity:1; position:static; margin-left:12px; transform:none; font-size:15px; color:var(--text-main);">ZONE VAULT</span>
+            </div>
+            <button onclick="toggleMobileSidebar()" style="background:none; border:none; color:var(--text-main); font-size:28px; cursor:pointer; margin-top: -2px;">&times;</button>
+        </div>
+        <ul class="nav-list" style="padding: 10px 0;">
+            <li class="nav-item"> <a href="/profile" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-user" style="margin-right:15px;"></i> Profile</a> </li>
+            <li class="nav-item"> <a href="/home" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-home" style="margin-right:15px;"></i> Home</a> </li>
+            <li class="nav-item"> <a href="/videos" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-play-circle" style="margin-right:15px;"></i> Videos</a> </li>
+            <li class="nav-item"> <a href="/collection" class="nav-link active" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-images" style="margin-right:15px;"></i> Collection</a> </li>
+            <li class="nav-item"> <a href="/live" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-broadcast-tower" style="margin-right:15px;"></i> Live</a> </li>
+        </ul>
+        <div class="sidebar-bottom" style="margin-top: auto; padding-bottom: 0;">
+             <div class="nav-link" onclick="toggleTheme()" style="justify-content: flex-start; padding-left: 15px; cursor: pointer;">
+                <i class="fas fa-cog" style="margin-right:15px;"></i> 
+                <span>Switch Theme</span>
+            </div>
+            <div class="nav-link text-danger" style="cursor:default; justify-content: flex-start; padding-left: 15px;">
+                 <i class="fas fa-shield-alt" style="margin-right:15px;"></i>
+                 <span id="status-text-mobile">ADMIN ACCESS</span>
+            </div>
+            <a href="javascript:void(0)" onclick="logout()" class="nav-link text-danger" style="justify-content: flex-start; padding-left: 15px;">
+                <i class="fas fa-sign-out-alt" style="margin-right:15px;"></i> Log Out
+            </a>
+            <div class="sidebar-user" onclick="window.location.href='/profile'" style="justify-content: flex-start; padding-left: 10px; margin-top: 15px;">
+                <img id="mobile-sidebar-pic" src="https://via.placeholder.com/150" alt="Profile" style="width:36px; height:36px;">
+                <div class="sidebar-user-info" style="display:block; margin-left:12px;">
+                    <div id="mobile-sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="mobile-sidebar-email" class="sidebar-useremail">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<aside class="sidebar-desktop">
+    <div class="sidebar-container">
+        <div class="sidebar-brand">
+            <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
+            <span>ZONE VAULT</span>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item"> <a href="/profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
+            <li class="nav-item"> <a href="/home" class="nav-link"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
+            <li class="nav-item"> <a href="/videos" class="nav-link"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
+            <li class="nav-item"> <a href="/collection" class="nav-link active"><i class="fas fa-images"></i> <span class="nav-text">Collection</span></a> </li>
+            <li class="nav-item"> <a href="/live" class="nav-link"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
+        </ul>
+        <div class="sidebar-bottom">
+            <div class="nav-link" onclick="toggleTheme()">
+                <i class="fas fa-cog"></i> 
+                <span class="nav-text">Switch Theme</span>
+            </div>
+             <div class="nav-link text-danger" style="cursor:default;">
+                 <i class="fas fa-shield-alt"></i>
+                 <span class="nav-text" id="status-text-pc">ADMIN ACCESS</span>
+            </div>
+            <a href="javascript:void(0)" onclick="logout()" class="nav-link text-danger">
+                <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Log Out</span>
+            </a>
+            <div class="sidebar-user" onclick="window.location.href='/profile'">
+                <img id="sidebar-pic" src="https://via.placeholder.com/150" alt="Profile">
+                <div class="sidebar-user-info">
+                    <div id="sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="sidebar-email" class="sidebar-useremail">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">
+    <i class="fas fa-bell"></i>
+    <span id="notif-badge" class="badge"></span>
+</a>
+
+<div id="notifModal" class="notif-modal">
+    <div class="notif-header">
+        <span>Notifications</span>
+        <i class="fas fa-check-double" style="cursor:pointer;" title="Mark all read"></i>
+    </div>
+    <div id="notif-list">
+        <div class="notif-empty">Loading notifications...</div>
+    </div>
+</div>
+
+
+<div class="main-wrapper fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 40px;">
+        <h1 class="page-title" style="padding:0; margin:0;">SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show SPECIAL GIFTS</h1>
+        <a href="/collection" class="back-to-cat-btn" style="display: inline-flex;">
+            <i class="fas fa-arrow-left"></i> Back to Collections
+        </a>
+    </div>
+
+    <div class="collection-section">
+        <div class="gallery-grid" id="grid-category"></div>
+    </div>
+</div>
+
+<div id="lightbox" class="lightbox-overlay">
+    <div class="lightbox-controls">
+        <div class="lightbox-btn" onclick="downloadImage()">
+            <i class="fas fa-download"></i>
+        </div>
+        <div class="lightbox-btn" onclick="closeLightbox()">
+            <i class="fas fa-times"></i>
+        </div>
+    </div>
+    
+    <div class="lightbox-content-wrapper">
+        <img id="lightbox-img" src="" class="lightbox-content">
+    </div>
+
+    <div id="lightbox-thumbs" class="lightbox-thumbs">
+    </div>
+</div>
+
+<script type="module" src="/special_gift/js/fukuoka.js"></script>
+
+</body>
+</html>

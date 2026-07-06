@@ -156,14 +156,14 @@ const videos = [
     {
         title: "Hoshi",
         thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783259446/4b31a01d9c7706e49171fe247c099d8a31fb0ea0ebfc6c3a4e7452b6680aa9761_goqrhd.png",
-        src: "https://n0x.cipherx.life/hls/MTx7b5Lq0x7c6Lq0t3c6Lq0Ia4MHd7c6Na4t3a4Mq0x7a4Mq0M0u4Gs20w6HBa4Or18e8w6n7Q2NTEf9y82g0q0ZG4f9x7m6Ue8w6n7o8p9ZW8f9y8TN1OD9q0y8WQ9w6n7o8p9ZW9Qy8GF5ZXJDZG4n7ZXs2d7z9XJo8x7a40c6Na4t3a4Ma4Qc6Nq0M0Ma4Q3Jm6Nb5Y0o8d7PTE4NS4b5Mq0Qf9MTI5Lq0E2OCZd7x7q00c6MCZa4x7n7NBZa41DSFJPTUUn7Y2t39LTE5Ma4p9c6OTt3d7Nr1Zg0x7a40c6Na4t3f9Mq0M3Lq0Ia4Lq0In7w6Ho8d7ZT0b5Jm6Nk4Za41k4TGl5c6ZFk4n7Yo8Bm6USZq0w6D04Jm6Vb5y8HM9MTt31Lq0Ib5Nr141NS45Mb5Zq0y8Go8o8y8m6RUv5XBo8PTAn7v5m6M9NDMn7z9WQ9MTx73Ma4Mc6Mq0M5MDE5NTp9.m3u8",
-        link: "#" // TODO: replace with real download link
+        src: "https://stream.mux.com/7M7z367DN9D9BmzfTq4dwb2bno7Qx1RCzzXDvMMd02AM.m3u8",
+        link: "https://drive.usercontent.google.com/download?id=1DnpuzpmLWtfuZadnYFPqCoeIju1K8TcK&export=download&authuser=2&confirm=t&uuid=f556731b-62dd-44f2-a8e0-1f3b3dac8b0d&at=ABswASbc_VVAkqPB-vAXXD8VdYSC:1783305474741" // TODO: replace with real download link
     },
     {
         title: "Woozi",
         thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783259446/4b31a01d9c7706e49171fe247c099d8a31fb0ea0ebfc6c3a4e7452b6680aa9761_goqrhd.png",
-        src: "https://silentcore.cipherx.life/hls/MTx7b5Lq0x7d7Lq0Id7OC40OHd7c6Na4t3a4Mq0x7a4NTA4u4Gs20w6HBa4Or18e8w6n7Q0NDAf9y82g0q0ZG4f9x7m6Ue8w6n7o8p9ZW8f9y8TN1OD9q0y8WQ9w6n7o8p9ZW9Qy8GF5ZXJDZG4n7ZXs2d7z9XJo8x7a40c6Na4t3a4Ma4Qc6OTA4Nq0p9c6Jm6Nb5Y0o8d7PTE4NS4b5Mq0Qf9MTI5Lq0E2OCZd7x7q00c6MCZa4x7n7NBZa41DSFJPTUUn7Y2t39LTUa4Nq0E2Nq0p93NCZg0x7a40c6Na4t3f9Mq0M3Lq0Ia4Lq0Qb5Jm6R5x7GU9Mr1Za4z9Wx79Ma4NRz9VJn7y8ENf9x71En7Y3Q9OCZ1x7n7c6a4PTE4NS4c6ODAf9Mq0Aa4Lq0Ib5Jn7Nh1z9WVf9w6FR5x7GU9MCZ6x7a400Mb5Zk4ZD0c6Na4x7a4Ma4Ic6NTY1Mq0M1OQ.m3u8",
-        link: "#" // TODO: replace with real download link
+        src: "https://stream.mux.com/dheA2hf9UUGwuxN7h7sJNrIBQ5fxnbZPCZivG87Nm02s.m3u8",
+        link: "https://drive.usercontent.google.com/download?id=15ung4pfBuAewNntGiCHT-U-e4UQ3zOvU&export=download&authuser=2&confirm=t&uuid=2adfa11a-f9a5-4be8-a63b-73f52e50909e&at=ABswASYqNYwHjTpQjVxUMlbKOFOu:1783306142653" // TODO: replace with real download link
     }
 ];
 

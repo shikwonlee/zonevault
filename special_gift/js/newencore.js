@@ -156,8 +156,8 @@ const videos = [
     {
         title: "[NEW_] ENCORE",
         thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783260162/Screenshot_2026-07-05_220228_zduqgo.png",
-        src: "https://n0x.cipherx.life/hls/MTYb5Lq0E1OC4c6MDt3f9Ma4o88MTx74Ma4I3Na4p90NHc6l5w6HRd7x7a4l5e8L3Zp9Nq0Y4Ln79i2Y2Rf9Lm6J1L3Zk4ZGVe8Ln70a4w6Tt3_Y21p9PXZk4ZGVe8UGc6s2v5WVb5Q2Rf9Jn7V4x7Go8b5ZXM9MTx74Ma4M0Nq0M0NDx7a4OCZa4x7n7NJx7D0c6ODUf9Mq0I0Lq0Eb5OS4c6Nq0t3n7x7HI9MTAn7x73Jq0QWx79Q0s2ST01FJn7Nl5PTEd7MDt3d7Na4p9a4Mq0t3n7y8XM9MTx74Lq0Ia4Nb54b5Mb54c6OSZ0v5XBo8PTIn7x72o8m6PXw6Qv5q0o8FNm6BQX3x74Jn7N0PTt3n7w6XJh1x7a40c6ODUf9Mq0I2Lq0Ub5Lq0I5Jn7Nh1z9WVf9w6FR5x7GU9MCZ6x7a400Mb5Zk4ZD0c6Na4x7a4Ma4M2NDA5MTM5OQ.m3u8",
-        link: "#"
+        src: "https://stream.mux.com/CtHg023LAXh5eETuSXiDG8r00yhWsfc2mtsFX6gFTeAyI.m3u8",
+        link: "https://drive.usercontent.google.com/download?id=1nJiouH4Z3_QCx3xBhGU6j24NPSXqJuab&export=download&authuser=2&confirm=t&uuid=c8b921b1-84d3-4ffd-b347-4d3f3946b9fe&at=ABswASbqUoCBP2uCTS_Vj8rRQ_9C:1783305468056"
     },
 ];
 

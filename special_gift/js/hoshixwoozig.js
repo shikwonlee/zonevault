@@ -149,21 +149,21 @@ function showAccessDeniedModal() {
 
 // ==========================================
 // 6. THIS CATEGORY'S VIDEOS
-// (Each video now points to its AnonMP4 EMBED page, not a raw .m3u8.
-//  We render that embed inside an <iframe> in the lightbox, so AnonMP4
-//  handles playback/expiration on their end — nothing to update here
-//  when a manifest link rotates.)
+// (Each video's own HLS (.m3u8) link is reused directly for
+//  previewing AND downloading, same pattern as the image gallery)
 // ==========================================
 const videos = [
     {
         title: "Hoshi",
         thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783259446/4b31a01d9c7706e49171fe247c099d8a31fb0ea0ebfc6c3a4e7452b6680aa9761_goqrhd.png",
-        embed: "https://anonmp4.help/embed/OVHelSkqLHCoVE1"
+        src: "https://n0x.cipherx.life/hls/MTx7b5Lq0x7c6Lq0t3c6Lq0Ia4MHd7c6Na4t3a4Mq0x7a4Mq0M0u4Gs20w6HBa4Or18e8w6n7Q2NTEf9y82g0q0ZG4f9x7m6Ue8w6n7o8p9ZW8f9y8TN1OD9q0y8WQ9w6n7o8p9ZW9Qy8GF5ZXJDZG4n7ZXs2d7z9XJo8x7a40c6Na4t3a4Ma4Qc6Nq0M0Ma4Q3Jm6Nb5Y0o8d7PTE4NS4b5Mq0Qf9MTI5Lq0E2OCZd7x7q00c6MCZa4x7n7NBZa41DSFJPTUUn7Y2t39LTE5Ma4p9c6OTt3d7Nr1Zg0x7a40c6Na4t3f9Mq0M3Lq0Ia4Lq0In7w6Ho8d7ZT0b5Jm6Nk4Za41k4TGl5c6ZFk4n7Yo8Bm6USZq0w6D04Jm6Vb5y8HM9MTt31Lq0Ib5Nr141NS45Mb5Zq0y8Go8o8y8m6RUv5XBo8PTAn7v5m6M9NDMn7z9WQ9MTx73Ma4Mc6Mq0M5MDE5NTp9.m3u8",
+        link: "#" // TODO: replace with real download link
     },
     {
         title: "Woozi",
         thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783259446/4b31a01d9c7706e49171fe247c099d8a31fb0ea0ebfc6c3a4e7452b6680aa9761_goqrhd.png",
-        embed: "https://anonmp4.help/embed/NyBMQlSOeG9l4cg"
+        src: "https://silentcore.cipherx.life/hls/MTx7b5Lq0x7d7Lq0Id7OC40OHd7c6Na4t3a4Mq0x7a4NTA4u4Gs20w6HBa4Or18e8w6n7Q0NDAf9y82g0q0ZG4f9x7m6Ue8w6n7o8p9ZW8f9y8TN1OD9q0y8WQ9w6n7o8p9ZW9Qy8GF5ZXJDZG4n7ZXs2d7z9XJo8x7a40c6Na4t3a4Ma4Qc6OTA4Nq0p9c6Jm6Nb5Y0o8d7PTE4NS4b5Mq0Qf9MTI5Lq0E2OCZd7x7q00c6MCZa4x7n7NBZa41DSFJPTUUn7Y2t39LTUa4Nq0E2Nq0p93NCZg0x7a40c6Na4t3f9Mq0M3Lq0Ia4Lq0Qb5Jm6R5x7GU9Mr1Za4z9Wx79Ma4NRz9VJn7y8ENf9x71En7Y3Q9OCZ1x7n7c6a4PTE4NS4c6ODAf9Mq0Aa4Lq0Ib5Jn7Nh1z9WVf9w6FR5x7GU9MCZ6x7a400Mb5Zk4ZD0c6Na4x7a4Ma4Ic6NTY1Mq0M1OQ.m3u8",
+        link: "#" // TODO: replace with real download link
     }
 ];
 
@@ -186,9 +186,10 @@ function renderGallery() {
     });
 }
 
-// --- VIDEO LIGHTBOX (IFRAME EMBED) LOGIC ---
+// --- VIDEO LIGHTBOX / ARTPLAYER LOGIC ---
 const lightbox = document.getElementById("lightbox");
 let currentVideoIndex = 0;
+let art = null;
 
 window.openLightbox = function(index) {
     currentVideoIndex = index;
@@ -208,8 +209,10 @@ window.closeLightbox = function() {
 }
 
 function destroyPlayer() {
-    const container = document.getElementById('video-player-container');
-    if (container) container.innerHTML = "";
+    if (art) {
+        art.destroy(false);
+        art = null;
+    }
 }
 
 function loadPlayer(index) {
@@ -219,27 +222,81 @@ function loadPlayer(index) {
     if (!container) return;
 
     try {
-        const iframe = document.createElement('iframe');
-        iframe.src = item.embed;
-        iframe.setAttribute('frameborder', '0');
-        iframe.setAttribute('allowfullscreen', 'true');
-        iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.border = 'none';
-        container.appendChild(iframe);
+        art = new Artplayer({
+            container: '#video-player-container',
+            url: item.src,
+            type: 'm3u8',
+            theme: '#ffffff',
+            autoplay: true,
+            autoSize: false,
+            autoMini: false,
+            loop: false,
+            flip: false,
+            playbackRate: false,
+            aspectRatio: false,
+            setting: true,
+            hotkey: true,
+            pip: false,
+            mutex: true,
+            fullscreen: false,      // disable browser fullscreen button
+            fullscreenWeb: false,   // disable web fullscreen button
+            subtitleOffset: false,
+            miniProgressBar: false,
+            playsInline: true,
+            lang: 'en',
+            volume: 0.7,
+            customType: {
+                m3u8: function (video, url, art) {
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(url);
+                        hls.attachMedia(video);
+                        video.hls = hls;
+
+                        // Build the quality options straight from the HLS manifest's
+                        // own bitrate levels, and expose them as a "Quality" entry
+                        // inside ArtPlayer's settings (gear) panel.
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                            const levelOptions = hls.levels.map((level, i) => ({
+                                html: level.height ? `${level.height}p` : `Level ${i + 1}`,
+                                value: i,
+                            }));
+                            levelOptions.unshift({ html: 'Auto', value: -1, default: true });
+
+                            art.setting.add({
+                                html: 'Quality',
+                                width: 200,
+                                tooltip: 'Auto',
+                                icon: '<i class="fas fa-sliders-h" style="color:#fff;"></i>',
+                                selector: levelOptions,
+                                onSelect: function (selectedItem) {
+                                    hls.currentLevel = selectedItem.value;
+                                    return selectedItem.html;
+                                },
+                            });
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = url;
+                    }
+                },
+            },
+        });
     } catch (err) {
-        console.error('Embed failed to load:', err);
+        console.error('ArtPlayer failed to initialize:', err);
         container.innerHTML = `<div style="color:#fff; padding:20px; text-align:center;">Video failed to load. Please try again.</div>`;
     }
 }
 
-// downloadVideo removed: there is no direct file/manifest URL to download
-// anymore since playback now goes through AnonMP4's own embed player.
-// If you want a "watch on AnonMP4" button instead, wire it to item.embed.
 window.downloadVideo = function() {
+    // Uses each video's own HLS link directly for download, mirroring how
+    // the image collection reuses each image's own link for downloading.
+    // TODO: swap these with dedicated download URLs once available.
     const item = videos[currentVideoIndex];
-    window.open(item.embed, '_blank');
+    if (item.link) {
+        window.open(item.link, '_blank');
+    } else {
+        window.open(item.src, '_blank');
+    }
 }
 
 function handleKeyDown(e) {

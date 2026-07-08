@@ -37,6 +37,7 @@
         --sidebar-width-expanded: 220px; 
         
         --input-bg: #27272a;
+        --bottom-nav-height: 66px;
     }
 
     body.light-mode {
@@ -165,6 +166,43 @@
         text-transform: uppercase; letter-spacing: 1px; color: var(--text-main);
     }
 
+    /* --- Search & Filter Bar --- */
+    .filter-bar {
+        display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .search-box {
+        flex: 1 1 260px; position: relative; display: flex; align-items: center;
+    }
+    .search-box i {
+        position: absolute; left: 16px; color: var(--text-muted); font-size: 14px; pointer-events: none;
+    }
+    .search-box input {
+        width: 100%; background: var(--card-bg); border: 1px solid var(--border-color);
+        color: var(--text-main); font-family: inherit; font-size: 13px; font-weight: 500;
+        padding: 12px 16px 12px 42px; border-radius: 12px; transition: 0.2s;
+        box-shadow: var(--shadow-subtle);
+    }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .search-box input:focus { border-color: var(--text-muted); }
+
+    .category-chips {
+        display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+    }
+    .category-chips::-webkit-scrollbar { display: none; }
+    .chip {
+        flex-shrink: 0; background: var(--card-bg); border: 1px solid var(--border-color);
+        color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+        text-transform: uppercase; padding: 10px 18px; border-radius: 20px; cursor: pointer;
+        transition: 0.2s; white-space: nowrap; box-shadow: var(--shadow-subtle);
+    }
+    .chip:hover { color: var(--text-main); background: var(--hover-bg); }
+    .chip.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+
+    .no-results {
+        grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted);
+    }
+    .no-results i { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.5; }
+
     .grid-container { 
         display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
         gap: 20px; animation: fadeIn 0.4s ease;
@@ -280,7 +318,40 @@
     .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
     /* =========================================
-       6. MOBILE RESPONSIVENESS
+       6. BOTTOM NAVIGATION BAR (MOBILE)
+       ========================================= */
+    .bottom-nav-mobile {
+        display: none;
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -6px 20px rgba(0,0,0,0.35);
+        z-index: 950;
+        padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+        align-items: center; justify-content: space-around;
+        transition: transform 0.3s ease;
+    }
+    .bottom-nav-mobile.hide-on-scroll { transform: translateY(100%); }
+
+    .bottom-nav-link {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 4px; text-decoration: none; color: var(--text-muted);
+        font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
+        padding: 6px 2px; border-radius: 10px; position: relative;
+        transition: color 0.2s ease, transform 0.15s ease; background: none; border: none; cursor: pointer;
+        font-family: inherit;
+    }
+    .bottom-nav-link i { font-size: 19px; transition: transform 0.15s ease; }
+    .bottom-nav-link:active { transform: scale(0.92); }
+    .bottom-nav-link.active { color: var(--text-main); }
+    .bottom-nav-link.active i { transform: translateY(-1px); }
+    .bottom-nav-link.active::before {
+        content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+        width: 18px; height: 3px; border-radius: 3px; background: var(--text-main);
+    }
+
+    /* =========================================
+       7. MOBILE RESPONSIVENESS
        ========================================= */
     .mobile-header { 
         display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
@@ -314,7 +385,8 @@
     @media (max-width: 900px) {
         .sidebar-desktop { display: none; }
         .mobile-header { display: flex; }
-        body { padding-left: 0; }
+        .bottom-nav-mobile { display: flex; }
+        body { padding-left: 0; padding-bottom: var(--bottom-nav-height); }
         
         .hero-notif-btn { display: none !important; }
         
@@ -328,6 +400,7 @@
         }
         
         .grid-container { grid-template-columns: repeat(1, 1fr); gap: 15px; }
+        .filter-bar { flex-direction: column; }
     }
     @media (min-width: 500px) and (max-width: 900px) {
          .grid-container { grid-template-columns: repeat(2, 1fr); }
@@ -358,6 +431,15 @@
     </div>
 </div>
 
+<!-- BOTTOM NAVIGATION BAR (mobile only) — matches home.html -->
+<nav class="bottom-nav-mobile" id="bottomNav">
+    <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
+    <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="videos" class="bottom-nav-link active"><i class="fas fa-play-circle"></i><span>Videos</span></a>
+    <a href="collection" class="bottom-nav-link"><i class="fas fa-images"></i><span>Collection</span></a>
+    <a href="live" class="bottom-nav-link"><i class="fas fa-broadcast-tower"></i><span>Live</span></a>
+</nav>
+
 <div id="mobileSidebar" class="mobile-sidebar-menu">
     <div class="sidebar-container">
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px 20px 5px;">
@@ -368,11 +450,6 @@
             <button onclick="toggleMobileSidebar()" style="background:none; border:none; color:var(--text-main); font-size:28px; cursor:pointer; margin-top: -2px;">&times;</button>
         </div>
         <ul class="nav-list" style="padding: 10px 0;">
-            <li class="nav-item"> <a href="profile" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-user" style="margin-right:15px;"></i> Profile</a> </li>
-            <li class="nav-item"> <a href="home" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-home" style="margin-right:15px;"></i> Home</a> </li>
-            <li class="nav-item"> <a href="videos" class="nav-link active" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-play-circle" style="margin-right:15px;"></i> Videos</a> </li>
-            <li class="nav-item"> <a href="collection" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-images" style="margin-right:15px;"></i> Collection</a> </li>
-            <li class="nav-item"> <a href="live" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-broadcast-tower" style="margin-right:15px;"></i> Live</a> </li>
             <li class="nav-item"> <a href="javascript:void(0)" onclick="openFavoriteModal();" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-star" style="margin-right:15px;"></i> Favorites</a> </li>
         </ul>
         <div class="sidebar-bottom" style="margin-top: auto; padding-bottom: 0;">
@@ -453,6 +530,14 @@
 <div class="main-wrapper fade-in">
     <h1 class="page-title">Videos</h1>
 
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input id="searchInput" type="text" placeholder="Search titles..." autocomplete="off">
+        </div>
+        <div class="category-chips" id="categoryChips"></div>
+    </div>
+
     <div class="grid-container" id="grid"></div>
      
     <div id="pagination"></div>
@@ -498,6 +583,24 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Bottom nav: highlight active + auto-hide on scroll down / show on scroll up
+    (function () {
+        var bottomNav = document.getElementById('bottomNav');
+        var lastScrollY = window.scrollY;
+        window.addEventListener('scroll', function () {
+            if (!bottomNav) return;
+            var currentScrollY = window.scrollY;
+            if (currentScrollY > lastScrollY && currentScrollY > 80) {
+                bottomNav.classList.add('hide-on-scroll');
+            } else {
+                bottomNav.classList.remove('hide-on-scroll');
+            }
+            lastScrollY = currentScrollY;
+        }, { passive: true });
+    })();
+</script>
 
 <script type="module" src="/js/videos.js"></script>
 

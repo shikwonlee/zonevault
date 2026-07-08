@@ -3,7 +3,7 @@
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
@@ -18,6 +18,39 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
+
+// --- NOTIFICATIONS (bell dropdown) ---
+const notifList = document.getElementById('notif-list');
+let latestNotifTimestamp = 0;
+const notifQuery = query(ref(db, 'notifications'), limitToLast(10));
+
+onValue(notifQuery, snapshot => {
+    if (!notifList) return;
+    notifList.innerHTML = '';
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        const notifs = Object.values(data).reverse();
+        notifs.forEach(n => {
+            const item = document.createElement('div');
+            item.className = 'notif-item';
+            item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
+            notifList.appendChild(item);
+            if (n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
+        });
+        const lastRead = localStorage.getItem('lastReadNotif') || 0;
+        const badgeDesktop = document.getElementById('notif-badge');
+        const badgeMobile = document.getElementById('notif-badge-mobile');
+        if (latestNotifTimestamp > lastRead) {
+            if (badgeDesktop) badgeDesktop.classList.add('active');
+            if (badgeMobile) badgeMobile.classList.add('active');
+        } else {
+            if (badgeDesktop) badgeDesktop.classList.remove('active');
+            if (badgeMobile) badgeMobile.classList.remove('active');
+        }
+    } else {
+        notifList.innerHTML = '<div class="notif-empty">No new notifications</div>';
+    }
+});
 
 // Check user state on load
 onAuthStateChanged(auth, async (user) => {
@@ -102,7 +135,15 @@ window.toggleTheme = function() {
 
 window.toggleNotifModal = function() {
     const modal = document.getElementById('notifModal');
-    if(modal) modal.classList.toggle('active');
+    if (!modal) return;
+    modal.classList.toggle('active');
+    if (modal.classList.contains('active')) {
+        const badgeDesktop = document.getElementById('notif-badge');
+        const badgeMobile = document.getElementById('notif-badge-mobile');
+        if (badgeDesktop) badgeDesktop.classList.remove('active');
+        if (badgeMobile) badgeMobile.classList.remove('active');
+        localStorage.setItem('lastReadNotif', latestNotifTimestamp);
+    }
 }
 
 window.openInfoModal = function(cardElement) {

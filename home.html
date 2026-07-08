@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Home | Zone Vault</title>
+  <title>Videos | Zone Vault</title>
+   
   <link rel="icon" href="favicon-new.png" type="image/png" />
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <style>
     /* =========================================
        1. VARIABLES & THEME ENGINE (MODERN SOLID)
@@ -30,7 +31,7 @@
         --accent: #ffffff;
         --status-online: #22c55e;
         --admin-color: #ef4444; 
-        --code-accent: #38bdf8;
+        --youtube-red: #ff0000;
         
         --sidebar-width-collapsed: 64px; 
         --sidebar-width-expanded: 220px; 
@@ -55,9 +56,6 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
 
-    /* =========================================
-       2. AMBIENT BACKGROUND
-       ========================================= */
     body { 
         background-color: var(--bg-color);
         color: var(--text-main);
@@ -68,12 +66,14 @@
         padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
         position: relative;
     }
+    
+    body.no-scroll { overflow: hidden; }
 
     .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       3. SOLID SIDEBAR & MENUS 
+       2. SOLID SIDEBAR & MENUS
        ========================================= */
     .sidebar-desktop {
         position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
@@ -86,6 +86,7 @@
         will-change: width; -webkit-transform: translateZ(0);
     }
     .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
+
     .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
 
     .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; }
@@ -103,7 +104,7 @@
     
     .nav-link:hover { background: var(--hover-bg); color: var(--text-main); }
     .nav-link.active { color: var(--text-main); background: var(--hover-bg); font-weight: 600; }
-    
+
     .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
     .text-danger { color: var(--admin-color) !important; font-weight: 600; }
     .text-danger i { color: var(--admin-color) !important; }
@@ -118,7 +119,7 @@
     .sidebar-useremail { font-size: 10px; color: var(--text-muted); }
 
     /* =========================================
-       4. MODERN BUTTONS & MODAL (NO BLUR)
+       3. MODERN BUTTONS & MODAL (NO BLUR) 
        ========================================= */
     .hero-notif-btn, .header-btn {
         background: var(--card-bg);
@@ -156,180 +157,157 @@
     .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
     /* =========================================
-       5. HERO SECTION 
+       4. VIDEO GRID STYLES
        ========================================= */
-    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; position: relative;}
+    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-left: 40px; padding-right: 40px; position: relative; padding-top: 40px;}
     
-    .hero-container { 
-        position: relative; width: 100%; margin: 0 0 40px 0; 
-        height: 48vh; min-height: 400px; border-radius: 0; 
-        overflow: hidden; display: flex; align-items: center; 
-        background: var(--card-bg);
-    }
-    .hero-bg-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; background: var(--card-bg); }
-    .hero-bg-image img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.8s ease; }
-    .hero-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to right, rgba(9, 9, 11, 0.95) 0%, rgba(9, 9, 11, 0.4) 60%, transparent 100%); }
-    .hero-content-box { position: relative; z-index: 2; padding: 0 60px; width: 100%; max-width: 850px; }
-    .hero-content-box h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 15px; color: #fff; transition: opacity 0.3s ease; }
-    
-    .thumbnails-floating { display: flex; gap: 12px; margin-top: 10px; }
-    .thumb-btn { 
-        width: 70px; height: 44px; border-radius: 8px; overflow: hidden; 
-        cursor: pointer; transition: all 0.2s ease; 
-        border: 1px solid var(--border-color);
-    }
-    .thumb-btn.active { transform: scale(1.15) translateY(-5px); border: 2px solid var(--text-main); z-index: 10; box-shadow: var(--shadow-float); }
-    .thumb-btn img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; opacity: 0.6; }
-    .thumb-btn.active img, .thumb-btn:hover img { opacity: 1; }
-
-    /* =========================================
-       6. SOLID CARDS 
-       ========================================= */
-    .section-header { padding: 0 40px; margin-top: 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; color: var(--text-main); }
-    .section-header h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
-    .section-header i { font-size: 18px; }
-    
-    .swipe-scroller { display: flex; gap: 24px; padding: 0 40px 40px 40px; overflow-x: auto; scrollbar-width: none; cursor: grab; }
-    .swipe-scroller::-webkit-scrollbar { display: none; }
-    .swipe-scroller.active { cursor: grabbing; } 
-    
-    .swipe-card {
-        flex: 0 0 340px; 
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 16px; overflow: hidden; transition: all 0.2s ease; user-select: none; 
-        box-shadow: var(--shadow-subtle);
-    }
-    .swipe-card:hover { transform: translateY(-5px); background: var(--hover-bg); box-shadow: var(--shadow-float); }
-    
-    .swipe-thumbnail { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-bottom: 1px solid var(--border-color); }
-    .swipe-thumbnail img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: 0.9; transition: opacity 0.2s; }
-    .swipe-card:hover .swipe-thumbnail img { opacity: 1; }
-    
-    .play-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.2s ease; font-size: 36px; color: #fff; }
-    .swipe-card:hover .play-overlay { opacity: 1; }
-    .play-overlay i { transform: scale(0.8); transition: 0.2s ease; }
-    .swipe-card:hover .play-overlay i { transform: scale(1); }
-    
-    .duration-badge { position: absolute; bottom: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); color: #ffffff; font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; letter-spacing: 0.5px; z-index: 2; border: 1px solid rgba(255,255,255,0.2); }
-    
-    .swipe-info { padding: 18px; }
-    .swipe-info h4 { font-size: 15px; color: var(--text-main); margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-    
-    .cards-scroller { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 0 40px; padding-bottom: 60px; }
-
-    /* =========================================
-       7. INFO CARDS (Popup Triggers)
-       ========================================= */
-    .info-card { 
-        background: var(--card-bg); 
-        border: 1px solid var(--border-color); 
-        border-radius: 16px; padding: 0; overflow: hidden; 
-        transition: all 0.2s ease; 
-        display: flex; flex-direction: column; cursor: pointer;
-        box-shadow: var(--shadow-subtle);
-    }
-    .info-card:hover { 
-        background: var(--hover-bg); transform: translateY(-3px); 
-        box-shadow: var(--shadow-float);
-    }
-    .card-head { 
-        padding: 20px; display: flex; justify-content: space-between; align-items: center; 
-    }
-    .card-head h4 { 
-        font-size: 15px; font-weight: 600; color: var(--text-main); margin: 0; 
-    }
-    .popup-icon { 
-        transition: 0.2s ease; color: var(--text-muted); font-size: 14px; 
-    }
-    .info-card:hover .popup-icon { 
-        color: var(--code-accent); transform: scale(1.1);
+    .page-title {
+        font-size: 28px; font-weight: 800; margin-bottom: 14px;
+        text-transform: uppercase; letter-spacing: 1px; color: var(--text-main);
     }
 
-    /* =========================================
-       8. INFORMATION MODAL POPUP
-       ========================================= */
-    .info-modal-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 10005; opacity: 0; visibility: hidden;
-        transition: all 0.2s ease;
+    /* --- Category Filter Bar --- */
+    .filter-bar {
+        margin-bottom: 15px;
     }
-    .info-modal-overlay.active { opacity: 1; visibility: visible; }
-    .info-modal-box {
+    .category-chips {
+        display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;
+    }
+    .category-chips::-webkit-scrollbar { height: 5px; }
+    .category-chips::-webkit-scrollbar-track { background: transparent; }
+    .category-chips::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+    .category-chips::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    .chip {
+        flex-shrink: 0; background: var(--card-bg); border: 1px solid var(--border-color);
+        color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+        text-transform: uppercase; padding: 10px 18px; border-radius: 20px; cursor: pointer;
+        transition: 0.2s; white-space: nowrap; box-shadow: var(--shadow-subtle);
+    }
+    .chip:hover { color: var(--text-main); background: var(--hover-bg); }
+    .chip.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+
+    .no-results {
+        grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted);
+    }
+    .no-results i { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.5; }
+
+    .grid-container { 
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+        gap: 20px; animation: fadeIn 0.4s ease;
+    }
+
+    .video-card {
         background: var(--card-bg); border: 1px solid var(--border-color);
-        border-radius: 16px; width: 90%; max-width: 550px; max-height: 85vh;
-        display: flex; flex-direction: column;
-        transform: translateY(10px);
-        transition: transform 0.2s ease, opacity 0.2s ease;
-        box-shadow: var(--shadow-float);
+        border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; position: relative;
+        box-shadow: var(--shadow-subtle);
     }
-    .info-modal-overlay.active .info-modal-box { transform: translateY(0); }
-    
-    .info-modal-header {
-        padding: 20px 25px; display: flex; justify-content: space-between; align-items: center;
-        border-bottom: 1px solid var(--border-color);
-    }
-    .info-modal-header h3 { font-size: 18px; margin: 0; color: var(--text-main); font-weight: 600; }
-    .info-modal-close {
-        background: var(--input-bg); border: 1px solid var(--border-color); width: 32px; height: 32px; 
-        border-radius: 50%; color: var(--text-muted); display: flex; align-items: center; 
-        justify-content: center; cursor: pointer; transition: 0.2s; font-size: 16px;
-    }
-    .info-modal-close:hover { background: var(--admin-color); color: #fff; border-color: var(--admin-color); }
-    
-    .info-modal-body {
-        padding: 25px; overflow-y: auto; color: var(--text-muted); font-size: 14px; line-height: 1.6;
-    }
-    .info-modal-body::-webkit-scrollbar { width: 6px; }
-    .info-modal-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
-    .info-modal-body ul, .info-modal-body ol { margin-left: 20px; margin-bottom: 15px; }
-    .info-modal-body li { margin-bottom: 10px; }
-    .info-modal-body strong { color: var(--text-main); font-weight: 600; }
+    .video-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-float); border-color: var(--text-muted); }
 
+    .thumb-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--border-color); }
+    .thumb-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .video-card:hover .thumb-wrapper img { transform: scale(1.05); }
+
+    .card-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+    .video-meta { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600; }
+    .video-title { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; line-height: 1.4; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .video-hashtags { font-size: 11px; color: var(--text-muted); margin-bottom: 15px; opacity: 0.7; }
+
+    .card-actions { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+    .btn-watch {
+        background: var(--text-main); color: var(--bg-color); border: none; padding: 8px 16px; border-radius: 8px;
+        font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; text-transform: uppercase;
+        font-family: inherit;
+    }
+    .btn-watch:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-fav {
+        background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted);
+        width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.2s;
+    }
+    .btn-fav:hover { color: gold; border-color: gold; background: rgba(255, 215, 0, 0.1); }
+    .btn-fav.active { color: gold; border-color: gold; }
+
+    .countdown-badge {
+        position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8);
+        color: white; font-size: 10px; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); font-weight: 600;
+    }
+
+    #pagination { text-align: center; margin-top: 30px; display: flex; justify-content: center; gap: 8px; }
+    #pagination button {
+        background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted);
+        width: 35px; height: 35px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+        font-family: inherit; font-weight: 600;
+    }
+    #pagination button.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+    #pagination button:hover:not(.active) { background: var(--hover-bg); color: var(--text-main); }
+
+    /* =========================================
+       5. MODALS
+       ========================================= */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        z-index: 10000; display: none; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    .modal-overlay.active { opacity: 1; display: flex; }
+    
+    .modal-box {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        padding: 0; border-radius: 16px; width: 92%; max-width: 500px; 
+        color: var(--text-main); max-height: 85vh; display: flex; flex-direction: column;
+        box-shadow: var(--shadow-float); position: relative;
+    }
+
+    .modal-header {
+        padding: 20px 25px; border-bottom: 1px solid var(--border-color);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text-main); text-transform: uppercase; }
+    .close-modal { 
+        background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted); 
+        width: 32px; height: 32px; border-radius: 50%; font-size: 16px; 
+        cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .close-modal:hover { background: var(--hover-bg); color: var(--text-main); }
+
+    .modal-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    
+    .fav-list-item { 
+        display: flex; align-items: center; gap: 15px; padding: 10px; 
+        border-radius: 12px; background: var(--input-bg); border: 1px solid var(--border-color);
+        transition: 0.2s;
+    }
+    .fav-list-item:hover { background: var(--hover-bg); }
+    .fav-thumb { width: 80px; aspect-ratio: 16/9; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-color); }
+    .fav-list-info { flex: 1; min-width: 0; }
+    .fav-list-title { font-size: 13px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fav-list-cat { font-size: 10px; color: var(--text-muted); }
+    .fav-btn-remove { 
+        color: var(--text-muted); background: none; border: none; cursor: pointer; font-size: 14px; transition: 0.2s;
+    }
+    .fav-btn-remove:hover { color: var(--admin-color); }
+
+    .info-text p { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 15px; }
+    .info-text b { color: var(--text-main); }
+    
     /* Modals & Toasts */
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); color: var(--text-main); padding: 14px 28px; border-radius: 50px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.4s ease; }
     .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    /* =========================================
-       9. SKELETON LOADERS
-       ========================================= */
-    .skeleton {
-        background: linear-gradient(90deg, var(--input-bg) 25%, var(--hover-bg) 50%, var(--input-bg) 75%);
-        background-size: 200% 100%;
-        animation: skeleton-shimmer 1.4s ease-in-out infinite;
-        border-radius: 8px;
-    }
-    @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .skeleton-line { height: 12px; margin-bottom: 10px; }
-    .skeleton-line.short { width: 50%; }
-    .skeleton-line.medium { width: 75%; }
-    .skeleton-line:last-child { margin-bottom: 0; }
-    .skeleton-notif-item { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
-    .skeleton-notif-icon { width: 34px; height: 34px; min-width: 34px; border-radius: 50%; }
-    .skeleton-notif-text { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 3px; }
-
-    /* =========================================
-       10. MOBILE RESPONSIVENESS
-       ========================================= */
-    /* CLEAR/TRANSPARENT HEADER */
-    .mobile-header { 
-        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
-        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; 
-        background: transparent; /* No solid background */
-        border: none; pointer-events: none; /* Lets clicks pass through the center */
-    }
     
-    .mobile-logo-container { 
-        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 16px; pointer-events: auto; 
-        background: transparent; border: none; box-shadow: none; padding: 0; /* Clean, clear logo */
-        letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Adds readability over an image */
-    }
-    .mobile-logo-img { height: 26px; width: auto; }
+    .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 10000; }
+    .access-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 50px; border-radius: 16px; text-align: center; color: var(--text-main); max-width: 420px; width: 90%; box-shadow: var(--shadow-float); }
+    .access-icon-box { width: 70px; height: 70px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 28px; border-top: 1px solid rgba(239, 68, 68, 0.2); }
+    .access-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .access-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
+    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
     /* =========================================
-       11. BOTTOM NAVIGATION BAR (MOBILE)
+       6. BOTTOM NAVIGATION BAR (MOBILE)
        ========================================= */
     .bottom-nav-mobile {
         display: none;
@@ -349,7 +327,8 @@
         gap: 4px; text-decoration: none; color: var(--text-muted);
         font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
         padding: 6px 2px; border-radius: 10px; position: relative;
-        transition: color 0.2s ease, transform 0.15s ease;
+        transition: color 0.2s ease, transform 0.15s ease; background: none; border: none; cursor: pointer;
+        font-family: inherit;
     }
     .bottom-nav-link i { font-size: 19px; transition: transform 0.15s ease; }
     .bottom-nav-link:active { transform: scale(0.92); }
@@ -360,28 +339,43 @@
         width: 18px; height: 3px; border-radius: 3px; background: var(--text-main);
     }
 
+    /* =========================================
+       7. MOBILE RESPONSIVENESS
+       ========================================= */
+    .mobile-header { 
+        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
+        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; 
+        background: transparent; border: none; pointer-events: none; 
+    }
+    
+    .mobile-logo-container { 
+        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 16px; pointer-events: auto; 
+        background: transparent; border: none; box-shadow: none; padding: 0;
+        letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+    }
+    .mobile-logo-img { height: 26px; width: auto; }
+
     @media (max-width: 900px) {
         .sidebar-desktop { display: none; }
-        .hero-notif-btn { display: none !important; } 
-        .mobile-header { display: flex; } 
+        .mobile-header { display: flex; }
         .bottom-nav-mobile { display: flex; }
         body { padding-left: 0; padding-bottom: var(--bottom-nav-height); }
         
-        .hero-container { width: 100%; height: auto; min-height: 55vh; margin: 0 0 30px 0; align-items: flex-end; padding-bottom: 30px; }
-        .hero-overlay { background: linear-gradient(to top, var(--bg-color) 0%, rgba(9,9,11,0.4) 60%, transparent 100%); }
-        .hero-content-box { text-align: center; padding: 25px; display: flex; flex-direction: column; align-items: center; }
-        .hero-content-box h1 { display: block; font-size: 1.6rem; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .hero-notif-btn { display: none !important; }
         
-        .notif-modal { position: fixed !important; top: 75px !important; right: 15px !important; width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; }
+        .main-wrapper { padding-top: 65px; padding-left: 20px; padding-right: 20px;} 
         
-        .thumbnails-floating { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
-        .thumb-btn { width: 60px; height: 38px; }
+        .notif-modal { 
+            position: fixed !important; 
+            top: 75px !important; 
+            right: 15px !important; 
+            width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; 
+        }
         
-        .section-header { padding: 0 25px; margin-top: 10px;}
-        .swipe-scroller { padding: 0 25px 30px 25px; gap: 18px; }
-        .swipe-card { flex: 0 0 300px; } 
-        .cards-scroller { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 18px; padding: 0 25px 30px 25px; scrollbar-width: none; }
-        .info-card { min-width: 85vw; scroll-snap-align: center; }
+        .grid-container { grid-template-columns: repeat(1, 1fr); gap: 15px; }
+    }
+    @media (min-width: 500px) and (max-width: 900px) {
+         .grid-container { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -389,35 +383,7 @@
 
 <div id="toast" class="toast">
     <i class="fas fa-check-circle" style="color:var(--status-online);"></i>
-    <span>Welcome back to Zone Vault</span>
-</div>
-
-<a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">
-    <i class="fas fa-bell"></i>
-    <span id="notif-badge" class="badge"></span>
-</a>
-
-<div id="notifModal" class="notif-modal">
-    <div class="notif-header">
-        <span>Notifications</span>
-        <i class="fas fa-check-double" style="cursor:pointer;" title="Mark all read"></i>
-    </div>
-    <div id="notif-list">
-        <div class="skeleton-notif-item">
-            <div class="skeleton skeleton-notif-icon"></div>
-            <div class="skeleton-notif-text">
-                <div class="skeleton skeleton-line medium"></div>
-                <div class="skeleton skeleton-line short"></div>
-            </div>
-        </div>
-        <div class="skeleton-notif-item">
-            <div class="skeleton skeleton-notif-icon"></div>
-            <div class="skeleton-notif-text">
-                <div class="skeleton skeleton-line medium"></div>
-                <div class="skeleton skeleton-line short"></div>
-            </div>
-        </div>
-    </div>
+    <span>Welcome to Videos</span>
 </div>
 
 <div class="mobile-header">
@@ -425,6 +391,7 @@
          <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
          <span>ZONE VAULT</span>
     </div>
+    
     <div style="display: flex; gap: 10px; pointer-events: auto;">
         <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">
             <i class="fas fa-bell"></i>
@@ -433,11 +400,11 @@
     </div>
 </div>
 
-<!-- BOTTOM NAVIGATION BAR (mobile only) -->
+<!-- BOTTOM NAVIGATION BAR (mobile only) — matches home.html -->
 <nav class="bottom-nav-mobile" id="bottomNav">
     <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
-    <a href="home" class="bottom-nav-link active"><i class="fas fa-home"></i><span>Home</span></a>
-    <a href="videos" class="bottom-nav-link"><i class="fas fa-play-circle"></i><span>Videos</span></a>
+    <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="videos" class="bottom-nav-link active"><i class="fas fa-play-circle"></i><span>Videos</span></a>
     <a href="collection" class="bottom-nav-link"><i class="fas fa-images"></i><span>Collection</span></a>
     <a href="live" class="bottom-nav-link"><i class="fas fa-broadcast-tower"></i><span>Live</span></a>
 </nav>
@@ -450,10 +417,11 @@
         </div>
         <ul class="nav-list">
             <li class="nav-item"> <a href="profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
-            <li class="nav-item"> <a href="home" class="nav-link active"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
-            <li class="nav-item"> <a href="videos" class="nav-link"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
+            <li class="nav-item"> <a href="home" class="nav-link"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
+            <li class="nav-item"> <a href="videos" class="nav-link active"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
             <li class="nav-item"> <a href="collection" class="nav-link"><i class="fas fa-images"></i> <span class="nav-text">Collection</span></a> </li>
             <li class="nav-item"> <a href="live" class="nav-link"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="openFavoriteModal();" class="nav-link"><i class="fas fa-star"></i> <span class="nav-text">Favorites</span></a> </li>
         </ul>
         <div class="sidebar-bottom">
             <div class="nav-link" onclick="toggleTheme()">
@@ -478,257 +446,77 @@
     </div>
 </aside>
 
+<a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">
+    <i class="fas fa-bell"></i>
+    <span id="notif-badge" class="badge"></span>
+</a>
+
+<div id="notifModal" class="notif-modal">
+    <div class="notif-header">
+        <span>Notifications</span>
+        <i class="fas fa-check-double" style="cursor:pointer;" title="Mark all read"></i>
+    </div>
+    <div id="notif-list">
+        <div class="notif-empty">Loading notifications...</div>
+    </div>
+</div>
+
 <div class="main-wrapper fade-in">
-    <div class="hero-container">
-        <div class="hero-bg-image">
-             <img id="mainDisplay" src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Main" loading="eager">
-        </div>
-        <div class="hero-overlay"></div>
-        <div class="hero-content-box">
-            <h1 id="heroTitle">DXS [SERENADE ON STAGE] ICHEON</h1>
-            
-            <div class="thumbnails-floating">
-                <div class="thumb-btn active" onclick="switchImage(0)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(1)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(2)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(3)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(4)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(5)"><img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png" loading="lazy"></div>
+    <h1 class="page-title">Videos</h1>
+
+    <div class="filter-bar">
+        <div class="category-chips" id="categoryChips"></div>
+    </div>
+
+    <div class="grid-container" id="grid"></div>
+     
+    <div id="pagination"></div>
+</div>
+
+<div id="favoriteModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-star" style="color:gold; margin-right:8px;"></i> Your Collection
             </div>
+            <button class="close-modal" onclick="closeFavoriteModal()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-    </div>
-
-    <div class="section-header">
-        <i class="fas fa-fire"></i> <h3>Recently Added</h3>
-    </div>
-
-    <div class="swipe-scroller drag-scrollable" id="recentlyAddedScroller">
         
-        <div class="swipe-card" onclick="window.location.href='2025/dxs_icheon'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>DXS [SERENADE ON STAGE] ICHEON</h4>
-            </div>
-        </div>
-
-        <div class="swipe-card" onclick="window.location.href='2025/svt_new_encore'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN WORLD TOUR [NEW] ENCORE</h4>
-            </div>
-        </div>
-
-        <div class="swipe-card" onclick="window.location.href='2025/magic_hour'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>MAGIC HOUR THE SEVENTEEN</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/cxminjapan'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>CxM [DOUBLE UP] LIVE PARTY in JAPAN</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/9th_caratland'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">FAN MEET</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN IN CARAT LAND 2025 SVT 9TH FAN MEETING</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2024/8th_caratland'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">VOD</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/cxm_in_incheon'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>CxM [DOUBLE UP] LIVE PARTY in INCHEON</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/fukuokanewtour'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN WORLD TOUR [NEW_] Fukuoka Show</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/japannewtour'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN WORLD TOUR [NEW_] Osaka Show</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/the-shadows-edge'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/the-shadow's-edge.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">MOVIE</span>
-            </div>
-            <div class="swipe-info">
-                <h4>The Shadow's Edge</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/ourchapterS17N-111025-6B4'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/svt_ourchapter.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">DOCU</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN: OUR CHAPTER</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2021/inthesoop2-N12X5R25-74K2'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">VARIETY</span>
-            </div>
-            <div class="swipe-info">
-                <h4>IN THE SOOP SEVENTEEN ver. Season2</h4>
-            </div>
-        </div>
-    </div>
-
-    <div class="section-header">
-        <i class="fas fa-layer-group"></i> <h3>Information Desk</h3>
-    </div>
-
-    <div class="cards-scroller" id="infoCardsContainer">
-        <div class="info-card" onclick="openInfoModal(this)">
-            <div class="card-head">
-                <h4>Rules</h4>
-                <i class="fas fa-expand-alt popup-icon"></i>
-            </div>
-            <div class="info-content-hidden" style="display: none;">
-                <ul>
-                    <li>Do not share or repost any content or links outside this site.</li>
-                    <li>No screenshots, screen recording, or reuploads of any content.</li>
-                    <li>Leaking content will lead to a permanent ban without warning.</li>
-                    <li>Access is for approved users only — do not share your login info or account.</li>
-                </ul>
-                <p style="margin-top: 15px; color: var(--admin-color); padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                    <strong><i class="fas fa-exclamation-triangle"></i> Violation of any rule will result in immediate removal and permanent ban.</strong>
-                </p>
-            </div>
-        </div>
-        <div class="info-card" onclick="openInfoModal(this)">
-            <div class="card-head">
-                <h4>Announcements</h4>
-                <i class="fas fa-expand-alt popup-icon"></i>
-            </div>
-            <div class="info-content-hidden" style="display: none;">
-                <h4 style="color:var(--text-main); margin-bottom:15px; font-size: 18px;">📲 Want to Install the Zone Vault Website as an App?</h4>
-                <p>Here's the Step-by-Step:</p>
-                <ol style="margin-left:20px; margin-bottom: 20px; margin-top: 10px;">
-                    <li>Open <strong>zonevault.site</strong> using <strong>Google Chrome</strong> on your phone.</li>
-                    <li>Wait for the website to fully load, then tap the <strong>three dots (⋮)</strong> in the upper-right corner of your browser.</li>
-                    <li>Select <strong>“Add to Home screen”</strong> then tap <strong>“Install”</strong>.</li>
-                    <li>✅ Once installation is complete, Zone Vault will appear on your phone just like a regular app — no need to search in your browser again!</li>
-                </ol>
-                <p>🔐 <strong>Stay connected anytime, anywhere</strong> — access exclusive content in just one tap.</p>
-                <p style="margin-top: 15px;">💬 <strong>Need help?</strong> Just visit the Vault Help section or email us if you have any other questions.</p>
-            </div>
-        </div>
-        <div class="info-card" onclick="openInfoModal(this)">
-            <div class="card-head">
-                <h4>Notes</h4>
-                <i class="fas fa-expand-alt popup-icon"></i>
-            </div>
-            <div class="info-content-hidden" style="display: none;">
-                <ul>
-                    <li>This platform is for private viewing only.</li>
-                    <li>Sharing links outside may lead to takedown or bans.</li>
-                    <li>All content is <strong>lifetime access</strong> — this means you can watch the content anytime, forever, with no expiration, as long as your account and this website stays active.</li>
-                </ul>
-            </div>
-        </div>
-        <div class="info-card" onclick="openInfoModal(this)">
-            <div class="card-head">
-                <h4>Vault Help</h4>
-                <i class="fas fa-expand-alt popup-icon"></i>
-            </div>
-            <div class="info-content-hidden" style="display: none;">
-                <p><strong>Q: Who can access the content?</strong><br>
-                A: Only paid members or approved joiners can view the exclusive content inside the site.</p>
-                <p style="margin-top: 15px;"><strong>Q: Can I share my account with someone else?</strong><br>
-                A: No. Account sharing is strictly prohibited and will result in a permanent ban.</p>
-                <p style="margin-top: 15px;"><strong>Q: Is it okay to repost or reupload the videos?</strong><br>
-                A: Absolutely not. All content is private. No screenshots, screen recordings, or reposts are allowed.</p>
-                <p style="margin-top: 15px;"><strong>Q: What happens if someone breaks the rules?</strong><br>
-                A: Any violation will lead to immediate removal and a permanent ban, with no warnings.</p>
-                <p style="margin-top: 15px;"><strong>Q: Can I request specific SEVENTEEN content?</strong><br>
-                A: You may send a request, but approval depends on the admin and content availability.</p>
-                <p style="margin-top: 15px;"><strong>Q: Where can I get the access code?</strong><br>
-                A: The access code is shared by the admin through email, DM, or after payment confirmation.</p>
-            </div>
-        </div>
-    </div>
-</div> 
-
-<div id="infoPopupModal" class="info-modal-overlay" onclick="closeInfoModal(event)">
-    <div class="info-modal-box">
-        <div class="info-modal-header">
-            <h3 id="infoPopupTitle">Title</h3>
-            <button class="info-modal-close" onclick="closeInfoModal(event)">&times;</button>
-        </div>
-        <div class="info-modal-body" id="infoPopupBody">
+        <div id="favoriteList" class="modal-body">
             </div>
     </div>
 </div>
 
-<script>
-    // Highlight the correct Bottom Nav item based on current page,
-    // and auto-hide the bar on scroll-down / show it again on scroll-up.
-    (function () {
-        var current = (window.location.pathname.split('/').pop() || 'home').replace('.html', '') || 'home';
-        document.querySelectorAll('.bottom-nav-link').forEach(function (link) {
-            var page = link.getAttribute('href');
-            if (page === current) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
-        });
+<div id="infoModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Important Notice</div>
+            <button class="close-modal" onclick="closeInfoModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+             <div class="info-text">
+                <p><b>Player Update:</b><br>
+                Double tap right to <b>Fast Forward</b>. Double tap left to <b>Rewind</b>. Double tap center to <b>Pause/Play</b>.<br>
+                Hold screen for 2s to show controls.</p>
+                
+                <p><b>Video Quality:</b><br>
+                Quality auto-adjusts based on your internet speed.</p>
+                
+                <hr style="border-color:var(--border-color); margin:15px 0;">
+                
+                <p style="color: var(--admin-color);"><b>PLEASE READ:</b><br>
+                Do not record, reupload, or share content. Unauthorized distribution will result in a <b>permanent ban</b>.</p>
+            </div>
+            <button onclick="closeInfoModal()" class="btn-watch" style="width:100%; margin-top:10px; padding: 12px; font-size: 13px;">I Understand</button>
+        </div>
+    </div>
+</div>
 
+<script>
+    // Bottom nav: highlight active + auto-hide on scroll down / show on scroll up
+    (function () {
         var bottomNav = document.getElementById('bottomNav');
         var lastScrollY = window.scrollY;
         window.addEventListener('scroll', function () {
@@ -744,7 +532,7 @@
     })();
 </script>
 
-<script type="module" src="/js/home.js"></script>
+<script type="module" src="/js/videos.js"></script>
 
 </body>
 </html>

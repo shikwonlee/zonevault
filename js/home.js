@@ -63,22 +63,14 @@ const userEmail = user.email || "";
 
 
             // --- C. UPDATE UI ---
-            // Desktop Sidebar
+            // Desktop Sidebar only — the mobile slide-out sidebar was removed
+            // in favor of the Bottom Nav Bar, which reads name/email/pic from the Profile page.
             if (document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = userName;
             if (document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = userEmail;
             if (document.getElementById("sidebar-pic")) {
                 const picEl = document.getElementById("sidebar-pic");
                 picEl.src = userPic;
                 picEl.onerror = () => { picEl.src = "https://via.placeholder.com/150"; }; // Iwas broken image
-            }
-
-            // Mobile Sidebar
-            if (document.getElementById("mobile-sidebar-name")) document.getElementById("mobile-sidebar-name").innerText = userName;
-            if (document.getElementById("mobile-sidebar-email")) document.getElementById("mobile-sidebar-email").innerText = userEmail;
-            if (document.getElementById("mobile-sidebar-pic")) {
-                const mPicEl = document.getElementById("mobile-sidebar-pic");
-                mPicEl.src = userPic;
-                mPicEl.onerror = () => { mPicEl.src = "https://via.placeholder.com/150"; }; // Iwas broken image
             }
         } catch (error) {
             console.error("Error fetching database profile:", error);
@@ -106,11 +98,6 @@ window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
     const isLight = document.body.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
-}
-
-window.toggleMobileSidebar = function() { 
-    const sidebar = document.getElementById('mobileSidebar');
-    if(sidebar) sidebar.classList.toggle('open'); 
 }
 
 window.toggleNotifModal = function() {

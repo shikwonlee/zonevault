@@ -61,6 +61,8 @@ let favorites = [];
 let userId = null;
 let currentPaginationPage = 1;
 let cardsPerPage = window.innerWidth <= 900 ? 6 : 8;
+let activeCategory = "ALL";
+let searchTerm = "";
 
 const data = [
   {id:"v14", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", category:"FAN MEET", title:"2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", hashtags:"c: uvvul", link:"2026/svt_in_carat_land_2026.html"},
@@ -123,7 +125,50 @@ window.closeInfoModal = function() {
 }
 
 // ==========================================
-// 5. GRID & PAGINATION RENDERING
+// 5. SEARCH + CATEGORY FILTER
+// ==========================================
+function getFilteredData() {
+    return data.filter(item => {
+        const matchesCategory = activeCategory === "ALL" || item.category === activeCategory;
+        const matchesSearch = !searchTerm || item.title.toLowerCase().includes(searchTerm);
+        return matchesCategory && matchesSearch;
+    });
+}
+
+function renderCategoryChips() {
+    const container = document.getElementById('categoryChips');
+    if (!container) return;
+    const categories = ["ALL", ...new Set(data.map(d => d.category).filter(Boolean))];
+    container.innerHTML = "";
+    categories.forEach(cat => {
+        const chip = document.createElement('button');
+        chip.className = 'chip' + (cat === activeCategory ? ' active' : '');
+        chip.textContent = cat;
+        chip.onclick = () => {
+            activeCategory = cat;
+            currentPaginationPage = 1;
+            renderCategoryChips();
+            renderGrid(1);
+        };
+        container.appendChild(chip);
+    });
+}
+
+const searchInputEl = document.getElementById('searchInput');
+if (searchInputEl) {
+    let debounceTimer;
+    searchInputEl.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            searchTerm = e.target.value.trim().toLowerCase();
+            currentPaginationPage = 1;
+            renderGrid(1);
+        }, 200);
+    });
+}
+
+// ==========================================
+// 6. GRID & PAGINATION RENDERING
 // ==========================================
 const grid = document.getElementById("grid");
 
@@ -139,9 +184,16 @@ window.addEventListener('resize', () => {
 function renderGrid(page) {
     if(!grid) return;
     grid.innerHTML = "";
+    const filtered = getFilteredData();
     const start = (page-1) * cardsPerPage;
     const end = start + cardsPerPage;
-    const pageData = data.slice(start,end);
+    const pageData = filtered.slice(start,end);
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div class="no-results"><i class="fas fa-video-slash"></i>No videos match your search.</div>`;
+        renderPagination(filtered.length);
+        return;
+    }
 
     pageData.forEach(item => {
         const el = document.createElement("div");
@@ -166,15 +218,16 @@ function renderGrid(page) {
         `;
         grid.appendChild(el);
     });
-    renderPagination();
+    renderPagination(filtered.length);
     startCountdown();
 }
 
-function renderPagination() {
+function renderPagination(totalCount) {
     const pagination = document.getElementById("pagination");
     if(!pagination) return;
     pagination.innerHTML = "";
-    const pageCount = Math.ceil(data.length / cardsPerPage);
+    const count = typeof totalCount === 'number' ? totalCount : data.length;
+    const pageCount = Math.ceil(count / cardsPerPage);
     if(pageCount <= 1) return;
     
     for(let i=1; i<=pageCount; i++){
@@ -203,7 +256,7 @@ function startCountdown() {
 }
 
 // ==========================================
-// 6. FAVORITES LOGIC
+// 7. FAVORITES LOGIC
 // ==========================================
 function loadFavoritesFromFirebase() {
     if (!userId) return;
@@ -264,11 +317,12 @@ window.closeFavoriteModal = function() {
     document.body.classList.remove('no-scroll');
 }
 
-// Initialize Grid visually first
+// Initialize Grid + Chips visually first
+renderCategoryChips();
 renderGrid(1);
 
 // ==========================================
-// 7. NOTIFICATIONS LOGIC
+// 8. NOTIFICATIONS LOGIC
 // ==========================================
 const notifList = document.getElementById('notif-list');
 let latestNotifTimestamp = 0;
@@ -320,7 +374,7 @@ window.toggleNotifModal = function() {
 }
 
 // ==========================================
-// 8. AUTH, SESSIONS & SECURITY LOGIC
+// 9. AUTH, SESSIONS & SECURITY LOGIC
 // ==========================================
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {

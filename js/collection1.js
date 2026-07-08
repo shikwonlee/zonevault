@@ -71,10 +71,6 @@ window.toggleTheme = function() {
 }
 initTheme();
 
-window.toggleMobileSidebar = function() {
-    document.getElementById('mobileSidebar').classList.toggle('open');
-}
-
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
         signOut(auth).then(() => window.location.replace("/index"));
@@ -148,14 +144,9 @@ onAuthStateChanged(auth, user => {
             if(document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = name;
             if(document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = user.email;
             if(document.getElementById("sidebar-pic")) document.getElementById("sidebar-pic").src = pic;
-            
-            if(document.getElementById("mobile-sidebar-name")) document.getElementById("mobile-sidebar-name").innerText = name;
-            if(document.getElementById("mobile-sidebar-email")) document.getElementById("mobile-sidebar-email").innerText = user.email;
-            if(document.getElementById("mobile-sidebar-pic")) document.getElementById("mobile-sidebar-pic").src = pic;
 
             const statusTxt = isAdm ? "ADMIN ACCESS" : "MEMBER ACCESS";
             if(document.getElementById("status-text-pc")) document.getElementById("status-text-pc").innerText = statusTxt;
-            if(document.getElementById("status-text-mobile")) document.getElementById("status-text-mobile").innerText = statusTxt;
             
             if (isAdm) { sessionStorage.setItem('isAdmin', 'true'); sessionStorage.setItem('internalAccess', 'true'); }
 
@@ -222,21 +213,30 @@ function renderMenu() {
     if(!menuContainer) return;
     menuContainer.innerHTML = '';
 
-    categoryMenu.forEach(cat => {
+    const countEl = document.getElementById('galleryCount');
+    if (countEl) countEl.textContent = categoryMenu.length;
+
+    categoryMenu.forEach((cat, index) => {
         const card = document.createElement('a');
         card.className = 'cat-card';
         card.href = cat.href;
+        card.style.animationDelay = `${Math.min(index * 0.05, 0.6)}s`;
 
         const img = document.createElement('img');
         img.src = cat.thumb;
         img.loading = "lazy";
         img.alt = cat.title;
 
+        const viewBadge = document.createElement('div');
+        viewBadge.className = 'cat-view-badge';
+        viewBadge.innerHTML = '<i class="fas fa-arrow-right"></i>';
+
         const overlay = document.createElement('div');
         overlay.className = 'cat-title-overlay';
         overlay.innerHTML = `<h3>${cat.title}</h3>`;
 
         card.appendChild(img);
+        card.appendChild(viewBadge);
         card.appendChild(overlay);
         menuContainer.appendChild(card);
     });

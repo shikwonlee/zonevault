@@ -33,6 +33,7 @@
         --sidebar-width-expanded: 220px; 
         --input-bg: #27272a;
         --link-color: #3b82f6;
+        --bottom-nav-height: 66px;
     }
 
     body.light-mode {
@@ -265,7 +266,40 @@
     .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
     /* =========================================
-       5. MOBILE RESPONSIVENESS
+       5. BOTTOM NAVIGATION BAR (MOBILE)
+       ========================================= */
+    .bottom-nav-mobile {
+        display: none;
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -6px 20px rgba(0,0,0,0.35);
+        z-index: 950;
+        padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+        align-items: center; justify-content: space-around;
+        transition: transform 0.3s ease;
+    }
+    .bottom-nav-mobile.hide-on-scroll { transform: translateY(100%); }
+
+    .bottom-nav-link {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 4px; text-decoration: none; color: var(--text-muted);
+        font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
+        padding: 6px 2px; border-radius: 10px; position: relative;
+        transition: color 0.2s ease, transform 0.15s ease; background: none; border: none; cursor: pointer;
+        font-family: inherit;
+    }
+    .bottom-nav-link i { font-size: 19px; transition: transform 0.15s ease; }
+    .bottom-nav-link:active { transform: scale(0.92); }
+    .bottom-nav-link.active { color: var(--text-main); }
+    .bottom-nav-link.active i { transform: translateY(-1px); }
+    .bottom-nav-link.active::before {
+        content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+        width: 18px; height: 3px; border-radius: 3px; background: var(--text-main);
+    }
+
+    /* =========================================
+       6. MOBILE RESPONSIVENESS
        ========================================= */
     .mobile-header { 
         display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
@@ -279,31 +313,11 @@
     }
     .mobile-logo-img { height: 26px; width: auto; }
 
-    .mobile-sidebar-menu { 
-        position: fixed; top: 0; left: 0; width: 280px; height: 100vh; height: 100dvh; 
-        background: var(--card-bg); border-right: 1px solid var(--border-color);
-        box-shadow: var(--shadow-float);
-        z-index: 10000; transform: translateX(-100%); -webkit-transform: translateX(-100%) translateZ(0);
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
-        will-change: transform; display: flex; flex-direction: column; overflow: hidden; 
-    }
-    .mobile-sidebar-menu.open { 
-        transform: translateX(0); 
-        -webkit-transform: translateX(0) translateZ(0);
-    }
-    
-    .mobile-sidebar-menu .sidebar-container {
-        overflow-y: auto;
-        padding: 20px 15px;
-    }
-    .mobile-sidebar-menu .sidebar-container::-webkit-scrollbar {
-        display: none;
-    }
-
     @media (max-width: 900px) {
         .sidebar-desktop { display: none; }
         .mobile-header { display: flex; }
-        body { padding-left: 0; }
+        .bottom-nav-mobile { display: flex; }
+        body { padding-left: 0; padding-bottom: var(--bottom-nav-height); }
         
         .hero-notif-btn { display: none !important; }
         
@@ -329,50 +343,17 @@
             <i class="fas fa-bell"></i>
             <span id="notif-badge-mobile" class="badge"></span>
         </a>
-        <button class="header-btn" onclick="toggleMobileSidebar()">
-            <i class="fas fa-bars"></i>
-        </button>
     </div>
 </div>
 
-<div id="mobileSidebar" class="mobile-sidebar-menu">
-    <div class="sidebar-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px 20px 5px;">
-            <div class="sidebar-brand" style="justify-content: flex-start; margin-bottom: 0; height: auto;">
-                <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo" style="width:24px; height:24px;">
-                <span style="opacity:1; position:static; margin-left:12px; transform:none; font-size:15px; color:var(--text-main);">ZONE VAULT</span>
-            </div>
-            <button onclick="toggleMobileSidebar()" style="background:none; border:none; color:var(--text-main); font-size:28px; cursor:pointer; margin-top: -2px;">&times;</button>
-        </div>
-        <ul class="nav-list" style="padding: 10px 0;">
-            <li class="nav-item"> <a href="profile" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-user" style="margin-right:15px;"></i> Profile</a> </li>
-            <li class="nav-item"> <a href="home" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-home" style="margin-right:15px;"></i> Home</a> </li>
-            <li class="nav-item"> <a href="videos" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-play-circle" style="margin-right:15px;"></i> Videos</a> </li>
-            <li class="nav-item"> <a href="collection" class="nav-link" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-images" style="margin-right:15px;"></i> Collection</a> </li>
-            <li class="nav-item"> <a href="live" class="nav-link active" style="justify-content: flex-start; padding-left: 15px;"><i class="fas fa-broadcast-tower" style="margin-right:15px;"></i> Live</a> </li>
-        </ul>
-        <div class="sidebar-bottom" style="margin-top: auto; padding-bottom: 0;">
-             <div class="nav-link" onclick="toggleTheme()" style="justify-content: flex-start; padding-left: 15px; cursor: pointer;">
-                <i class="fas fa-cog" style="margin-right:15px;"></i> 
-                <span>Switch Theme</span>
-            </div>
-            <div class="nav-link text-danger" style="cursor:default; justify-content: flex-start; padding-left: 15px;">
-                 <i class="fas fa-shield-alt" style="margin-right:15px;"></i>
-                 <span id="status-text-mobile">ADMIN ACCESS</span>
-            </div>
-            <a href="javascript:void(0)" onclick="logout()" class="nav-link text-danger" style="justify-content: flex-start; padding-left: 15px;">
-                <i class="fas fa-sign-out-alt" style="margin-right:15px;"></i> Log Out
-            </a>
-            <div class="sidebar-user" onclick="window.location.href='profile'" style="justify-content: flex-start; padding-left: 10px; margin-top: 15px;">
-                <img id="mobile-sidebar-pic" src="https://via.placeholder.com/150" alt="Profile" style="width:36px; height:36px;">
-                <div class="sidebar-user-info" style="display:block; margin-left:12px;">
-                    <div id="mobile-sidebar-name" class="sidebar-username">Loading...</div>
-                    <div id="mobile-sidebar-email" class="sidebar-useremail">...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- BOTTOM NAVIGATION BAR (mobile only) — matches home.html / videos.html -->
+<nav class="bottom-nav-mobile" id="bottomNav">
+    <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
+    <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="videos" class="bottom-nav-link"><i class="fas fa-play-circle"></i><span>Videos</span></a>
+    <a href="collection" class="bottom-nav-link"><i class="fas fa-images"></i><span>Collection</span></a>
+    <a href="live" class="bottom-nav-link active"><i class="fas fa-broadcast-tower"></i><span>Live</span></a>
+</nav>
 
 <aside class="sidebar-desktop">
     <div class="sidebar-container">
@@ -471,6 +452,22 @@
         document.getElementById('linkConfirmModal').classList.remove('active');
         window.open('https://stream.zonevault.live/', '_blank');
     }
+
+    // Bottom nav: auto-hide on scroll down / show on scroll up
+    (function () {
+        var bottomNav = document.getElementById('bottomNav');
+        var lastScrollY = window.scrollY;
+        window.addEventListener('scroll', function () {
+            if (!bottomNav) return;
+            var currentScrollY = window.scrollY;
+            if (currentScrollY > lastScrollY && currentScrollY > 80) {
+                bottomNav.classList.add('hide-on-scroll');
+            } else {
+                bottomNav.classList.remove('hide-on-scroll');
+            }
+            lastScrollY = currentScrollY;
+        }, { passive: true });
+    })();
 </script>
 
 <script type="module" src="/js/live.js"></script>

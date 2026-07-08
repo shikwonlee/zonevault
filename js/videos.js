@@ -62,7 +62,6 @@ let userId = null;
 let currentPaginationPage = 1;
 let cardsPerPage = window.innerWidth <= 900 ? 6 : 8;
 let activeCategory = "ALL";
-let searchTerm = "";
 
 const data = [
   {id:"v14", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", category:"FAN MEET", title:"2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", hashtags:"c: uvvul", link:"2026/svt_in_carat_land_2026.html"},
@@ -117,7 +116,6 @@ window.toggleTheme = function() {
 }
 initTheme();
 
-window.toggleMobileSidebar = function() { document.getElementById('mobileSidebar').classList.toggle('open'); }
 window.closeInfoModal = function() { 
     document.getElementById('infoModal').classList.remove('active'); 
     sessionStorage.setItem('infoModalShown', 'true'); 
@@ -125,14 +123,11 @@ window.closeInfoModal = function() {
 }
 
 // ==========================================
-// 5. SEARCH + CATEGORY FILTER
+// 5. CATEGORY FILTER
 // ==========================================
 function getFilteredData() {
-    return data.filter(item => {
-        const matchesCategory = activeCategory === "ALL" || item.category === activeCategory;
-        const matchesSearch = !searchTerm || item.title.toLowerCase().includes(searchTerm);
-        return matchesCategory && matchesSearch;
-    });
+    if (activeCategory === "ALL") return data;
+    return data.filter(item => item.category === activeCategory);
 }
 
 function renderCategoryChips() {
@@ -151,19 +146,6 @@ function renderCategoryChips() {
             renderGrid(1);
         };
         container.appendChild(chip);
-    });
-}
-
-const searchInputEl = document.getElementById('searchInput');
-if (searchInputEl) {
-    let debounceTimer;
-    searchInputEl.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            searchTerm = e.target.value.trim().toLowerCase();
-            currentPaginationPage = 1;
-            renderGrid(1);
-        }, 200);
     });
 }
 
@@ -190,7 +172,7 @@ function renderGrid(page) {
     const pageData = filtered.slice(start,end);
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="no-results"><i class="fas fa-video-slash"></i>No videos match your search.</div>`;
+        grid.innerHTML = `<div class="no-results"><i class="fas fa-video-slash"></i>No videos in this category yet.</div>`;
         renderPagination(filtered.length);
         return;
     }

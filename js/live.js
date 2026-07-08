@@ -1,209 +1,476 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Live | Zone Vault</title>
+   
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-console.log("✅ Live.js successfully loaded!");
-
-// ---------- FIREBASE CONFIG ----------
-const firebaseConfig = {
-    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-    authDomain: "tvnstream-b4497.firebaseapp.com",
-    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-    projectId: "tvnstream-b4497",
-    storageBucket: "tvnstream-b4497.appspot.com",
-    messagingSenderId: "308384754214",
-    appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
-    measurementId: "G-VFNH70R4D9"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-
-// ==========================================
-// 1. THE MAINTENANCE KILL SWITCH (REALTIME)
-// ==========================================
-const maintenanceRef = ref(db, 'settings/maintenanceMode');
-onValue(maintenanceRef, (snapshot) => {
-    const isUnderMaintenance = snapshot.val();
-    const currentPage = window.location.pathname;
-
-    if (isUnderMaintenance === true && !currentPage.includes('maintenance')) {
-        sessionStorage.setItem('returnPage', window.location.href);
-        window.location.href = 'maintenance';
-    } 
-    else if (isUnderMaintenance === false && currentPage.includes('maintenance')) {
-        const returnUrl = sessionStorage.getItem('returnPage') || 'live';
-        window.location.href = returnUrl; 
+  <style>
+    /* =========================================
+       1. VARIABLES & THEME ENGINE (MODERN SOLID)
+       ========================================= */
+    :root {
+        --bg-color: #09090b; 
+        --card-bg: #18181b;  
+        --border-color: #27272a; 
+        --hover-bg: #27272a;
+        --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.6);
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --accent: #ffffff;
+        --status-online: #22c55e;
+        --admin-color: #ef4444; 
+        --youtube-red: #ff0000;
+        --sidebar-width-collapsed: 64px; 
+        --sidebar-width-expanded: 220px; 
+        --input-bg: #27272a;
+        --link-color: #3b82f6;
+        --bottom-nav-height: 66px;
     }
-});
 
-// ==========================================
-// 2. DYNAMIC URL PARAMETERS LOGIC
-// ==========================================
-function updateDynamicURL(uid, role, status) {
-  let token = sessionStorage.getItem('urlToken');
-  if (!token) {
-      token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-      sessionStorage.setItem('urlToken', token);
-  }
-  const newUrl = `${window.location.pathname}?uid=${uid}&token=${token}&role=${role}&status=${status}`;
-  window.history.pushState({ path: newUrl }, '', newUrl);
-}
-
-// ==========================================
-// 3. UI THEMES & TOGGLES
-// ==========================================
-function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
-}
-window.toggleTheme = function() {
-    document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
-    localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
-}
-initTheme();
-
-window.toggleMobileSidebar = function() {
-    document.getElementById('mobileSidebar').classList.toggle('open');
-}
-
-window.logout = function() {
-    if(confirm("Are you sure you want to log out?")) {
-        signOut(auth).then(() => window.location.replace("index"));
+    body.light-mode {
+        --bg-color: #f4f4f5;
+        --card-bg: #ffffff;
+        --border-color: #e4e4e7;
+        --hover-bg: #f4f4f5;
+        --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.08);
+        --text-main: #18181b;
+        --text-muted: #71717a;
+        --input-bg: #f4f4f5;
+        --link-color: #2563eb;
     }
-}
 
-// ==========================================
-// 4. NOTIFICATIONS
-// ==========================================
-const notifList = document.getElementById('notif-list');
-let latestNotifTimestamp = 0;
-const notifQuery = query(ref(db, 'notifications'), limitToLast(10));
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
 
-onValue(notifQuery, snapshot => {
-    if(!notifList) return;
-    notifList.innerHTML = ''; 
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        const notifs = Object.values(data).reverse(); 
-        
-        notifs.forEach(n => {
-            const item = document.createElement('div');
-            item.className = 'notif-item';
-            item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
-            notifList.appendChild(item);
-            if(n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
-        });
-
-        const lastRead = localStorage.getItem('lastReadNotif') || 0;
-        const badgeDesktop = document.getElementById('notif-badge');
-        const badgeMobile = document.getElementById('notif-badge-mobile');
-        
-        if (latestNotifTimestamp > lastRead) {
-            if(badgeDesktop) badgeDesktop.classList.add('active');
-            if(badgeMobile) badgeMobile.classList.add('active');
-        } else {
-            if(badgeDesktop) badgeDesktop.classList.remove('active');
-            if(badgeMobile) badgeMobile.classList.remove('active');
-        }
-    } else {
-        notifList.innerHTML = '<div class="notif-empty">No new notifications</div>';
+    body { 
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        overflow-x: hidden;
+        padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
+        position: relative;
     }
-});
-
-window.toggleNotifModal = function() {
-    const modal = document.getElementById('notifModal');
-    const badgeDesktop = document.getElementById('notif-badge');
-    const badgeMobile = document.getElementById('notif-badge-mobile');
     
-    if(!modal) return;
-    modal.classList.toggle('active');
-    if (modal.classList.contains('active')) {
-        if(badgeDesktop) badgeDesktop.classList.remove('active');
-        if(badgeMobile) badgeMobile.classList.remove('active');
-        localStorage.setItem('lastReadNotif', latestNotifTimestamp);
+    body.no-scroll { overflow: hidden; }
+
+    .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================
+       2. SOLID SIDEBAR & MENUS 
+       ========================================= */
+    .sidebar-desktop {
+        position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
+        border-radius: 16px; width: var(--sidebar-width-collapsed);
+        background: var(--card-bg);
+        border: 1px solid var(--border-color); 
+        box-shadow: var(--shadow-subtle);
+        z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden; display: flex; flex-direction: column;
+        will-change: width; -webkit-transform: translateZ(0);
     }
-}
+    .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
 
-// ==========================================
-// 5. AUTH & SECURITY LOGIC
-// ==========================================
-window.isKickedOut = false; // Initialize flag for security modal
+    .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
 
-onAuthStateChanged(auth, user => {
-    if(user) {
-        onValue(ref(db, 'users/' + user.uid), snap => {
-            const data = snap.val() || {};
-            const name = data.name || "Member";
-            const pic = data.profilePicture || "https://via.placeholder.com/150";
-            const role = (data.role || "member").toLowerCase();
-            const isAdm = role === 'admin';
+    .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; }
+    .sidebar-brand img { width: 24px; height: 24px; object-fit: contain; z-index: 2; }
+    .sidebar-brand span { position: absolute; left: 50px; opacity: 0; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; color: var(--text-main); transition: opacity 0.2s ease; pointer-events: none; text-transform: uppercase; }
+    .sidebar-desktop:hover .sidebar-brand { justify-content: flex-start; padding-left: 20px; }
+    .sidebar-desktop:hover .sidebar-brand span { opacity: 1; pointer-events: auto; }
 
-            if (!window.isKickedOut) {
-                if(document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = name;
-                if(document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = user.email;
-                if(document.getElementById("sidebar-pic")) document.getElementById("sidebar-pic").src = pic;
-                
-                if(document.getElementById("mobile-sidebar-name")) document.getElementById("mobile-sidebar-name").innerText = name;
-                if(document.getElementById("mobile-sidebar-email")) document.getElementById("mobile-sidebar-email").innerText = user.email;
-                if(document.getElementById("mobile-sidebar-pic")) document.getElementById("mobile-sidebar-pic").src = pic;
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
+    .nav-link { display: flex; align-items: center; height: 40px; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; font-size: 13px; font-weight: 500; width: 100%; justify-content: center; position: relative; cursor: pointer; border-radius: 8px; }
+    .nav-link i { font-size: 16px; min-width: 20px; text-align: center; transition: color 0.3s; }
+    .nav-text { display: none; white-space: nowrap; margin-left: 12px; opacity: 0; transition: opacity 0.2s; }
+    .sidebar-desktop:hover .nav-link { justify-content: flex-start; padding-left: 12px; }
+    .sidebar-desktop:hover .nav-text { display: block; opacity: 1; transition-delay: 0.1s; }
+    
+    .nav-link:hover { background: var(--hover-bg); color: var(--text-main); }
+    .nav-link.active { color: var(--text-main); background: var(--hover-bg); font-weight: 600; }
 
-                const statusTxt = isAdm ? "ADMIN ACCESS" : "MEMBER ACCESS";
-                if(document.getElementById("status-text-pc")) document.getElementById("status-text-pc").innerText = statusTxt;
-                if(document.getElementById("status-text-mobile")) document.getElementById("status-text-mobile").innerText = statusTxt;
-            }
-            
-            if (isAdm) { 
-                sessionStorage.setItem('isAdmin', 'true'); 
-                sessionStorage.setItem('internalAccess', 'true'); 
-            }
+    .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
+    .text-danger { color: var(--admin-color) !important; font-weight: 600; }
+    .text-danger i { color: var(--admin-color) !important; }
 
-            // Update Dynamic URL
-            get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {
-                const reqStatus = reqSnap.val() || 'none';
-                updateDynamicURL(user.uid, role, reqStatus);
-            });
-        });
-    } else {
-        // Fallback to anonymous sign-in if guest
-        signInAnonymously(auth).catch(error => {
-            console.error("Anonymous Sign-in failed:", error);
-            if (!window.isKickedOut) {
-                window.location.replace("index");
-            }
-        });
+    .sidebar-user { display: flex; align-items: center; justify-content: center; padding: 10px; cursor: pointer; transition: 0.2s; margin-top: 5px; border-top: 1px solid var(--border-color); border-radius: 8px; }
+    .sidebar-user:hover { background: var(--hover-bg); }
+    .sidebar-user img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
+    .sidebar-user-info { display: none; margin-left: 10px; }
+    .sidebar-desktop:hover .sidebar-user { justify-content: flex-start; padding-left: 10px; border-top: none; }
+    .sidebar-desktop:hover .sidebar-user-info { display: block; }
+    .sidebar-username { font-size: 13px; font-weight: 600; color: var(--text-main); }
+    .sidebar-useremail { font-size: 10px; color: var(--text-muted); }
+
+    /* =========================================
+       3. MODERN BUTTONS & MODAL (NO BLUR) 
+       ========================================= */
+    .hero-notif-btn, .header-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-subtle); 
+        color: var(--text-main);
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
     }
-});
+    
+    .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
+    .header-btn { width: 40px; height: 40px; border-radius: 50%; font-size: 16px; pointer-events: auto; position: relative; }
+    
+    .hero-notif-btn:hover, .header-btn:hover { background: var(--hover-bg); transform: translateY(-2px); box-shadow: var(--shadow-float); }
+    
+    .hero-notif-btn .badge, .header-btn .badge { 
+        position: absolute; top: 0px; right: 0px; width: 12px; height: 12px; 
+        background: var(--admin-color); border-radius: 50%; border: 2px solid var(--card-bg); display: none; 
+    }
+    .hero-notif-btn .badge.active, .header-btn .badge.active { display: block; }
 
-// SECURITY CHECK
-const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', '/hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection', '/live'];
-const isAdminFlag = sessionStorage.getItem('isAdmin') === 'true';
-const currentPagePath = window.location.pathname;
-let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true';
-const referer = document.referrer;
-const refererPath = referer ? new URL(referer, location.origin).pathname : null;
+    .notif-modal { 
+        position: absolute !important; top: 85px; right: 40px; width: 340px; max-height: 400px; 
+        background: var(--card-bg); border: 1px solid var(--border-color); 
+        box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
+    }
+    .notif-modal.active { display: flex; animation: dropDown 0.2s ease; }
+    @keyframes dropDown { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
+    
+    .notif-header { padding: 16px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
+    .notif-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 14px; align-items: flex-start; transition: 0.2s; }
+    .notif-item:hover { background: var(--hover-bg); }
+    .notif-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-main); flex-shrink: 0; }
+    .notif-content h5 { font-size: 14px; color: var(--text-main); margin-bottom: 4px; }
+    .notif-content p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+    .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
-const cameFromAllowedPageFlag = refererPath && allowedPaths.includes(refererPath);
-if (cameFromAllowedPageFlag || isAdminFlag) { 
-    sessionStorage.setItem('internalAccess', 'true'); 
-    hasInternalAccessFlag = true; 
-}
-const isIndexPagePath = currentPagePath.endsWith('index') || currentPagePath === '/';
+    /* =========================================
+       4. NEW LIVESTREAM NOTICE STYLES
+       ========================================= */
+    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-top: 40px; display: flex; justify-content: center; align-items: center; min-height: 80vh;}
+    
+    .notice-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 50px 40px;
+        max-width: 550px;
+        width: 90%;
+        text-align: center;
+        box-shadow: var(--shadow-float);
+        animation: fadeIn 0.4s ease;
+    }
+    .notice-box h2 {
+        font-size: 26px;
+        font-weight: 800;
+        margin-bottom: 25px;
+        color: var(--text-main);
+        letter-spacing: 0.5px;
+    }
 
-if (!hasInternalAccessFlag && !isIndexPagePath && !isAdminFlag && !window.isKickedOut) { 
-    showAccessDeniedModal(); 
-}
+    /* THE NEW LINK BOX STYLING */
+    .link-container {
+        background: var(--hover-bg);
+        border: 1px solid var(--border-color);
+        padding: 16px 20px;
+        border-radius: 12px;
+        margin: 0 auto 30px auto;
+        cursor: pointer;
+        display: block;
+        max-width: 380px;
+        transition: 0.2s ease;
+        text-decoration: none;
+    }
+    .link-container:hover {
+        border-color: var(--text-muted);
+        transform: translateY(-2px);
+    }
+    .link-title {
+        color: var(--text-main);
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .link-url {
+        color: var(--link-color);
+        font-size: 16px;
+        font-weight: 700;
+    }
 
-function showAccessDeniedModal() {
-    window.isKickedOut = true;
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.replace('index')">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-    setTimeout(() => { window.location.replace("index"); }, 3000);
-}
+    .notice-box p {
+        font-size: 16px;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+    .notice-footer {
+        font-weight: 700;
+        color: var(--text-main);
+        margin-top: 10px;
+    }
+
+    /* LINK CONFIRMATION MODAL */
+    .link-modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        display: none; align-items: center; justify-content: center;
+        z-index: 10001;
+        backdrop-filter: blur(4px);
+    }
+    .link-modal-overlay.active { display: flex; animation: fadeIn 0.2s ease forwards;}
+    
+    .link-modal-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        padding: 35px 30px;
+        border-radius: 16px;
+        max-width: 380px;
+        width: 90%;
+        text-align: center;
+        box-shadow: var(--shadow-float);
+    }
+    .link-modal-card h3 { 
+        font-size: 20px; 
+        margin-bottom: 15px; 
+        color: var(--text-main); 
+    }
+    .link-modal-card p { 
+        font-size: 14px; 
+        color: var(--text-muted); 
+        line-height: 1.5; 
+        margin-bottom: 25px; 
+    }
+    .link-btn-group { display: flex; gap: 12px; justify-content: center; }
+    .link-btn {
+        padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; font-size: 14px; flex: 1;
+    }
+    .btn-cancel { background: var(--hover-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-cancel:hover { background: var(--border-color); }
+    .btn-confirm { background: var(--text-main); color: var(--bg-color); }
+    .btn-confirm:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    /* ACCESS DENIED */
+    .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 10000; }
+    .access-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 50px; border-radius: 16px; text-align: center; color: var(--text-main); max-width: 420px; width: 90%; box-shadow: var(--shadow-float); }
+    .access-icon-box { width: 70px; height: 70px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 28px; border-top: 1px solid rgba(239, 68, 68, 0.2); }
+    .access-title { font-size: 24px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .access-desc { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
+    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 14px 35px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; font-family: inherit;}
+    .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+    /* =========================================
+       5. BOTTOM NAVIGATION BAR (MOBILE)
+       ========================================= */
+    .bottom-nav-mobile {
+        display: none;
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -6px 20px rgba(0,0,0,0.35);
+        z-index: 950;
+        padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+        align-items: center; justify-content: space-around;
+        transition: transform 0.3s ease;
+    }
+    .bottom-nav-mobile.hide-on-scroll { transform: translateY(100%); }
+
+    .bottom-nav-link {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 4px; text-decoration: none; color: var(--text-muted);
+        font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
+        padding: 6px 2px; border-radius: 10px; position: relative;
+        transition: color 0.2s ease, transform 0.15s ease; background: none; border: none; cursor: pointer;
+        font-family: inherit;
+    }
+    .bottom-nav-link i { font-size: 19px; transition: transform 0.15s ease; }
+    .bottom-nav-link:active { transform: scale(0.92); }
+    .bottom-nav-link.active { color: var(--text-main); }
+    .bottom-nav-link.active i { transform: translateY(-1px); }
+    .bottom-nav-link.active::before {
+        content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+        width: 18px; height: 3px; border-radius: 3px; background: var(--text-main);
+    }
+
+    /* =========================================
+       6. MOBILE RESPONSIVENESS
+       ========================================= */
+    .mobile-header { 
+        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
+        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; background: transparent; border: none; pointer-events: none; 
+    }
+    
+    .mobile-logo-container { 
+        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 16px; pointer-events: auto; 
+        background: transparent; border: none; box-shadow: none; padding: 0;
+        letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+    }
+    .mobile-logo-img { height: 26px; width: auto; }
+
+    @media (max-width: 900px) {
+        .sidebar-desktop { display: none; }
+        .mobile-header { display: flex; }
+        .bottom-nav-mobile { display: flex; }
+        body { padding-left: 0; padding-bottom: var(--bottom-nav-height); }
+        
+        .hero-notif-btn { display: none !important; }
+        
+        .notif-modal { 
+            position: fixed !important; top: 75px !important; right: 15px !important; 
+            width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; 
+        }
+        
+        .main-wrapper { padding-top: 80px; padding-bottom: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="mobile-header">
+    <div class="mobile-logo-container">
+         <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
+         <span>ZONE VAULT</span>
+    </div>
+    
+    <div style="display: flex; gap: 10px; pointer-events: auto;">
+        <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">
+            <i class="fas fa-bell"></i>
+            <span id="notif-badge-mobile" class="badge"></span>
+        </a>
+    </div>
+</div>
+
+<!-- BOTTOM NAVIGATION BAR (mobile only) — matches home.html / videos.html -->
+<nav class="bottom-nav-mobile" id="bottomNav">
+    <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
+    <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="videos" class="bottom-nav-link"><i class="fas fa-play-circle"></i><span>Videos</span></a>
+    <a href="collection" class="bottom-nav-link"><i class="fas fa-images"></i><span>Collection</span></a>
+    <a href="live" class="bottom-nav-link active"><i class="fas fa-broadcast-tower"></i><span>Live</span></a>
+</nav>
+
+<aside class="sidebar-desktop">
+    <div class="sidebar-container">
+        <div class="sidebar-brand">
+            <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
+            <span>ZONE VAULT</span>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item"> <a href="profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
+            <li class="nav-item"> <a href="home" class="nav-link"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
+            <li class="nav-item"> <a href="videos" class="nav-link"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
+            <li class="nav-item"> <a href="collection" class="nav-link"><i class="fas fa-images"></i> <span class="nav-text">Collection</span></a> </li>
+            <li class="nav-item"> <a href="live" class="nav-link active"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
+        </ul>
+        <div class="sidebar-bottom">
+            <div class="nav-link" onclick="toggleTheme()">
+                <i class="fas fa-cog"></i> 
+                <span class="nav-text">Switch Theme</span>
+            </div>
+             <div class="nav-link text-danger" style="cursor:default;">
+                 <i class="fas fa-shield-alt"></i>
+                 <span class="nav-text" id="status-text-pc">ADMIN ACCESS</span>
+            </div>
+            <a href="javascript:void(0)" onclick="logout()" class="nav-link text-danger">
+                <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Log Out</span>
+            </a>
+            <div class="sidebar-user" onclick="window.location.href='profile'">
+                <img id="sidebar-pic" src="https://via.placeholder.com/150" alt="Profile">
+                <div class="sidebar-user-info">
+                    <div id="sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="sidebar-email" class="sidebar-useremail">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">
+    <i class="fas fa-bell"></i>
+    <span id="notif-badge" class="badge"></span>
+</a>
+
+<div id="notifModal" class="notif-modal">
+    <div class="notif-header">
+        <span>Notifications</span>
+        <i class="fas fa-check-double" style="cursor:pointer;" title="Mark all read"></i>
+    </div>
+    <div id="notif-list">
+        <div class="notif-empty">Loading notifications...</div>
+    </div>
+</div>
+
+<!-- =========================================
+     NEW LIVESTREAM NOTICE
+     ========================================= -->
+<div class="main-wrapper fade-in">
+    <div class="notice-box">
+        <h2>Livestream Notice</h2>
+
+        <p>To provide a smoother, faster, and more reliable viewing experience, all livestream events have been moved to our new dedicated livestream page.</p>
+
+       <!-- The Clickable Link Box is now placed at the top as requested -->
+        <div class="link-container" onclick="showLinkModal()">
+            <div class="link-title">New Live Page:</div>
+            <div class="link-url">stream.zonevault.live</div>
+        </div>
+      
+      <p>Starting today, all upcoming livestreams will be available on our new livestream page.</p>
+        <div class="notice-footer">Thank you for choosing Zone Vault! 💙</div>
+    </div>
+</div>
+
+<!-- =========================================
+     EXTERNAL LINK CONFIRMATION MODAL
+     ========================================= -->
+<div id="linkConfirmModal" class="link-modal-overlay">
+    <div class="link-modal-card">
+        <h3>Open External Link?</h3>
+        <p>You are about to leave this page and navigate to our new dedicated livestream site. Do you want to continue?</p>
+        <div class="link-btn-group">
+            <button class="link-btn btn-cancel" onclick="closeLinkModal()">Cancel</button>
+            <button class="link-btn btn-confirm" onclick="confirmLink()">Yes, open it</button>
+        </div>
+    </div>
+</div>
+
+<!-- BULLETPROOF INLINE SCRIPT FOR THE MODAL -->
+<script>
+    function showLinkModal() {
+        document.getElementById('linkConfirmModal').classList.add('active');
+    }
+    function closeLinkModal() {
+        document.getElementById('linkConfirmModal').classList.remove('active');
+    }
+    function confirmLink() {
+        document.getElementById('linkConfirmModal').classList.remove('active');
+        window.open('https://stream.zonevault.live/', '_blank');
+    }
+
+    // Bottom nav: auto-hide on scroll down / show on scroll up
+    (function () {
+        var bottomNav = document.getElementById('bottomNav');
+        var lastScrollY = window.scrollY;
+        window.addEventListener('scroll', function () {
+            if (!bottomNav) return;
+            var currentScrollY = window.scrollY;
+            if (currentScrollY > lastScrollY && currentScrollY > 80) {
+                bottomNav.classList.add('hide-on-scroll');
+            } else {
+                bottomNav.classList.remove('hide-on-scroll');
+            }
+            lastScrollY = currentScrollY;
+        }, { passive: true });
+    })();
+</script>
+
+<script type="module" src="/js/live.js"></script>
+
+</body>
+</html>

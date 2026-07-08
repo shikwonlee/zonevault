@@ -77,7 +77,6 @@ window.addEventListener('load', () => {
     }, 1000);
 });
 
-window.toggleMobileSidebar = function() { document.getElementById('mobileSidebar').classList.toggle('open'); }
 window.toggleEditMode = function() {
     const display = document.getElementById('display-mode');
     const edit = document.getElementById('edit-mode');
@@ -176,13 +175,10 @@ onAuthStateChanged(auth, user => {
             document.getElementById('display-bio').innerText = bio;
             document.getElementById('profile-pic').src = pic;
 
-            // Sidebar updates
+            // Sidebar updates (desktop only now; mobile sidebar was removed in favor of the bottom nav)
             document.getElementById('sidebar-name').innerText = name;
             document.getElementById('sidebar-email').innerText = user.email;
             document.getElementById('sidebar-pic').src = pic;
-            document.getElementById('mobile-sidebar-name').innerText = name;
-            document.getElementById('mobile-sidebar-email').innerText = user.email;
-            document.getElementById('mobile-sidebar-pic').src = pic;
 
             const rawRole = (data.role || "member").toLowerCase();
             let displayRoleText = rawRole.toUpperCase();
@@ -197,7 +193,7 @@ onAuthStateChanged(auth, user => {
             const statusTxt = isAdm ? "ADMIN ACCESS" : "MEMBER ACCESS";
             
             if(document.getElementById("status-text-pc")) document.getElementById("status-text-pc").innerText = statusTxt;
-            if(document.getElementById("status-text-mobile")) document.getElementById("status-text-mobile").innerText = statusTxt;
+            if(document.getElementById("status-text-mobile")) document.getElementById("status-text-mobile").innerText = isAdm ? "ADMIN" : "MEMBER";
 
             if(isAdm) {
                 roleEl.style.color = 'var(--admin-color)';
@@ -265,7 +261,7 @@ onAuthStateChanged(auth, user => {
             container.innerHTML = html;
         });
 
-        // WATCH HISTORY
+        // WATCH HISTORY (display only — items are intentionally non-clickable, see profile.html)
         onValue(ref(db, 'watchHistory/' + uid), (snapshot) => {
             const historyContainer = document.getElementById("watched-list");
             const data = snapshot.val();
@@ -289,7 +285,7 @@ onAuthStateChanged(auth, user => {
                         let percent = (item.duration > 0) ? (item.currentTime / item.duration) * 100 : 0;
                         
                         historyHTML += `
-                        <div class="history-item" onclick="window.location.href='${item.link ? item.link.replace('.html', '') : '#'}'">
+                        <div class="history-item">
                             <div class="history-thumb-wrapper">
                                 <img src="${item.image || 'https://via.placeholder.com/160x90'}" class="history-thumb-img">
                                 <div class="progress-bar-bg">

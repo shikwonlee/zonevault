@@ -63,6 +63,12 @@ let currentPaginationPage = 1;
 let cardsPerPage = window.innerWidth <= 900 ? 6 : 8;
 let activeCategory = "ALL";
 
+// ---- Restore last-viewed page/category so a refresh keeps the user where they were ----
+const savedVideosCategory = sessionStorage.getItem('videosCategory');
+const savedVideosPage = parseInt(sessionStorage.getItem('videosPage'), 10);
+if (savedVideosCategory) activeCategory = savedVideosCategory;
+if (!isNaN(savedVideosPage) && savedVideosPage > 0) currentPaginationPage = savedVideosPage;
+
 const data = [
   {id:"v14", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", category:"FAN MEET", title:"2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", hashtags:"c: uvvul", link:"2026/svt_in_carat_land_2026.html"},
   {id:"v13", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png", category:"FAN MEET", title:"SEVENTEEN 2026 JAPAN FANMEETING'YAKUSOKU' Osaka", hashtags:"c: uvvul", link:"2026/svt_2026_fanmeeting_yakusoku"},
@@ -167,6 +173,17 @@ function renderGrid(page) {
     if(!grid) return;
     grid.innerHTML = "";
     const filtered = getFilteredData();
+
+    // Clamp requested page kung lampas na sa available pages (hal. pagbago ng category)
+    const maxPage = Math.max(1, Math.ceil(filtered.length / cardsPerPage));
+    if (page > maxPage) page = maxPage;
+    if (page < 1) page = 1;
+    currentPaginationPage = page;
+
+    // Sagipin ang kasalukuyang page/category para maibalik pagka-refresh
+    sessionStorage.setItem('videosPage', currentPaginationPage);
+    sessionStorage.setItem('videosCategory', activeCategory);
+
     const start = (page-1) * cardsPerPage;
     const end = start + cardsPerPage;
     const pageData = filtered.slice(start,end);
@@ -216,7 +233,7 @@ function renderPagination(totalCount) {
         const btn = document.createElement("button");
         btn.textContent = i;
         if(i===currentPaginationPage) btn.classList.add("active");
-        btn.onclick = () => { currentPaginationPage=i; renderGrid(currentPaginationPage); window.scrollTo(0,0); };
+        btn.onclick = () => { renderGrid(i); window.scrollTo(0,0); };
         pagination.appendChild(btn);
     }
 }
@@ -299,9 +316,9 @@ window.closeFavoriteModal = function() {
     document.body.classList.remove('no-scroll');
 }
 
-// Initialize Grid + Chips visually first
+// Initialize Grid + Chips visually first (restores saved page/category if any)
 renderCategoryChips();
-renderGrid(1);
+renderGrid(currentPaginationPage);
 
 // ==========================================
 // 8. NOTIFICATIONS LOGIC

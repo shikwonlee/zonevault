@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Live | Zone Vault</title>
+  <title>Videos | Zone Vault</title>
    
   <link rel="icon" href="favicon-new.png" type="image/png" />
   <link rel="manifest" href="manifest.json">
@@ -17,36 +17,41 @@
        1. VARIABLES & THEME ENGINE (MODERN SOLID)
        ========================================= */
     :root {
+        /* SOLID DARK THEME (MATTE) */
         --bg-color: #09090b; 
         --card-bg: #18181b;  
         --border-color: #27272a; 
         --hover-bg: #27272a;
         --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
         --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.6);
+
         --text-main: #ffffff;
         --text-muted: #a1a1aa;
+        
         --accent: #ffffff;
         --status-online: #22c55e;
         --admin-color: #ef4444; 
         --youtube-red: #ff0000;
+        
         --sidebar-width-collapsed: 64px; 
         --sidebar-width-expanded: 220px; 
+        
         --input-bg: #27272a;
-        --link-color: #3b82f6;
         --bottom-nav-height: 96px;
     }
 
     body.light-mode {
+        /* SOLID LIGHT THEME (MATTE) */
         --bg-color: #f4f4f5;
         --card-bg: #ffffff;
         --border-color: #e4e4e7;
         --hover-bg: #f4f4f5;
         --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
         --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.08);
+
         --text-main: #18181b;
         --text-muted: #71717a;
         --input-bg: #f4f4f5;
-        --link-color: #2563eb;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -68,7 +73,7 @@
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       2. SOLID SIDEBAR & MENUS 
+       2. SOLID SIDEBAR & MENUS
        ========================================= */
     .sidebar-desktop {
         position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
@@ -152,121 +157,157 @@
     .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
     /* =========================================
-       4. NEW LIVESTREAM NOTICE STYLES
+       4. VIDEO GRID STYLES
        ========================================= */
-    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-top: 40px; display: flex; justify-content: center; align-items: center; min-height: 80vh;}
+    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-left: 40px; padding-right: 40px; position: relative; padding-top: 40px;}
     
-    .notice-box {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 16px;
-        padding: 50px 40px;
-        max-width: 550px;
-        width: 90%;
-        text-align: center;
-        box-shadow: var(--shadow-float);
-        animation: fadeIn 0.4s ease;
-    }
-    .notice-box h2 {
-        font-size: 26px;
-        font-weight: 800;
-        margin-bottom: 25px;
-        color: var(--text-main);
-        letter-spacing: 0.5px;
+    .page-title {
+        font-size: 28px; font-weight: 800; margin-bottom: 14px;
+        text-transform: uppercase; letter-spacing: 1px; color: var(--text-main);
     }
 
-    /* THE NEW LINK BOX STYLING */
-    .link-container {
-        background: var(--hover-bg);
-        border: 1px solid var(--border-color);
-        padding: 16px 20px;
-        border-radius: 12px;
-        margin: 0 auto 30px auto;
-        cursor: pointer;
-        display: block;
-        max-width: 380px;
-        transition: 0.2s ease;
-        text-decoration: none;
+    /* --- Category Filter Bar --- */
+    .filter-bar {
+        margin-bottom: 15px;
     }
-    .link-container:hover {
-        border-color: var(--text-muted);
-        transform: translateY(-2px);
+    .category-chips {
+        display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;
     }
-    .link-title {
-        color: var(--text-main);
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 6px;
+    .category-chips::-webkit-scrollbar { height: 5px; }
+    .category-chips::-webkit-scrollbar-track { background: transparent; }
+    .category-chips::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+    .category-chips::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    .chip {
+        flex-shrink: 0; background: var(--card-bg); border: 1px solid var(--border-color);
+        color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+        text-transform: uppercase; padding: 10px 18px; border-radius: 20px; cursor: pointer;
+        transition: 0.2s; white-space: nowrap; box-shadow: var(--shadow-subtle);
     }
-    .link-url {
-        color: var(--link-color);
-        font-size: 16px;
-        font-weight: 700;
+    .chip:hover { color: var(--text-main); background: var(--hover-bg); }
+    .chip.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+
+    .no-results {
+        grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted);
+    }
+    .no-results i { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.5; }
+
+    .grid-container { 
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+        gap: 20px; animation: fadeIn 0.4s ease;
     }
 
-    .notice-box p {
-        font-size: 16px;
-        color: var(--text-muted);
-        line-height: 1.6;
-        margin-bottom: 20px;
+    .video-card {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; position: relative;
+        box-shadow: var(--shadow-subtle);
     }
-    .notice-footer {
-        font-weight: 700;
-        color: var(--text-main);
-        margin-top: 10px;
+    .video-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-float); border-color: var(--text-muted); }
+
+    .thumb-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-bottom: 1px solid var(--border-color); }
+    .thumb-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .video-card:hover .thumb-wrapper img { transform: scale(1.05); }
+
+    .card-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+    .video-meta { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600; }
+    .video-title { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; line-height: 1.4; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .video-hashtags { font-size: 11px; color: var(--text-muted); margin-bottom: 15px; opacity: 0.7; }
+
+    .card-actions { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+    .btn-watch {
+        background: var(--text-main); color: var(--bg-color); border: none; padding: 8px 16px; border-radius: 8px;
+        font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; text-transform: uppercase;
+        font-family: inherit;
+    }
+    .btn-watch:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-fav {
+        background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted);
+        width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.2s;
+    }
+    .btn-fav:hover { color: gold; border-color: gold; background: rgba(255, 215, 0, 0.1); }
+    .btn-fav.active { color: gold; border-color: gold; }
+
+    .countdown-badge {
+        position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8);
+        color: white; font-size: 10px; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); font-weight: 600;
     }
 
-    /* LINK CONFIRMATION MODAL */
-    .link-modal-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.75);
-        display: none; align-items: center; justify-content: center;
-        z-index: 10001;
-        backdrop-filter: blur(4px);
+    #pagination { text-align: center; margin-top: 30px; display: flex; justify-content: center; gap: 8px; }
+    #pagination button {
+        background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted);
+        width: 35px; height: 35px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+        font-family: inherit; font-weight: 600;
     }
-    .link-modal-overlay.active { display: flex; animation: fadeIn 0.2s ease forwards;}
+    #pagination button.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+    #pagination button:hover:not(.active) { background: var(--hover-bg); color: var(--text-main); }
+
+    /* =========================================
+       5. MODALS
+       ========================================= */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        z-index: 10000; display: none; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    .modal-overlay.active { opacity: 1; display: flex; }
     
-    .link-modal-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        padding: 35px 30px;
-        border-radius: 16px;
-        max-width: 380px;
-        width: 90%;
-        text-align: center;
-        box-shadow: var(--shadow-float);
+    .modal-box {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        padding: 0; border-radius: 16px; width: 92%; max-width: 500px; 
+        color: var(--text-main); max-height: 85vh; display: flex; flex-direction: column;
+        box-shadow: var(--shadow-float); position: relative;
     }
-    .link-modal-card h3 { 
-        font-size: 20px; 
-        margin-bottom: 15px; 
-        color: var(--text-main); 
-    }
-    .link-modal-card p { 
-        font-size: 14px; 
-        color: var(--text-muted); 
-        line-height: 1.5; 
-        margin-bottom: 25px; 
-    }
-    .link-btn-group { display: flex; gap: 12px; justify-content: center; }
-    .link-btn {
-        padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; font-size: 14px; flex: 1;
-    }
-    .btn-cancel { background: var(--hover-bg); color: var(--text-main); border: 1px solid var(--border-color); }
-    .btn-cancel:hover { background: var(--border-color); }
-    .btn-confirm { background: var(--text-main); color: var(--bg-color); }
-    .btn-confirm:hover { opacity: 0.9; transform: translateY(-2px); }
 
-    /* ACCESS DENIED */
+    .modal-header {
+        padding: 20px 25px; border-bottom: 1px solid var(--border-color);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text-main); text-transform: uppercase; }
+    .close-modal { 
+        background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-muted); 
+        width: 32px; height: 32px; border-radius: 50%; font-size: 16px; 
+        cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .close-modal:hover { background: var(--hover-bg); color: var(--text-main); }
+
+    .modal-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    
+    .fav-list-item { 
+        display: flex; align-items: center; gap: 15px; padding: 10px; 
+        border-radius: 12px; background: var(--input-bg); border: 1px solid var(--border-color);
+        transition: 0.2s;
+    }
+    .fav-list-item:hover { background: var(--hover-bg); }
+    .fav-thumb { width: 80px; aspect-ratio: 16/9; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-color); }
+    .fav-list-info { flex: 1; min-width: 0; }
+    .fav-list-title { font-size: 13px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fav-list-cat { font-size: 10px; color: var(--text-muted); }
+    .fav-btn-remove { 
+        color: var(--text-muted); background: none; border: none; cursor: pointer; font-size: 14px; transition: 0.2s;
+    }
+    .fav-btn-remove:hover { color: var(--admin-color); }
+
+    .info-text p { color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 15px; }
+    .info-text b { color: var(--text-main); }
+    
+    /* Modals & Toasts */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); color: var(--text-main); padding: 14px 28px; border-radius: 50px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.4s ease; }
+    .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
+    
     .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 10000; }
     .access-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 50px; border-radius: 16px; text-align: center; color: var(--text-main); max-width: 420px; width: 90%; box-shadow: var(--shadow-float); }
     .access-icon-box { width: 70px; height: 70px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 28px; border-top: 1px solid rgba(239, 68, 68, 0.2); }
-    .access-title { font-size: 24px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.5px; }
-    .access-desc { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
-    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 14px 35px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; font-family: inherit;}
+    .access-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .access-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
+    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
     /* =========================================
-       5. BOTTOM NAVIGATION BAR (MOBILE) — FLOATING PILL
+       6. BOTTOM NAVIGATION BAR (MOBILE) — FLOATING PILL
        ========================================= */
     .bottom-nav-mobile {
         display: none;
@@ -300,11 +341,14 @@
     }
 
     /* =========================================
-       6. MOBILE RESPONSIVENESS
+       7. MOBILE RESPONSIVENESS
        ========================================= */
+    /* CLEAR/TRANSPARENT HEADER */
     .mobile-header { 
         display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
-        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; background: transparent; border: none; pointer-events: none; 
+        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; 
+        background: transparent; /* No solid background */
+        border: none; pointer-events: none; /* Lets clicks pass through the center */
     }
     
     /* Only the Logo + ZONE VAULT wordmark gets the pill/card treatment — not the whole header */
@@ -324,16 +368,36 @@
         
         .hero-notif-btn { display: none !important; }
         
+        .main-wrapper { padding-top: 65px; padding-left: 20px; padding-right: 20px;} 
+        
         .notif-modal { 
-            position: fixed !important; top: 75px !important; right: 15px !important; 
+            position: fixed !important; 
+            top: 75px !important; 
+            right: 15px !important; 
             width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; 
         }
         
-        .main-wrapper { padding-top: 80px; padding-bottom: 40px; }
+        .grid-container { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+        .card-body { padding: 10px; }
+        .video-title { font-size: 12px; margin-bottom: 5px; }
+        .video-meta { font-size: 9px; margin-bottom: 3px; }
+        .video-hashtags { font-size: 10px; margin-bottom: 10px; }
+        .btn-watch { padding: 7px 12px; font-size: 10px; }
+        .btn-fav { width: 28px; height: 28px; font-size: 12px; }
+    }
+    @media (max-width: 360px) {
+        .grid-container { gap: 8px; }
+        .card-body { padding: 8px; }
     }
   </style>
 </head>
 <body>
+
+<div id="toast" class="toast">
+    <i class="fas fa-check-circle" style="color:var(--status-online);"></i>
+    <span>Welcome to Videos</span>
+</div>
 
 <div class="mobile-header">
     <div class="mobile-logo-container">
@@ -342,6 +406,9 @@
     </div>
     
     <div style="display: flex; gap: 10px; pointer-events: auto;">
+        <a href="javascript:void(0)" class="header-btn" onclick="openFavoriteModal()">
+            <i class="fas fa-star"></i>
+        </a>
         <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">
             <i class="fas fa-bell"></i>
             <span id="notif-badge-mobile" class="badge"></span>
@@ -349,13 +416,13 @@
     </div>
 </div>
 
-<!-- BOTTOM NAVIGATION BAR (mobile only) — matches profile.html / videos.html -->
+<!-- BOTTOM NAVIGATION BAR (mobile only) — matches profile.html -->
 <nav class="bottom-nav-mobile" id="bottomNav">
     <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
     <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
-    <a href="videos" class="bottom-nav-link"><i class="fas fa-play-circle"></i><span>Videos</span></a>
+    <a href="videos" class="bottom-nav-link active"><i class="fas fa-play-circle"></i><span>Videos</span></a>
     <a href="collection" class="bottom-nav-link"><i class="fas fa-images"></i><span>Collection</span></a>
-    <a href="live" class="bottom-nav-link active"><i class="fas fa-broadcast-tower"></i><span>Live</span></a>
+    <a href="live" class="bottom-nav-link"><i class="fas fa-broadcast-tower"></i><span>Live</span></a>
 </nav>
 
 <aside class="sidebar-desktop">
@@ -367,9 +434,10 @@
         <ul class="nav-list">
             <li class="nav-item"> <a href="profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
             <li class="nav-item"> <a href="home" class="nav-link"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
-            <li class="nav-item"> <a href="videos" class="nav-link"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
+            <li class="nav-item"> <a href="videos" class="nav-link active"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
             <li class="nav-item"> <a href="collection" class="nav-link"><i class="fas fa-images"></i> <span class="nav-text">Collection</span></a> </li>
-            <li class="nav-item"> <a href="live" class="nav-link active"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
+            <li class="nav-item"> <a href="live" class="nav-link"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
+            <li class="nav-item"> <a href="javascript:void(0)" onclick="openFavoriteModal();" class="nav-link"><i class="fas fa-star"></i> <span class="nav-text">Favorites</span></a> </li>
         </ul>
         <div class="sidebar-bottom">
             <div class="nav-link" onclick="toggleTheme()">
@@ -409,66 +477,61 @@
     </div>
 </div>
 
-<!-- =========================================
-     NEW LIVESTREAM NOTICE
-     ========================================= -->
 <div class="main-wrapper fade-in">
-    <div class="notice-box">
-        <h2>Livestream Notice</h2>
+    <h1 class="page-title">Videos</h1>
 
-        <p>To provide a smoother, faster, and more reliable viewing experience, all livestream events have been moved to our new dedicated livestream page.</p>
+    <div class="filter-bar">
+        <div class="category-chips" id="categoryChips"></div>
+    </div>
 
-       <!-- The Clickable Link Box is now placed at the top as requested -->
-        <div class="link-container" onclick="showLinkModal()">
-            <div class="link-title">New Live Page:</div>
-            <div class="link-url">stream.zonevault.live</div>
+    <div class="grid-container" id="grid"></div>
+     
+    <div id="pagination"></div>
+</div>
+
+<div id="favoriteModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-star" style="color:gold; margin-right:8px;"></i> Your Collection
+            </div>
+            <button class="close-modal" onclick="closeFavoriteModal()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-      
-      <p>Starting today, all upcoming livestreams will be available on our new livestream page.</p>
-        <div class="notice-footer">Thank you for choosing Zone Vault! 💙</div>
+        
+        <div id="favoriteList" class="modal-body">
+            </div>
     </div>
 </div>
 
-<!-- =========================================
-     EXTERNAL LINK CONFIRMATION MODAL
-     ========================================= -->
-<div id="linkConfirmModal" class="link-modal-overlay">
-    <div class="link-modal-card">
-        <h3>Open External Link?</h3>
-        <p>You are about to leave this page and navigate to our new dedicated livestream site. Do you want to continue?</p>
-        <div class="link-btn-group">
-            <button class="link-btn btn-cancel" onclick="closeLinkModal()">Cancel</button>
-            <button class="link-btn btn-confirm" onclick="confirmLink()">Yes, open it</button>
+<div id="infoModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Important Notice</div>
+            <button class="close-modal" onclick="closeInfoModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+             <div class="info-text">
+                <p><b>Player Update:</b><br>
+                Double tap right to <b>Fast Forward</b>. Double tap left to <b>Rewind</b>. Double tap center to <b>Pause/Play</b>.<br>
+                Hold screen for 2s to show controls.</p>
+                
+                <p><b>Video Quality:</b><br>
+                Quality auto-adjusts based on your internet speed.</p>
+                
+                <hr style="border-color:var(--border-color); margin:15px 0;">
+                
+                <p style="color: var(--admin-color);"><b>PLEASE READ:</b><br>
+                Do not record, reupload, or share content. Unauthorized distribution will result in a <b>permanent ban</b>.</p>
+            </div>
+            <button onclick="closeInfoModal()" class="btn-watch" style="width:100%; margin-top:10px; padding: 12px; font-size: 13px;">I Understand</button>
         </div>
     </div>
 </div>
 
-<!-- BULLETPROOF INLINE SCRIPT FOR THE MODAL -->
 <script>
-    function showLinkModal() {
-        document.getElementById('linkConfirmModal').classList.add('active');
-    }
-    function closeLinkModal() {
-        document.getElementById('linkConfirmModal').classList.remove('active');
-    }
-    function confirmLink() {
-        document.getElementById('linkConfirmModal').classList.remove('active');
-        window.open('https://stream.zonevault.live/', '_blank');
-    }
-
-    // ---- THEME (light/dark) — restores saved theme and lets the sidebar toggle work ----
-    function initTheme() {
-        const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-        if (savedTheme === 'light') document.body.classList.add('light-mode');
-    }
-    window.toggleTheme = function() {
-        document.body.classList.toggle('light-mode');
-        const isLight = document.body.classList.contains('light-mode');
-        localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
-    }
-    initTheme();
-
-    // Bottom nav: auto-hide on scroll down / show on scroll up
+    // Bottom nav: highlight active + auto-hide on scroll down / show on scroll up
     (function () {
         var bottomNav = document.getElementById('bottomNav');
         var lastScrollY = window.scrollY;
@@ -485,7 +548,7 @@
     })();
 </script>
 
-<script type="module" src="/js/live.js"></script>
+<script type="module" src="/js/videos.js"></script>
 
 </body>
 </html>

@@ -33,7 +33,7 @@
         --sidebar-width-expanded: 220px; 
         --input-bg: #27272a;
         --link-color: #3b82f6;
-        --bottom-nav-height: 66px;
+        --bottom-nav-height: 96px;
     }
 
     body.light-mode {
@@ -266,32 +266,33 @@
     .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
     /* =========================================
-       5. BOTTOM NAVIGATION BAR (MOBILE)
+       5. BOTTOM NAVIGATION BAR (MOBILE) — FLOATING PILL
        ========================================= */
     .bottom-nav-mobile {
         display: none;
-        position: fixed; bottom: 0; left: 0; width: 100%;
+        position: fixed; bottom: 16px; left: 16px; right: 16px; width: auto;
         background: var(--card-bg);
-        border-top: 1px solid var(--border-color);
-        box-shadow: 0 -6px 20px rgba(0,0,0,0.35);
+        border: 1px solid var(--border-color);
+        border-radius: 22px;
+        box-shadow: var(--shadow-float);
         z-index: 950;
         padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
         align-items: center; justify-content: space-around;
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, opacity 0.3s ease;
     }
-    .bottom-nav-mobile.hide-on-scroll { transform: translateY(100%); }
+    .bottom-nav-mobile.hide-on-scroll { transform: translateY(140%); opacity: 0; }
 
     .bottom-nav-link {
         flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 4px; text-decoration: none; color: var(--text-muted);
         font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
-        padding: 6px 2px; border-radius: 10px; position: relative;
+        padding: 6px 2px; border-radius: 14px; position: relative;
         transition: color 0.2s ease, transform 0.15s ease; background: none; border: none; cursor: pointer;
         font-family: inherit;
     }
     .bottom-nav-link i { font-size: 19px; transition: transform 0.15s ease; }
     .bottom-nav-link:active { transform: scale(0.92); }
-    .bottom-nav-link.active { color: var(--text-main); }
+    .bottom-nav-link.active { color: var(--text-main); background: var(--hover-bg); }
     .bottom-nav-link.active i { transform: translateY(-1px); }
     .bottom-nav-link.active::before {
         content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
@@ -306,12 +307,14 @@
         position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; background: transparent; border: none; pointer-events: none; 
     }
     
+    /* Only the Logo + ZONE VAULT wordmark gets the pill/card treatment — not the whole header */
     .mobile-logo-container { 
-        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 16px; pointer-events: auto; 
-        background: transparent; border: none; box-shadow: none; padding: 0;
-        letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 15px; pointer-events: auto; 
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
+        padding: 9px 18px 9px 12px; border-radius: 50px;
+        letter-spacing: 0.5px; text-shadow: none;
     }
-    .mobile-logo-img { height: 26px; width: auto; }
+    .mobile-logo-img { height: 24px; width: auto; }
 
     @media (max-width: 900px) {
         .sidebar-desktop { display: none; }
@@ -346,7 +349,7 @@
     </div>
 </div>
 
-<!-- BOTTOM NAVIGATION BAR (mobile only) — matches home.html / videos.html -->
+<!-- BOTTOM NAVIGATION BAR (mobile only) — matches profile.html / videos.html -->
 <nav class="bottom-nav-mobile" id="bottomNav">
     <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
     <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
@@ -452,6 +455,18 @@
         document.getElementById('linkConfirmModal').classList.remove('active');
         window.open('https://stream.zonevault.live/', '_blank');
     }
+
+    // ---- THEME (light/dark) — restores saved theme and lets the sidebar toggle work ----
+    function initTheme() {
+        const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
+        if (savedTheme === 'light') document.body.classList.add('light-mode');
+    }
+    window.toggleTheme = function() {
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+        localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
+    }
+    initTheme();
 
     // Bottom nav: auto-hide on scroll down / show on scroll up
     (function () {

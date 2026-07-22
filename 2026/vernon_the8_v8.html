@@ -116,7 +116,7 @@
         }
         .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; gap: 0; }
         .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #playlist, .center-logo, .back-btn, .video-title-box { display: none !important; }
+        #playlist, .back-btn, .video-title-box { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; }
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
@@ -124,10 +124,6 @@
     /* =========================================
        2. LAYOUT - CINEMATIC SPLIT
        ========================================= */
-    .center-logo { display: flex; justify-content: center; margin-bottom: 30px; }
-    .center-logo img { width: 55px; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); transition: transform 0.3s; }
-    .center-logo img:hover { transform: scale(1.05); }
-
     .main-layout {
         max-width: 1600px; width: 100%; margin: 0 auto;
         display: grid;
@@ -313,7 +309,6 @@
        ========================================= */
     @media (max-width: 1099px) {
         body { padding: 20px 16px; }
-        .center-logo { margin-bottom: 20px; }
         #poster-container, #player-container { border-radius: 16px; }
         .playlist-card { max-height: none; } 
         #playlist-items { max-height: 400px; } 
@@ -394,10 +389,6 @@
 
 <div id="adminToast" class="admin-toast">
     <i class="fas fa-shield-alt"></i> You are using ADMIN ACCOUNT
-</div>
-
-<div class="center-logo">
-  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
 </div>
 
 <div class="main-layout">

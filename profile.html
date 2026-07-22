@@ -189,20 +189,22 @@
     
     .card-content { padding: 25px; font-size: 14px; color: var(--text-main); }
     
-    /* Privacy Text Styles */
-    .privacy-mask { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); font-size: 13px; font-style: italic; padding: 40px 20px !important; min-height: 150px; }
-    .privacy-icon { font-size: 24px; margin-bottom: 12px; opacity: 0.5; }
+    /* Compact Privacy Screen */
+    .privacy-mask { display: flex; flex-direction: row; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); font-size: 13px; font-style: italic; padding: 20px !important; min-height: auto; gap: 8px; }
+    .privacy-icon { font-size: 14px; opacity: 0.7; }
 
-    /* Vertically Stacked Action Buttons */
-    .pref-action-btn {
-        display: flex; align-items: center; justify-content: flex-start; gap: 12px;
-        width: 100%; padding: 14px 20px; background: var(--input-bg); border: 1px solid var(--border-color); 
-        border-radius: 12px; color: var(--text-main); font-size: 13px; font-weight: 600;
-        cursor: pointer; transition: 0.2s; margin-bottom: 12px;
+    /* Horizontal Side-by-Side Action Buttons */
+    .pref-actions-container {
+        display: flex; flex-direction: row; gap: 10px; width: 100%;
     }
-    .pref-action-btn:last-child { margin-bottom: 0; }
+    .pref-action-btn {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+        padding: 15px 5px; background: var(--input-bg); border: 1px solid var(--border-color); 
+        border-radius: 12px; color: var(--text-main); font-size: 11px; font-weight: 700;
+        cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+    }
     .pref-action-btn:hover { background: var(--hover-bg); transform: translateY(-2px); }
-    .pref-action-btn i { font-size: 16px; width: 24px; text-align: center; }
+    .pref-action-btn i { font-size: 18px; }
     .pref-action-btn.danger { color: var(--admin-color); }
     .pref-action-btn.danger i { color: var(--admin-color); }
 
@@ -404,21 +406,22 @@
 
     <div class="grid-container">
         
-        <!-- Preferences & Actions Box -->
+        <!-- Preferences & Actions Box (Horizontal on Mobile & Desktop) -->
         <div class="glass-card" style="grid-column: 1 / -1;">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-cogs"></i> Preferences & Actions</div>
             </div>
-            <div class="card-content" style="padding: 20px;">
-                <!-- Vertical Button Layout format -->
-                <div class="pref-action-btn" onclick="toggleTheme()">
-                    <i class="fas fa-adjust"></i> Switch Theme
-                </div>
-                <div class="pref-action-btn danger" style="cursor: default;">
-                    <i class="fas fa-shield-alt"></i> <span id="status-text-card">ADMIN ACCESS</span>
-                </div>
-                <div class="pref-action-btn danger" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Log Out
+            <div class="card-content" style="padding: 15px;">
+                <div class="pref-actions-container">
+                    <div class="pref-action-btn" onclick="toggleTheme()">
+                        <i class="fas fa-adjust"></i> <span>Theme</span>
+                    </div>
+                    <div class="pref-action-btn danger" style="cursor: default;">
+                        <i class="fas fa-shield-alt"></i> <span id="status-text-card">ADMIN</span>
+                    </div>
+                    <div class="pref-action-btn danger" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> <span>Log Out</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -427,11 +430,14 @@
         <div class="glass-card" style="grid-column: 1 / -1;">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-ticket-alt"></i> My Codes</div>
+                <i class="fas fa-eye eye-btn" title="View All" onclick="openCardViewModal('codes')"></i>
             </div>
-            <div class="card-content" id="my-codes-content" style="padding: 20px;">
-                <!-- Dynamically populated or says NO CODE YET -->
-                <div style="text-align: center; color: var(--text-muted); font-size: 13px;">Loading codes...</div>
+            <!-- Compact Privacy Mask -->
+            <div class="card-content privacy-mask">
+                <i class="fas fa-lock privacy-icon"></i> Click eye button to view
             </div>
+            <!-- Hidden Actual Data -->
+            <div id="my-codes-content" style="display: none;"></div>
         </div>
 
         <!-- Account Status Card (Hidden default) -->
@@ -440,10 +446,9 @@
                 <div class="card-header-left"><i class="fas fa-id-card"></i> Account Status</div>
                 <i class="fas fa-eye eye-btn" title="View Details" onclick="openCardViewModal('account')"></i>
             </div>
-            <!-- Visible Privacy Mask -->
+            <!-- Compact Privacy Mask -->
             <div class="card-content privacy-mask">
-                <i class="fas fa-lock privacy-icon"></i>
-                <p>Information hidden for privacy.<br>Click the eye icon to view.</p>
+                <i class="fas fa-lock privacy-icon"></i> Click eye button to view
             </div>
             <!-- Hidden Actual Data -->
             <div id="account-status-content" style="display: none;">
@@ -468,10 +473,9 @@
                 <div class="card-header-left"><i class="fas fa-bell"></i> Notifications</div>
                 <i class="fas fa-eye eye-btn" title="View All" onclick="openCardViewModal('notifications')"></i>
             </div>
-            <!-- Visible Privacy Mask -->
+            <!-- Compact Privacy Mask -->
             <div class="card-content privacy-mask">
-                <i class="fas fa-lock privacy-icon"></i>
-                <p>Information hidden for privacy.<br>Click the eye icon to view.</p>
+                <i class="fas fa-lock privacy-icon"></i> Click eye button to view
             </div>
             <!-- Hidden Actual Data -->
             <div id="notice-container" style="display: none;"></div>
@@ -483,10 +487,9 @@
                 <div class="card-header-left"><i class="fas fa-history"></i> Continue Watching</div>
                 <i class="fas fa-eye eye-btn" title="View History" onclick="openCardViewModal('history')"></i>
             </div>
-            <!-- Visible Privacy Mask -->
+            <!-- Compact Privacy Mask -->
             <div class="card-content privacy-mask">
-                <i class="fas fa-lock privacy-icon"></i>
-                <p>Information hidden for privacy.<br>Click the eye icon to view.</p>
+                <i class="fas fa-lock privacy-icon"></i> Click eye button to view
             </div>
             <!-- Hidden Actual Data -->
             <div id="watched-list" style="display: none;"></div>
@@ -585,6 +588,9 @@
         } else if (type === 'history') {
             title.innerHTML = '<i class="fas fa-history"></i> Continue Watching';
             content.innerHTML = document.getElementById('watched-list').innerHTML;
+        } else if (type === 'codes') {
+            title.innerHTML = '<i class="fas fa-ticket-alt"></i> My Codes';
+            content.innerHTML = document.getElementById('my-codes-content').innerHTML;
         }
         modal.style.display = 'flex';
     };

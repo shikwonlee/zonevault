@@ -321,14 +321,13 @@
         border: none; pointer-events: none; /* Lets clicks pass through the center */
     }
     
-    /* Only the Logo + ZONE VAULT wordmark gets the pill/card treatment — not the whole header */
+    /* Logo-only pill: bigger perfect circle, no wordmark text */
     .mobile-logo-container { 
-        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 15px; pointer-events: auto; 
+        display: flex; align-items: center; justify-content: center; pointer-events: auto; 
         background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
-        padding: 9px 18px 9px 12px; border-radius: 50px;
-        letter-spacing: 0.5px; text-shadow: none;
+        width: 42px; height: 42px; padding: 0; border-radius: 50%;
     }
-    .mobile-logo-img { height: 24px; width: auto; }
+    .mobile-logo-img { height: 28px; width: 28px; object-fit: contain; }
 
     /* =========================================
        11. BOTTOM NAVIGATION BAR (MOBILE) — FLOATING PILL
@@ -426,7 +425,6 @@
 <div class="mobile-header">
     <div class="mobile-logo-container">
          <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
-    
     </div>
     <div style="display: flex; gap: 10px; pointer-events: auto;">
         <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">

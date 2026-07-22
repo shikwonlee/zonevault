@@ -7,14 +7,14 @@
    <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon-new.png" type="image/png">
-  <meta name="theme-color" content="#050505">
+  <meta name="theme-color" content="#08080a">
 
   <meta name="title" content="Zone Vault">
   <meta name="description" content="Watch, Enjoy, and Stay Private. The premier destination for exclusive content in a secure environment.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
@@ -24,7 +24,7 @@
     gtag('js', new Date());
     gtag('config', 'G-1B2RJ659GL');
   </script>
-    
+
   <style>
     /* =========================================
        1. VARIABLES & THEME ENGINE
@@ -36,12 +36,12 @@
         --card-bg: #121212;
         --glass-border: 1px solid rgba(255, 255, 255, 0.08);
         --accent: #ffffff;
-        --sidebar-hover: #18181b;
+        --accent-dim: rgba(255, 255, 255, 0.06);
         --input-bg: rgba(255, 255, 255, 0.05);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-    
+
     body {
       background-color: var(--bg-color);
       color: var(--text-main);
@@ -55,7 +55,7 @@
     #auth-loader {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
-        background-color: #050505;
+        background-color: #08080a;
         z-index: 9999;
         display: flex;
         justify-content: center;
@@ -68,12 +68,12 @@
         height: 40px;
         border: 3px solid rgba(255,255,255,0.1);
         border-radius: 50%;
-        border-top-color: #fff;
+        border-top-color: var(--accent);
         animation: spin 1s ease-in-out infinite;
         margin-bottom: 15px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    
+
     /* === MAIN LAYOUT WRAPPER === */
     #main-app-content {
         opacity: 0;
@@ -88,21 +88,37 @@
 
     /* === BACKGROUNDS === */
     .bg-gradient {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
-      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05), transparent 40%);
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -3;
+      background:
+        radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.05), transparent 45%),
+        radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.03), transparent 50%);
       pointer-events: none;
     }
-    
+
+    /* Vault-dial signature graphic */
+    .vault-rings {
+      position: fixed; top: 50%; right: -12vw; transform: translateY(-50%);
+      width: 60vw; height: 60vw; max-width: 900px; max-height: 900px;
+      z-index: -2; pointer-events: none; opacity: 0.5;
+    }
+    .vault-rings svg { width: 100%; height: 100%; }
+    .vault-rings .ring { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 1; }
+    .vault-rings .ring-accent { stroke: rgba(255, 255, 255, 0.15); }
+    .vault-rings .tick { stroke: rgba(255,255,255,0.08); stroke-width: 1; }
+    .vault-rings .spin-slow { animation: spinRing 120s linear infinite; transform-origin: center; }
+    .vault-rings .spin-slow-rev { animation: spinRing 90s linear infinite reverse; transform-origin: center; }
+    @keyframes spinRing { to { transform: rotate(360deg); } }
+
     .noise-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
       pointer-events: none; z-index: -1;
     }
 
     #particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
     .particle {
-      position: fixed; background: rgba(255,255,255,0.2); border-radius: 50%;
-      box-shadow: 0 0 10px rgba(255,255,255,0.05);
+      position: fixed; background: rgba(255, 255, 255, 0.25); border-radius: 50%;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
       animation: floatUp linear infinite;
     }
     @keyframes floatUp {
@@ -115,20 +131,26 @@
     header {
       width: 100%; position: fixed; top: 0; left: 0; z-index: 100;
       display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 40px; transition: all 0.4s ease;
+      padding: 24px 48px; transition: all 0.4s ease;
     }
     header.scrolled {
-      padding: 15px 40px;
-      background: rgba(5, 5, 5, 0.8);
+      padding: 16px 48px;
+      background: rgba(8, 8, 10, 0.75);
       backdrop-filter: blur(15px);
       border-bottom: var(--glass-border);
     }
-    
-    .logo { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: 0.5px; font-size: 18px; }
-    .logo img { height: 32px; width: auto; }
 
-    .header-buttons { display: flex; align-items: center; gap: 20px; }
-    
+    /* Responsive brand mark: desktop shows wordmark logo, mobile shows compact mark */
+    .logo { display: flex; align-items: center; }
+    .logo-img-desktop {
+      height: 30px; width: auto; display: block;
+    }
+    .logo-img-mobile {
+      height: 42px; width: auto; display: none;
+    }
+
+    .header-buttons { display: flex; align-items: center; gap: 24px; }
+
     .nav-link {
       background: transparent; border: none; color: var(--text-muted);
       font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.3s;
@@ -137,63 +159,78 @@
     .nav-link:hover { color: #fff; }
 
     /* === HERO SECTION === */
-    main { 
+    main {
         flex: 1;
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        position: relative; 
-        z-index: 2; 
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
+        z-index: 2;
         width: 100%;
-        padding-top: 80px;
-        padding-bottom: 40px;
-    }
-    
-    .welcome { text-align: center; padding: 0 20px; max-width: 800px; }
-    
-    .badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: 50px;
-      background: rgba(255,255,255,0.03); border: var(--glass-border);
-      font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
-      margin-bottom: 24px; animation: fadeIn 1s ease forwards; backdrop-filter: blur(5px);
+        padding: 100px 48px 60px;
     }
 
+    .welcome { text-align: left; max-width: 640px; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 16px 7px 12px; border-radius: 50px;
+      background: var(--accent-dim); border: 1px solid rgba(255, 255, 255, 0.25);
+      font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 28px; animation: fadeIn 1s ease forwards;
+    }
+    .badge i { font-size: 9px; }
+
     .welcome h1 {
-      font-size: clamp(3rem, 8vw, 5rem);
-      font-weight: 800; line-height: 1; letter-spacing: -1px; margin-bottom: 20px;
+      font-family: "Fraunces", serif;
+      font-size: clamp(2.6rem, 6vw, 4.4rem);
+      font-weight: 600; line-height: 1.05; letter-spacing: -1px; margin-bottom: 22px;
       color: var(--text-main);
       animation: fadeIn 1s ease forwards 0.2s; opacity: 0;
     }
+    .welcome h1 em {
+      font-style: italic; color: var(--accent); font-weight: 500;
+    }
 
     .welcome p {
-      color: var(--text-muted); font-size: clamp(1rem, 2vw, 1.1rem);
-      line-height: 1.6; max-width: 500px; margin: 0 auto 40px;
+      color: var(--text-muted); font-size: clamp(1rem, 2vw, 1.05rem);
+      line-height: 1.7; max-width: 460px; margin: 0 0 40px;
       opacity: 0; animation: fadeIn 1s ease forwards 0.4s;
     }
 
     .cta-group {
-      display: flex; gap: 15px; justify-content: center;
+      display: flex; gap: 14px; justify-content: flex-start;
       opacity: 0; animation: fadeIn 1s ease forwards 0.6s;
-      flex-wrap: wrap; 
+      flex-wrap: wrap;
+      margin-bottom: 56px;
     }
-    
+
     .btn-primary {
-      padding: 14px 32px; border-radius: 50px; 
-      background: var(--text-main); color: #000;
+      padding: 15px 30px; border-radius: 10px;
+      background: var(--accent); color: #0a0a0a;
       font-size: 14px; font-weight: 700; text-decoration: none;
       transition: all 0.2s; border: none; cursor: pointer;
       display: inline-flex; align-items: center; gap: 8px;
     }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
-    
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255, 255, 255, 0.25); }
+
     .btn-outline {
-      padding: 14px 32px; border-radius: 50px; 
-      background: transparent; color: #fff; border: 1px solid var(--glass-border);
+      padding: 15px 30px; border-radius: 10px;
+      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.14);
       font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
       text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
     }
-    .btn-outline:hover { background: rgba(255,255,255,0.05); border-color: #fff; }
+    .btn-outline:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.3); }
+
+    /* Trust strip */
+    .trust-strip {
+      display: flex; gap: 36px; flex-wrap: wrap;
+      opacity: 0; animation: fadeIn 1s ease forwards 0.8s;
+      border-top: var(--glass-border); padding-top: 24px;
+    }
+    .trust-item { display: flex; align-items: center; gap: 10px; }
+    .trust-item i { color: var(--accent); font-size: 14px; }
+    .trust-item span { font-size: 12px; color: var(--text-muted); letter-spacing: 0.3px; }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -209,32 +246,32 @@
     .modal-box {
       background: var(--card-bg); border: var(--glass-border);
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-      border-radius: 24px; width: 90%; max-width: 450px;
+      border-radius: 20px; width: 90%; max-width: 450px;
       position: relative; transform: scale(0.95); animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       overflow: hidden; display: flex; flex-direction: column;
     }
     #aboutModal .modal-box { max-width: 650px; max-height: 85vh; }
-    
+
     @keyframes popIn { to { transform: scale(1); opacity: 1; } }
 
     .modal-header {
       padding: 20px 25px; border-bottom: var(--glass-border);
       display: flex; justify-content: space-between; align-items: center;
-      font-weight: 700; font-size: 16px; color: #fff; text-transform: uppercase; letter-spacing: 1px;
+      font-weight: 700; font-size: 14px; color: #fff; text-transform: uppercase; letter-spacing: 1.5px;
     }
     .close-btn { font-size: 24px; color: var(--text-muted); cursor: pointer; transition: 0.2s; background: none; border: none; }
     .close-btn:hover { color: #fff; }
 
     .modal-content { padding: 30px 25px; text-align: center; overflow-y: auto; max-height: 70vh; }
-    
+
     .modal-content::-webkit-scrollbar { width: 4px; }
     .modal-content::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
     .modal-content p { color: var(--text-muted); margin-bottom: 25px; font-size: 14px; line-height: 1.6; }
-    .modal-content h2, .modal-content h3 { color: var(--text-main); font-size: 16px; margin-top: 20px; margin-bottom: 10px; text-align: left; }
+    .modal-content h2, .modal-content h3 { color: var(--text-main); font-size: 16px; margin-top: 20px; margin-bottom: 10px; text-align: left; font-family: "Fraunces", serif; font-weight: 600; }
     .modal-content ul { text-align: left; padding-left: 20px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
     .modal-content li { margin-bottom: 5px; }
-    .modal-content strong { color: var(--text-main); font-weight: 600; }
+    .modal-content strong { color: var(--accent); font-weight: 600; }
 
     .modal-actions { display: flex; flex-direction: column; gap: 12px; }
     .btn-full { width: 100%; justify-content: center; }
@@ -266,8 +303,8 @@
     }
 
     .app-notification-icon {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
+      background: var(--accent-dim);
+      color: var(--accent);
       width: 45px;
       height: 45px;
       border-radius: 50%;
@@ -276,7 +313,7 @@
       justify-content: center;
       font-size: 22px;
       flex-shrink: 0;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .app-notification-text {
@@ -300,20 +337,20 @@
     }
 
     .app-notification .btn-download {
-      background: var(--text-main);
-      color: #000;
+      background: var(--accent);
+      color: #0a0a0a;
       padding: 10px 18px;
-      border-radius: 50px;
+      border-radius: 8px;
       font-size: 13px;
       font-weight: 700;
       text-decoration: none;
       transition: all 0.2s;
       white-space: nowrap;
     }
-    
+
     .app-notification .btn-download:hover {
       transform: translateY(-2px);
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
     }
 
     .app-notification-close {
@@ -332,14 +369,25 @@
       color: #fff;
     }
 
+    @media (max-width: 900px) {
+      .vault-rings { width: 90vw; height: 90vw; right: -30vw; opacity: 0.35; }
+    }
+
     @media (max-width: 600px) {
-        header { padding: 15px 20px; }
-        header.scrolled { padding: 15px 20px; }
-        .logo span { display: none; } 
-        .logo img { height: 28px; }
-        .cta-group { flex-direction: column; width: 100%; }
+        header { padding: 16px 20px; }
+        header.scrolled { padding: 14px 20px; }
+
+        /* Swap brand mark on mobile */
+        .logo-img-desktop { display: none; }
+        .logo-img-mobile { display: block; }
+
+        main { justify-content: center; padding: 90px 20px 40px; }
+        .welcome { text-align: center; }
+        .welcome p { margin-left: auto; margin-right: auto; }
+        .cta-group { flex-direction: column; width: 100%; justify-content: center; }
         .btn-primary, .btn-outline { width: 100%; justify-content: center; }
-        
+        .trust-strip { justify-content: center; }
+
         /* Mobile App Notification */
         .app-notification {
             bottom: 20px;
@@ -363,34 +411,64 @@
 
   <div id="main-app-content">
       <div class="bg-gradient"></div>
+
+      <div class="vault-rings" aria-hidden="true">
+        <svg viewBox="0 0 400 400">
+          <g class="spin-slow">
+            <circle class="ring" cx="200" cy="200" r="190"/>
+            <circle class="ring ring-accent" cx="200" cy="200" r="150"/>
+          </g>
+          <g class="spin-slow-rev">
+            <circle class="ring" cx="200" cy="200" r="110"/>
+            <g class="tick">
+              <line x1="200" y1="30" x2="200" y2="50"/>
+              <line x1="200" y1="350" x2="200" y2="370"/>
+              <line x1="30" y1="200" x2="50" y2="200"/>
+              <line x1="350" y1="200" x2="370" y2="200"/>
+              <line x1="83" y1="83" x2="97" y2="97"/>
+              <line x1="303" y1="303" x2="317" y2="317"/>
+              <line x1="83" y1="317" x2="97" y2="303"/>
+              <line x1="303" y1="97" x2="317" y2="83"/>
+            </g>
+          </g>
+          <circle class="ring ring-accent" cx="200" cy="200" r="60"/>
+        </svg>
+      </div>
+
       <div class="noise-overlay"></div>
       <div id="particle-container"></div>
 
       <header id="navbar">
         <div class="logo">
-          <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
-          <span>ZONE VAULT</span>
+          <img class="logo-img-desktop" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault">
+          <img class="logo-img-mobile" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/2_nratjn.png" alt="Zone Vault">
         </div>
         <div class="header-buttons">
           <button class="nav-link" onclick="openAbout()">About</button>
-          <button class="btn-primary" onclick="openModal()" style="padding: 8px 20px; font-size: 12px;">Get Access</button>
+          <button class="btn-primary" onclick="openModal()" style="padding: 9px 22px; font-size: 12px;">Get Access</button>
         </div>
       </header>
 
       <main>
         <div class="welcome">
-          <div class="badge">Zone Vault 2.0</div>
-          <h1>Watch. Enjoy.<br>Stay Private.</h1>
+          <div class="badge"><i class="fas fa-circle"></i> Zone Vault 2.0</div>
+          <h1>Watch. Enjoy.<br><em>Stay private.</em></h1>
           <p>A secure, permission-based sanctuary for exclusive content. Watch your favorites and more in high-fidelity private streams.</p>
-            
+
           <div class="cta-group">
             <button onclick="openModal()" class="btn-primary">
                 <i class="fas fa-lock"></i> Get Access
             </button>
-            
+
             <a href="download" class="btn-outline">
                <i class="fab fa-android"></i> Download App
             </a>
+          </div>
+
+          <div class="trust-strip">
+            <div class="trust-item"><i class="fas fa-shield-halved"></i><span>Permission-based access</span></div>
+            <div class="trust-item"><i class="fas fa-lock"></i><span>Private streaming</span></div>
+            <div class="trust-item"><i class="fas fa-bolt"></i><span>Adaptive HD playback</span></div>
           </div>
         </div>
       </main>
@@ -402,14 +480,14 @@
             <button class="close-btn" onclick="closeModal()">&times;</button>
           </div>
           <div class="modal-content">
-            <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <i class="fas fa-lock" style="font-size: 24px; color: #fff;"></i>
+            <div style="width: 60px; height: 60px; background: var(--accent-dim); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(201,161,90,0.25);">
+                <i class="fas fa-lock" style="font-size: 24px; color: var(--accent);"></i>
             </div>
             <p>To maintain security and exclusivity, Zone Vault requires an account. Please log in or register to continue.</p>
             <div class="modal-actions">
               <a href="login" class="btn-primary btn-full">Log In to Account</a>
               <a href="register" class="btn-outline btn-full">Create New Account</a>
-              
+
               <a href="code" class="btn-outline btn-full">Use Access Code</a>
             </div>
           </div>
@@ -425,8 +503,8 @@
           <div class="modal-content" style="text-align: left;">
             <h2 style="margin-top:0;">How Zone Vault Works</h2>
             <p>
-              Zone Vault is a private platform created for <strong>exclusive VODs</strong>. 
-              We use a secure <strong>permission-based system</strong> to verify each user and ensure that only 
+              Zone Vault is a private platform created for <strong>exclusive VODs</strong>.
+              We use a secure <strong>permission-based system</strong> to verify each user and ensure that only
               approved accounts can access this site.
             </p>
 
@@ -438,7 +516,7 @@
             <h2>How can i make sure my Information is Secured?</h2>
             <p>
               Your privacy and safety are our top priority. We do not store personal information on the site itself.
-              All user data—including your email and profile details—is securely stored in our 
+              All user data—including your email and profile details—is securely stored in our
               <strong>database</strong>.
             </p>
             <p>
@@ -447,10 +525,10 @@
 
             <h2>How the Videos Works?</h2>
             <p>
-              Zone Vault uses <strong>HLS (HTTP Live Streaming)</strong> with <strong>Plyr</strong>, providing smooth, adaptive 
+              Zone Vault uses <strong>HLS (HTTP Live Streaming)</strong> with <strong>Plyr</strong>, providing smooth, adaptive
               playback on all devices. Video sources are protected through database, preventing copying and sharing.
             </p>
-             
+
             <p>To improve performance and flexibility, we are now separating subtitles from the video files.</p>
 
             <h3>Player Features</h3>
@@ -465,10 +543,10 @@
 
             <h2>How Can I Access the Videos?</h2>
             <p>
-              Some videos are <strong>free</strong>, while others require access code.  
+              Some videos are <strong>free</strong>, while others require access code.
               But we have upgraded from access codes to a <strong>permission-access</strong>, allowing us (the admin)
               to control or give the user a access on specific videos.
-              
+
               This upgrade ensures fairness for everyone, and keeps the system more secure and organized.
             </p>
 
@@ -488,7 +566,7 @@
               <li>Use a stable internet connection for the best video quality.</li>
               <li>For support, contact the admin via email.</li>
             </ul>
-             
+
             <div style="margin-top: 30px; text-align: center;">
                 <button class="btn-primary" onclick="closeAbout()">Got it</button>
             </div>
@@ -508,13 +586,13 @@
         <a href="https://drive.usercontent.google.com/download?id=1yj5y_9FfKqFav3Je4HTY2500lkimF17u&export=download&authuser=2&confirm=t&uuid=f7a13376-b2a1-4327-bf8a-0be231c808ed&at=ABswASYmNuJI03pj_DEN8xDuK55K:1783503691864" class="btn-download" download>Download</a>
       </div>
 
-  </div> 
+  </div>
 
   <script>
     // --- PARTICLES ---
     const container = document.getElementById("particle-container");
     const particleCount = 60;
-    
+
     for(let i = 0; i < particleCount; i++){
       const particle = document.createElement("div");
       particle.classList.add("particle");
@@ -523,7 +601,7 @@
       particle.style.height = `${size}px`;
       particle.style.left = `${Math.random() * 100}%`;
       particle.style.top = `${Math.random() * 100}%`;
-      particle.style.animationDuration = `${40 + Math.random() * 40}s`; 
+      particle.style.animationDuration = `${40 + Math.random() * 40}s`;
       particle.style.animationDelay = `${Math.random() * 20}s`;
       container.appendChild(particle);
     }
@@ -556,14 +634,14 @@
       document.getElementById("aboutModal").style.display = "flex";
       document.body.style.overflow = "hidden";
     }
-    
+
     function closeAppNotification() {
       const notification = document.getElementById("appNotification");
       if (notification) {
         notification.classList.remove("show");
       }
     }
-    
+
     window.onload = function() {
         const modalShown = localStorage.getItem('welcomeModalShown');
 
@@ -575,7 +653,7 @@
             }
         }, 2500);
     };
-    
+
     window.onclick = function(event) {
       if (event.target.classList.contains('modal-overlay')) {
         event.target.style.display = "none";

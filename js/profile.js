@@ -4,7 +4,6 @@ import { getDatabase, ref, onValue, get, update, query, limitToLast } from "http
 
 console.log("✅ Profile.js successfully loaded!");
 
-// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
     apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
     authDomain: "tvnstream-b4497.firebaseapp.com",
@@ -19,16 +18,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// --- GLOBAL CLOUDINARY CONFIG ---
 const CLOUDINARY_UPLOAD_PRESET = "zone_vault_avatars"; 
 const CLOUDINARY_CLOUD_NAME = "dp6x9xmku"; 
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 const MAX_FILE_SIZE_MB = 10;
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
 
-// ==========================================
-// 1. THE MAINTENANCE KILL SWITCH
-// ==========================================
 const maintenanceRef = ref(db, 'settings/maintenanceMode');
 onValue(maintenanceRef, (snapshot) => {
     const isUnderMaintenance = snapshot.val();
@@ -44,9 +39,6 @@ onValue(maintenanceRef, (snapshot) => {
     }
 });
 
-// ==========================================
-// 2. DYNAMIC URL PARAMETERS LOGIC
-// ==========================================
 function updateDynamicURL(uid, role, status) {
   let token = sessionStorage.getItem('urlToken');
   if (!token) {
@@ -58,7 +50,22 @@ function updateDynamicURL(uid, role, status) {
   window.history.pushState({ path: newUrl }, '', newUrl);
 }
 
-// --- THEME LOGIC ---
+function maskEmail(email) {
+    if (!email) return "";
+    const parts = email.split("@");
+    if (parts.length !== 2) return email;
+    
+    const name = parts[0];
+    const domain = parts[1];
+    
+    if (name.length <= 3) return name.charAt(0) + "***@" + domain; 
+    
+    const visibleStart = name.substring(0, 2);
+    const visibleEnd = name.substring(name.length - 1);
+    
+    return visibleStart + "***" + visibleEnd + "@" + domain;
+}
+
 function initTheme() {
     const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
     if (savedTheme === 'light') document.body.classList.add('light-mode');
@@ -91,7 +98,6 @@ window.toggleEditMode = function() {
     }
 }
 
-// --- NOTIFICATIONS ---
 const notifList = document.getElementById('notif-list');
 let latestNotifTimestamp = 0;
 const notifQuery = query(ref(db, 'notifications'), limitToLast(10));
@@ -135,7 +141,6 @@ window.toggleNotifModal = function() {
     }
 }
 
-// --- AUTH & DATA LOGIC ---
 onAuthStateChanged(auth, user => {
     if(user) {
         console.log("✅ User detected:", user.uid);
@@ -143,7 +148,8 @@ onAuthStateChanged(auth, user => {
         const uidEl = document.getElementById('user-uid');
         if(uidEl) uidEl.innerText = uid;
         
-        // Fetch Profile + Real-time UI Sync
+        const secureEmail = maskEmail(user.email);
+        
         onValue(ref(db, 'users/' + uid), snap => {
             const data = snap.val() || {};
             
@@ -151,7 +157,6 @@ onAuthStateChanged(auth, user => {
             const bio = data.bio || "No bio set.";
             const pic = data.profilePicture || "https://via.placeholder.com/150";
             
-            // Banner Logic
             const bannerColor = data.bannerColor || "#27272a"; 
             const bannerImage = data.bannerImage || null;
             const bannerEl = document.getElementById('profile-banner');
@@ -171,13 +176,12 @@ onAuthStateChanged(auth, user => {
             if(inputEl) inputEl.value = bannerColor;
 
             document.getElementById('display-name').innerText = name;
-            document.getElementById('display-email').innerText = user.email;
+            document.getElementById('display-email').innerText = secureEmail;
             document.getElementById('display-bio').innerText = bio;
             document.getElementById('profile-pic').src = pic;
 
-            // Sidebar updates (desktop only now; mobile sidebar was removed in favor of the bottom nav)
             document.getElementById('sidebar-name').innerText = name;
-            document.getElementById('sidebar-email').innerText = user.email;
+            document.getElementById('sidebar-email').innerText = secureEmail;
             document.getElementById('sidebar-pic').src = pic;
 
             const rawRole = (data.role || "member").toLowerCase();
@@ -194,6 +198,7 @@ onAuthStateChanged(auth, user => {
             
             if(document.getElementById("status-text-pc")) document.getElementById("status-text-pc").innerText = statusTxt;
             if(document.getElementById("status-text-mobile")) document.getElementById("status-text-mobile").innerText = isAdm ? "ADMIN" : "MEMBER";
+            if(document.getElementById("status-text-card")) document.getElementById("status-text-card").innerText = statusTxt; 
 
             if(isAdm) {
                 roleEl.style.color = 'var(--admin-color)';
@@ -206,18 +211,15 @@ onAuthStateChanged(auth, user => {
                 sessionStorage.removeItem('isAdmin');
             }
 
-            // === FIXED REQUEST STATUS LOGIC ===
             const reqStatusEl = document.getElementById('req-status');
             
             if (data.status === "approved") {
-                // Kung nasa 'users' at approved, ilagay ang Approved
                 if(reqStatusEl) {
                     reqStatusEl.innerText = "Approved";
                     reqStatusEl.style.color = 'var(--status-online)';
                 }
                 updateDynamicURL(uid, rawRole, "approved");
             } else {
-                // Fallback check sa joinRequests kung wala pa sa users
                 get(ref(db, 'joinRequests/' + uid + '/status')).then(reqSnap => {
                     const reqStatus = reqSnap.val();
                     if(reqStatusEl) {
@@ -236,7 +238,6 @@ onAuthStateChanged(auth, user => {
             }
         });
 
-        // Fetch Updates
         onValue(query(ref(db, 'notifications'), limitToLast(5)), snap => {
             const container = document.getElementById('notice-container');
             if (!snap.exists()) {
@@ -248,7 +249,7 @@ onAuthStateChanged(auth, user => {
             let html = '';
             list.forEach(n => {
                 html += `
-                <div style="padding:12px 0; border-bottom:1px solid var(--glass-border); display:flex; gap:12px; align-items:flex-start;">
+                <div style="padding:12px 0; border-bottom:1px solid var(--border-color); display:flex; gap:12px; align-items:flex-start;">
                     <div style="width:24px; height:24px; border-radius:50%; background:var(--input-bg); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--text-main); font-size:10px;">
                         <i class="fas ${n.icon || 'fa-bell'}"></i>
                     </div>
@@ -261,7 +262,7 @@ onAuthStateChanged(auth, user => {
             container.innerHTML = html;
         });
 
-        // WATCH HISTORY (display only — items are intentionally non-clickable, see profile.html)
+        // WATCH HISTORY
         onValue(ref(db, 'watchHistory/' + uid), (snapshot) => {
             const historyContainer = document.getElementById("watched-list");
             const data = snapshot.val();
@@ -305,8 +306,33 @@ onAuthStateChanged(auth, user => {
                 historyContainer.innerHTML = "<div style='color:var(--text-muted)'>No watch history found.</div>";
             }
         });
+
+        // FETCH USER CODES (MY CODE)
+        onValue(ref(db, 'userCodes/' + uid), snap => {
+            const codesContainer = document.getElementById('my-codes-content');
+            if (!snap.exists()) {
+                codesContainer.innerHTML = `<div style="color:var(--text-muted); font-size:13px; font-style:italic;">No access codes assigned yet.</div>`;
+                return;
+            }
+            
+            const data = snap.val();
+            const codesList = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+            let html = '';
+            
+            codesList.forEach(c => {
+                html += `
+                <div class="info-row" style="flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--hover-bg); border: 1px solid var(--border-color); margin-bottom: 10px;">
+                    <span class="info-label" style="color:var(--text-main); font-weight:600; font-size:14px;"><i class="fas fa-video"></i> ${c.videoTitle}</span>
+                    <span class="uid-badge" style="color:var(--status-online); font-weight:700; font-size:13px; padding: 8px 12px; width: 100%; display: block; box-sizing: border-box; text-align:center;">
+                        Code: ${c.code}
+                    </span>
+                </div>`;
+            });
+            
+            codesContainer.innerHTML = html;
+        });
+
     } else {
-        // KUNG WALANG SESSION, IBABALIK SA LOGIN PAGE
         console.log("❌ No user detected, redirecting to login...");
         window.location.href = "login";
     }
@@ -337,10 +363,6 @@ window.logout = function() {
     }
 }
 
-// ==========================================
-// --- AVATAR UPLOAD LOGIC ---
-// ==========================================
-// ... (Walang binago dito, same as your code) ...
 const avatarModal = document.getElementById('imageChangeModal');
 const avatarFileInput = document.getElementById('fileInput');
 const chooseAvatarBtn = document.getElementById('chooseFromGalleryBtn');
@@ -415,10 +437,6 @@ function handleAvatarSelect(evt) {
     });
 }
 
-// ==========================================
-// --- BANNER UPLOAD & CROPPING LOGIC ---
-// ==========================================
-// ... (Walang binago dito, same as your code) ...
 let cropper = null;
 const bannerModal = document.getElementById('bannerChangeModal');
 const bannerFileInput = document.getElementById('bannerFileInput');
@@ -519,7 +537,6 @@ window.uploadCroppedBanner = function() {
     }, 'image/jpeg', 0.9);
 }
 
-// --- SECURITY LOGIC ---
 const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', '/hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection', '/'];
 const isAdminFlag = sessionStorage.getItem('isAdmin') === 'true';
 const currentPagePath = window.location.pathname;

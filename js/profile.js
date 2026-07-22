@@ -45,11 +45,13 @@ function updateDynamicURL(uid, role, status) {
       token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
       sessionStorage.setItem('urlToken', token);
   }
-  
   const newUrl = `${window.location.pathname}?uid=${uid}&token=${token}&role=${role}&status=${status}`;
   window.history.pushState({ path: newUrl }, '', newUrl);
 }
 
+// ----------------------------------------------------
+// SECURE EMAIL MASKING (Middle part uses exactly *****)
+// ----------------------------------------------------
 function maskEmail(email) {
     if (!email) return "";
     const parts = email.split("@");
@@ -58,12 +60,12 @@ function maskEmail(email) {
     const name = parts[0];
     const domain = parts[1];
     
-    if (name.length <= 3) return name.charAt(0) + "***@" + domain; 
+    if (name.length <= 2) return name + "*****@" + domain; 
     
     const visibleStart = name.substring(0, 2);
     const visibleEnd = name.substring(name.length - 1);
     
-    return visibleStart + "***" + visibleEnd + "@" + domain;
+    return visibleStart + "*****" + visibleEnd + "@" + domain;
 }
 
 function initTheme() {
@@ -156,7 +158,6 @@ onAuthStateChanged(auth, user => {
             const name = data.name || data.telegramUsername || "Member";
             const bio = data.bio || "No bio set.";
             const pic = data.profilePicture || "https://via.placeholder.com/150";
-            
             const bannerColor = data.bannerColor || "#27272a"; 
             const bannerImage = data.bannerImage || null;
             const bannerEl = document.getElementById('profile-banner');
@@ -238,6 +239,7 @@ onAuthStateChanged(auth, user => {
             }
         });
 
+        // HIDDEN NOTIFICATIONS DATA
         onValue(query(ref(db, 'notifications'), limitToLast(5)), snap => {
             const container = document.getElementById('notice-container');
             if (!snap.exists()) {
@@ -262,7 +264,7 @@ onAuthStateChanged(auth, user => {
             container.innerHTML = html;
         });
 
-        // WATCH HISTORY
+        // HIDDEN WATCH HISTORY DATA
         onValue(ref(db, 'watchHistory/' + uid), (snapshot) => {
             const historyContainer = document.getElementById("watched-list");
             const data = snapshot.val();
@@ -311,7 +313,11 @@ onAuthStateChanged(auth, user => {
         onValue(ref(db, 'userCodes/' + uid), snap => {
             const codesContainer = document.getElementById('my-codes-content');
             if (!snap.exists()) {
-                codesContainer.innerHTML = `<div style="color:var(--text-muted); font-size:13px; font-style:italic;">No access codes assigned yet.</div>`;
+                // If user has no codes, display NO CODE YET exactly as requested
+                codesContainer.innerHTML = `
+                <div style="text-align: center; color: var(--text-muted); font-size: 14px; font-weight: 600; padding: 20px 0; letter-spacing: 1px;">
+                    NO CODE YET.
+                </div>`;
                 return;
             }
             
@@ -321,9 +327,11 @@ onAuthStateChanged(auth, user => {
             
             codesList.forEach(c => {
                 html += `
-                <div class="info-row" style="flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--hover-bg); border: 1px solid var(--border-color); margin-bottom: 10px;">
-                    <span class="info-label" style="color:var(--text-main); font-weight:600; font-size:14px;"><i class="fas fa-video"></i> ${c.videoTitle}</span>
-                    <span class="uid-badge" style="color:var(--status-online); font-weight:700; font-size:13px; padding: 8px 12px; width: 100%; display: block; box-sizing: border-box; text-align:center;">
+                <div class="info-row" style="flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--hover-bg); border: 1px solid var(--border-color); margin-bottom: 10px; border-radius: 8px;">
+                    <span class="info-label" style="color:var(--text-main); font-weight:600; font-size:14px;">
+                        <i class="fas fa-video"></i> ${c.videoTitle}
+                    </span>
+                    <span class="uid-badge" style="color:var(--status-online); font-weight:700; font-size:13px; padding: 10px 12px; width: 100%; display: block; box-sizing: border-box; text-align:center;">
                         Code: ${c.code}
                     </span>
                 </div>`;
@@ -363,6 +371,7 @@ window.logout = function() {
     }
 }
 
+// ... All Avatar and Security logic remains exactly the same below here
 const avatarModal = document.getElementById('imageChangeModal');
 const avatarFileInput = document.getElementById('fileInput');
 const chooseAvatarBtn = document.getElementById('chooseFromGalleryBtn');

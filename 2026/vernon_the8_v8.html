@@ -94,7 +94,7 @@
         color: var(--text-main);
         font-family: 'Inter', sans-serif;
         margin: 0;
-        padding: 30px 20px 0;
+        padding: 30px 20px;
         min-height: 100vh;
         transition: background 0.4s ease, color 0.4s ease;
     }
@@ -116,7 +116,7 @@
         }
         .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; gap: 0; }
         .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #playlist, .back-btn, .video-title-box { display: none !important; }
+        #playlist, .center-logo, .back-btn { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; }
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
@@ -124,12 +124,15 @@
     /* =========================================
        2. LAYOUT - CINEMATIC SPLIT
        ========================================= */
+    .center-logo { display: flex; justify-content: center; margin-bottom: 30px; }
+    .center-logo img { width: 55px; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); transition: transform 0.3s; }
+    .center-logo img:hover { transform: scale(1.05); }
+
     .main-layout {
         max-width: 1600px; width: 100%; margin: 0 auto;
         display: grid;
         grid-template-columns: 1fr;
         gap: 20px;
-        padding-bottom: 30px;
     }
 
     @media (min-width: 800px) and (max-width: 1099px) {
@@ -173,20 +176,6 @@
     }
     .art-video-player { width: 100%; height: 100%; }
     .art-layer-mobile { pointer-events: auto !important; }
-
-    /* =========================================
-       2b. VIDEO TITLE BOX (separated from video)
-       ========================================= */
-    .video-title-box {
-        margin-top: 20px;
-        background: var(--card-bg);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border: var(--glass-border);
-        border-radius: 20px;
-        padding: 20px 24px;
-        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
-    }
 
     /* =========================================
        3. CUSTOM GESTURES & BUTTONS
@@ -234,7 +223,12 @@
         background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
         border: var(--glass-border); border-radius: 20px; overflow: hidden;
         box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); display: flex; flex-direction: column; 
-        max-height: calc(100vh - 60px); 
+        max-height: calc(100vh - 180px); 
+    }
+
+    .current-episode-header {
+        padding: 28px 24px 20px; border-bottom: var(--glass-border);
+        background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%); position: relative;
     }
 
     .current-episode-label {
@@ -309,30 +303,32 @@
        5. RESPONSIVE DESIGN
        ========================================= */
     @media (max-width: 1099px) {
-        body { padding: 20px 16px 0; }
-        .main-layout { padding-bottom: 20px; }
+        body { padding: 20px 16px; }
+        .center-logo { margin-bottom: 20px; }
         #poster-container, #player-container { border-radius: 16px; }
         .playlist-card { max-height: none; } 
         #playlist-items { max-height: 400px; } 
-        .video-title-box { padding: 16px 20px; margin-top: 16px; }
+        .current-episode-header { padding: 20px 16px; }
         #main-title { font-size: 18px; min-height: auto; }
         .playlist-img-wrapper { width: 90px; }
         .playlist-title { font-size: 13px; }
     }
 
-    /* Back Button - "Back to Video" (text style, bottom-left, from doc 2) */
+    /* Back Button */
     .back-btn {
-        display: inline-flex; align-items: center; gap: 8px;
-        position: fixed; bottom: 25px; left: 25px; z-index: 1500;
-        background: transparent; color: var(--text-main); border: none;
-        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
-        padding: 0; box-shadow: none;
-        transition: opacity 0.2s ease;
+        position: fixed; bottom: 30px; left: 30px; width: 50px; height: 50px;
+        background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        z-index: 100; cursor: pointer; text-decoration: none;
     }
-    .back-btn:hover { opacity: 0.7; transform: none; }
+    .back-btn:hover { background: var(--text-main); transform: scale(1.1) translateX(-4px); }
+    .back-btn svg { stroke: var(--text-main); transition: stroke 0.3s; width: 22px; height: 22px; margin-right: 2px; }
+    .back-btn:hover svg { stroke: var(--bg-color); }
 
     @media (max-width: 768px) {
-        .back-btn { bottom: 16px; left: 16px; font-size: 13px; }
+        .back-btn { width: 44px; height: 44px; bottom: 20px; left: 20px; }
+        .back-btn svg { width: 18px; height: 18px; }
     }
 
     /* --- ADMIN NOTIFICATION TOAST --- */
@@ -393,6 +389,10 @@
     <i class="fas fa-shield-alt"></i> You are using ADMIN ACCOUNT
 </div>
 
+<div class="center-logo">
+  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
+</div>
+
 <div class="main-layout">
   <div class="video-wrapper-left">
     <div id="poster-container">
@@ -423,23 +423,24 @@
            </div>
        </div>
     </div>
-
-    <!-- Title box, separated from the video/artplayer -->
-    <div class="video-title-box">
-        <div class="current-episode-label">Now Playing</div>
-        <h2 id="main-title"></h2>
-    </div>
   </div>
 
   <div id="playlist">
     <div class="playlist-card">
+        <div class="current-episode-header">
+            <div class="current-episode-label">Now Playing</div>
+            <h2 id="main-title"></h2>
+        </div>
+        
         <div id="playlist-items"></div>
     </div>
   </div>
 </div> 
 
 <a href="https://zonevault.live/videos" class="back-btn">
-  <i class="fas fa-arrow-left"></i> Back to Video
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
 </a>
 
 <script>

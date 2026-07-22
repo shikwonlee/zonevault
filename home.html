@@ -89,18 +89,10 @@
     .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
 
     .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; overflow: hidden; }
-    /* Collapsed state: small icon-only mark, shown while the sidebar rail is not expanded */
-    .sidebar-brand-collapsed-logo { height: 30px; width: auto; object-fit: contain; z-index: 2; flex-shrink: 0; display: block; }
-    .sidebar-brand-collapsed-logo.logo-light { display: none; }
-    body.light-mode .sidebar-brand-collapsed-logo.logo-dark { display: none; }
-    body.light-mode .sidebar-brand-collapsed-logo.logo-light { display: block; }
-    /* Expanded state: same full logo used in the mobile header, revealed on hover */
-    .sidebar-brand-logo { height: 28px; width: auto; object-fit: contain; z-index: 2; flex-shrink: 0; display: none; }
-    .sidebar-desktop:hover .sidebar-brand-collapsed-logo { display: none; }
-    .sidebar-desktop:hover .sidebar-brand-logo.logo-dark { display: block; }
-    .sidebar-desktop:hover .sidebar-brand-logo.logo-light { display: none; }
-    body.light-mode .sidebar-desktop:hover .sidebar-brand-logo.logo-dark { display: none; }
-    body.light-mode .sidebar-desktop:hover .sidebar-brand-logo.logo-light { display: block; }
+    .sidebar-brand-logo { height: 30px; width: auto; object-fit: contain; z-index: 2; flex-shrink: 0; display: block; }
+    .sidebar-brand-logo.logo-light { display: none; }
+    body.light-mode .sidebar-brand-logo.logo-dark { display: none; }
+    body.light-mode .sidebar-brand-logo.logo-light { display: block; }
     .sidebar-desktop:hover .sidebar-brand { justify-content: flex-start; padding-left: 20px; }
 
     .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
@@ -459,10 +451,8 @@
 <aside class="sidebar-desktop">
     <div class="sidebar-container">
         <div class="sidebar-brand">
-            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/2_nratjn.png" alt="Zone Vault" class="sidebar-brand-collapsed-logo logo-dark">
-            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/1_utxztb.png" alt="Zone Vault" class="sidebar-brand-collapsed-logo logo-light">
-            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault" class="sidebar-brand-logo logo-dark">
-            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/WHITE_THEME_blxmt7.png" alt="Zone Vault" class="sidebar-brand-logo logo-light">
+            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/2_nratjn.png" alt="Zone Vault" class="sidebar-brand-logo logo-dark">
+            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/1_utxztb.png" alt="Zone Vault" class="sidebar-brand-logo logo-light">
         </div>
         <ul class="nav-list">
             <li class="nav-item"> <a href="profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>

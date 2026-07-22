@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#08080a">
 
   <meta name="title" content="Zone Vault">
-  <meta name="description" content="Watch, Enjoy, and Stay Private. The premier destination for exclusive content in a secure environment.">
+  <meta name="description" content="Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,20 +94,6 @@
         radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.03), transparent 50%);
       pointer-events: none;
     }
-
-    /* Vault-dial signature graphic */
-    .vault-rings {
-      position: fixed; top: 50%; right: -12vw; transform: translateY(-50%);
-      width: 60vw; height: 60vw; max-width: 900px; max-height: 900px;
-      z-index: -2; pointer-events: none; opacity: 0.5;
-    }
-    .vault-rings svg { width: 100%; height: 100%; }
-    .vault-rings .ring { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 1; }
-    .vault-rings .ring-accent { stroke: rgba(255, 255, 255, 0.15); }
-    .vault-rings .tick { stroke: rgba(255,255,255,0.08); stroke-width: 1; }
-    .vault-rings .spin-slow { animation: spinRing 120s linear infinite; transform-origin: center; }
-    .vault-rings .spin-slow-rev { animation: spinRing 90s linear infinite reverse; transform-origin: center; }
-    @keyframes spinRing { to { transform: rotate(360deg); } }
 
     .noise-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -369,10 +355,6 @@
       color: #fff;
     }
 
-    @media (max-width: 900px) {
-      .vault-rings { width: 90vw; height: 90vw; right: -30vw; opacity: 0.35; }
-    }
-
     @media (max-width: 600px) {
         header { padding: 16px 20px; }
         header.scrolled { padding: 14px 20px; }
@@ -412,28 +394,6 @@
   <div id="main-app-content">
       <div class="bg-gradient"></div>
 
-      <div class="vault-rings" aria-hidden="true">
-        <svg viewBox="0 0 400 400">
-          <g class="spin-slow">
-            <circle class="ring" cx="200" cy="200" r="190"/>
-            <circle class="ring ring-accent" cx="200" cy="200" r="150"/>
-          </g>
-          <g class="spin-slow-rev">
-            <circle class="ring" cx="200" cy="200" r="110"/>
-            <g class="tick">
-              <line x1="200" y1="30" x2="200" y2="50"/>
-              <line x1="200" y1="350" x2="200" y2="370"/>
-              <line x1="30" y1="200" x2="50" y2="200"/>
-              <line x1="350" y1="200" x2="370" y2="200"/>
-              <line x1="83" y1="83" x2="97" y2="97"/>
-              <line x1="303" y1="303" x2="317" y2="317"/>
-              <line x1="83" y1="317" x2="97" y2="303"/>
-              <line x1="303" y1="97" x2="317" y2="83"/>
-            </g>
-          </g>
-          <circle class="ring ring-accent" cx="200" cy="200" r="60"/>
-        </svg>
-      </div>
 
       <div class="noise-overlay"></div>
       <div id="particle-container"></div>
@@ -676,7 +636,7 @@
           };
         };
       }).catch(err => {
-        console.error('Service Worker registration failed:', err);
+        // Service Worker registration failed silently
       });
     }
   </script>

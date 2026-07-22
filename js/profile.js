@@ -309,7 +309,9 @@ onAuthStateChanged(auth, user => {
         });
 
         // FETCH USER CODES (MY CODE) - HIDDEN
-        onValue(ref(db, 'userCodes/' + uid), snap => {
+        // FIXED: was reading from 'userCodes/' + uid, but admin panel writes to 'users/' + uid + '/codes'
+        // This mismatch is why assigned codes never showed up here.
+        onValue(ref(db, 'users/' + uid + '/codes'), snap => {
             const codesContainer = document.getElementById('my-codes-content');
             if (!snap.exists()) {
                 codesContainer.innerHTML = `

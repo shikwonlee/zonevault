@@ -6,6 +6,7 @@
   <title>Zone Vault</title>
   <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon-new.png" type="image/png">
   <meta name="theme-color" content="#050505">
 
   <meta name="title" content="Zone Vault">
@@ -188,22 +189,6 @@
       margin-bottom: 48px;
     }
 
-    /* Feature grid — replaces old trust-strip icon row */
-    .feature-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
-      background: rgba(255,255,255,0.08);
-      border: var(--glass-border); border-radius: 14px; overflow: hidden;
-      opacity: 0; animation: fadeIn 1s ease forwards 0.8s;
-    }
-    .feature-card {
-      background: #0a0a0a; padding: 18px 16px;
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .feature-card i { color: var(--accent); font-size: 14px; }
-    .feature-card span {
-      font-size: 12px; color: var(--text-muted); letter-spacing: 0.2px; line-height: 1.4;
-    }
-
     @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
     /* === MODALS === */
@@ -282,8 +267,6 @@
         main { padding: 100px 20px 40px; }
         .cta-group { flex-direction: column; width: 100%; }
         .btn-primary, .btn-outline { width: 100%; justify-content: center; }
-        .feature-grid { grid-template-columns: 1fr; }
-        .feature-card { flex-direction: row; align-items: center; }
 
         .app-notification { bottom: 20px; right: 20px; left: 20px; max-width: none; transform: translateY(150%); }
         .app-notification.show { transform: translateY(0); }
@@ -334,20 +317,6 @@
               </a>
             </div>
 
-            <div class="feature-grid">
-              <div class="feature-card">
-                <i class="fas fa-shield-halved"></i>
-                <span>Permission-based access, granted per video</span>
-              </div>
-              <div class="feature-card">
-                <i class="fas fa-eye-slash"></i>
-                <span>Private streaming, off the public radar</span>
-              </div>
-              <div class="feature-card">
-                <i class="fas fa-bolt"></i>
-                <span>Adaptive HD playback on any connection</span>
-              </div>
-            </div>
           </div>
 
         </div>

@@ -88,11 +88,12 @@
     .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
     .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
 
-    .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; }
-    .sidebar-brand img { width: 24px; height: 24px; object-fit: contain; z-index: 2; }
-    .sidebar-brand span { position: absolute; left: 50px; opacity: 0; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; color: var(--text-main); transition: opacity 0.2s ease; pointer-events: none; text-transform: uppercase; }
+    .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; overflow: hidden; }
+    .sidebar-brand-logo { height: 28px; width: auto; object-fit: contain; z-index: 2; flex-shrink: 0; }
+    .sidebar-brand-logo.logo-light { display: none; }
+    body.light-mode .sidebar-brand-logo.logo-dark { display: none; }
+    body.light-mode .sidebar-brand-logo.logo-light { display: block; }
     .sidebar-desktop:hover .sidebar-brand { justify-content: flex-start; padding-left: 20px; }
-    .sidebar-desktop:hover .sidebar-brand span { opacity: 1; pointer-events: auto; }
 
     .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
     .nav-link { display: flex; align-items: center; height: 40px; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; font-size: 13px; font-weight: 500; width: 100%; justify-content: center; position: relative; cursor: pointer; border-radius: 8px; }
@@ -321,13 +322,13 @@
         border: none; pointer-events: none; /* Lets clicks pass through the center */
     }
     
-    /* Logo-only pill: circle, no wordmark text */
+    /* Logo pill: wide rounded rectangle so the full logo (icon + wordmark) reads clearly */
     .mobile-logo-container { 
         display: flex; align-items: center; justify-content: center; pointer-events: auto; 
         background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
-        width: 42px; height: 42px; padding: 0; border-radius: 50%;
+        height: 44px; width: 132px; padding: 6px 14px; border-radius: 14px;
     }
-    .mobile-logo-img { height: 28px; width: 28px; object-fit: contain; }
+    .mobile-logo-img { width: 100%; height: 100%; object-fit: contain; }
     .mobile-logo-img.logo-light { display: none; }
     body.light-mode .mobile-logo-img.logo-dark { display: none; }
     body.light-mode .mobile-logo-img.logo-light { display: block; }
@@ -450,8 +451,8 @@
 <aside class="sidebar-desktop">
     <div class="sidebar-container">
         <div class="sidebar-brand">
-            <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
-            <span>ZONE VAULT</span>
+            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault" class="sidebar-brand-logo logo-dark">
+            <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/WHITE_THEME_blxmt7.png" alt="Zone Vault" class="sidebar-brand-logo logo-light">
         </div>
         <ul class="nav-list">
             <li class="nav-item"> <a href="profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>

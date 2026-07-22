@@ -60,7 +60,6 @@
         min-height: 100vh;
         transition: background-color 0.3s ease, color 0.3s ease;
         overflow-x: hidden;
-        padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
         position: relative;
     }
     
@@ -68,52 +67,6 @@
 
     .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
-
-    /* =========================================
-       2. SOLID SIDEBAR & MENUS 
-       ========================================= */
-    .sidebar-desktop {
-        position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
-        border-radius: 16px; width: var(--sidebar-width-collapsed);
-        background: var(--card-bg);
-        border: 1px solid var(--border-color); 
-        box-shadow: var(--shadow-subtle);
-        z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        overflow: hidden; display: flex; flex-direction: column;
-        will-change: width; -webkit-transform: translateZ(0);
-    }
-    .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
-
-    .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
-
-    .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; }
-    .sidebar-brand img { width: 24px; height: 24px; object-fit: contain; z-index: 2; }
-    .sidebar-brand span { position: absolute; left: 50px; opacity: 0; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; color: var(--text-main); transition: opacity 0.2s ease; pointer-events: none; text-transform: uppercase; }
-    .sidebar-desktop:hover .sidebar-brand { justify-content: flex-start; padding-left: 20px; }
-    .sidebar-desktop:hover .sidebar-brand span { opacity: 1; pointer-events: auto; }
-
-    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
-    .nav-link { display: flex; align-items: center; height: 40px; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; font-size: 13px; font-weight: 500; width: 100%; justify-content: center; position: relative; cursor: pointer; border-radius: 8px; }
-    .nav-link i { font-size: 16px; min-width: 20px; text-align: center; transition: color 0.3s; }
-    .nav-text { display: none; white-space: nowrap; margin-left: 12px; opacity: 0; transition: opacity 0.2s; }
-    .sidebar-desktop:hover .nav-link { justify-content: flex-start; padding-left: 12px; }
-    .sidebar-desktop:hover .nav-text { display: block; opacity: 1; transition-delay: 0.1s; }
-    
-    .nav-link:hover { background: var(--hover-bg); color: var(--text-main); }
-    .nav-link.active { color: var(--text-main); background: var(--hover-bg); font-weight: 600; }
-
-    .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
-    .text-danger { color: var(--admin-color) !important; font-weight: 600; }
-    .text-danger i { color: var(--admin-color) !important; }
-
-    .sidebar-user { display: flex; align-items: center; justify-content: center; padding: 10px; cursor: pointer; transition: 0.2s; margin-top: 5px; border-top: 1px solid var(--border-color); border-radius: 8px; }
-    .sidebar-user:hover { background: var(--hover-bg); }
-    .sidebar-user img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
-    .sidebar-user-info { display: none; margin-left: 10px; }
-    .sidebar-desktop:hover .sidebar-user { justify-content: flex-start; padding-left: 10px; border-top: none; }
-    .sidebar-desktop:hover .sidebar-user-info { display: block; }
-    .sidebar-username { font-size: 13px; font-weight: 600; color: var(--text-main); }
-    .sidebar-useremail { font-size: 10px; color: var(--text-muted); }
 
     /* =========================================
        3. MODERN BUTTONS & MODAL (NO BLUR)
@@ -156,20 +109,29 @@
     /* =========================================
        5. COLLECTION LAYOUT (SOLID STYLES)
        ========================================= */
-    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; padding-top: 40px;}
+    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 100px; padding-top: 40px;}
     
     .page-title {
         font-size: 28px; font-weight: 800; margin-bottom: 20px; padding: 0 40px;
         text-transform: uppercase; letter-spacing: 1px; color: var(--text-main);
+        line-height: 1.3;
     }
 
-    .back-to-cat-btn {
-        display: none; align-items: center; gap: 8px;
-        background: transparent; color: var(--text-muted); border: none;
-        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
-        transition: color 0.2s ease;
+    .header-row {
+        display: flex; justify-content: flex-start; align-items: center;
+        margin-bottom: 20px; padding: 0 40px;
     }
-    .back-to-cat-btn:hover { color: var(--text-main); }
+
+    /* Fixed bottom-left back button, plain text, no box */
+    .back-to-cat-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        position: fixed; bottom: 25px; left: 25px; z-index: 1500;
+        background: transparent; color: var(--text-main); border: none;
+        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+        padding: 0; box-shadow: none;
+        transition: opacity 0.2s ease;
+    }
+    .back-to-cat-btn:hover { opacity: 0.7; }
 
     /* CATEGORY GRID */
     .category-menu-grid {
@@ -257,45 +219,33 @@
     /* =========================================
        6. MOBILE RESPONSIVENESS
        ========================================= */
-    .mobile-header { 
-        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
-        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; background: transparent; border: none; pointer-events: none; 
-    }
-    
-    .mobile-logo-container { 
-        display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-main); font-size: 16px; pointer-events: auto; 
-        background: transparent; border: none; box-shadow: none; padding: 0;
-        letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
-    }
-    .mobile-logo-img { height: 26px; width: auto; }
-
-    .mobile-sidebar-menu { 
-        position: fixed; top: 0; left: 0; width: 280px; height: 100vh; height: 100dvh; 
-        background: var(--card-bg); border-right: 1px solid var(--border-color);
-        box-shadow: var(--shadow-float);
-        z-index: 10000; transform: translateX(-100%); -webkit-transform: translateX(-100%) translateZ(0);
-        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
-        will-change: transform; display: flex; flex-direction: column; overflow: hidden; 
-    }
-    .mobile-sidebar-menu.open { transform: translateX(0); -webkit-transform: translateX(0) translateZ(0); }
-    .mobile-sidebar-menu .sidebar-container { overflow-y: auto; padding: 20px 15px; }
-    .mobile-sidebar-menu .sidebar-container::-webkit-scrollbar { display: none; }
-
     @media (max-width: 900px) {
-        .sidebar-desktop { display: none; }
-        .mobile-header { display: flex; }
-        body { padding-left: 0; }
-        
         .hero-notif-btn { display: none !important; }
-        .main-wrapper { padding-top: 80px; } 
-        
+        .main-wrapper { padding-top: 30px; padding-bottom: 110px; }
+
         .notif-modal { 
             position: fixed !important; top: 75px !important; right: 15px !important; 
             width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; 
         }
         
         .category-menu-grid, .collection-section { padding: 0 20px; }
-        .page-title { padding: 0 20px; font-size: 24px; }
+
+        .header-row { padding: 0 20px; }
+
+        /* Title: much smaller + wraps nicely on phones */
+        .page-title {
+            font-size: 15px;
+            letter-spacing: 0.3px;
+            padding: 0;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .back-to-cat-btn {
+            bottom: 16px; left: 16px;
+            font-size: 13px;
+        }
+
         .gallery-grid { gap: 10px; }
         .gallery-item { height: 160px; }
         .cat-card { aspect-ratio: 4/3; }
@@ -311,62 +261,20 @@
     <span>Welcome to Collections</span>
 </div>
 
-<div class="mobile-header">
-    <div class="mobile-logo-container">
-         <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
-         <span>ZONE VAULT</span>
-    </div>
-</div>
-
-<aside class="sidebar-desktop">
-    <div class="sidebar-container">
-        <div class="sidebar-brand">
-            <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Logo">
-            <span>ZONE VAULT</span>
-        </div>
-        <ul class="nav-list">
-            <li class="nav-item"> <a href="/profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
-            <li class="nav-item"> <a href="/home" class="nav-link"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
-            <li class="nav-item"> <a href="/videos" class="nav-link"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
-            <li class="nav-item"> <a href="/collection" class="nav-link active"><i class="fas fa-images"></i> <span class="nav-text">Collection</span></a> </li>
-            <li class="nav-item"> <a href="/live" class="nav-link"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
-        </ul>
-        <div class="sidebar-bottom">
-            <div class="nav-link" onclick="toggleTheme()">
-                <i class="fas fa-cog"></i> 
-                <span class="nav-text">Switch Theme</span>
-            </div>
-             <div class="nav-link text-danger" style="cursor:default;">
-                 <i class="fas fa-shield-alt"></i>
-                 <span class="nav-text" id="status-text-pc">ADMIN ACCESS</span>
-            </div>
-            <a href="javascript:void(0)" onclick="logout()" class="nav-link text-danger">
-                <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Log Out</span>
-            </a>
-            <div class="sidebar-user" onclick="window.location.href='/profile'">
-                <img id="sidebar-pic" src="https://via.placeholder.com/150" alt="Profile">
-                <div class="sidebar-user-info">
-                    <div id="sidebar-name" class="sidebar-username">Loading...</div>
-                    <div id="sidebar-email" class="sidebar-useremail">...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</aside>
-
 
 <div class="main-wrapper fade-in">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 40px;">
-        <h1 class="page-title" style="padding:0; margin:0;">SEVENTEEN WORLD TOUR [NEW_] IN INCHEON SPECIAL GIFTS</h1>
-        <a href="/collection" class="back-to-cat-btn" style="display: inline-flex;">
-            <i class="fas fa-arrow-left"></i> Back to Collections
-        </a>
+    <div class="header-row">
+        <h1 class="page-title">SEVENTEEN WORLD TOUR [NEW_] IN INCHEON SPECIAL GIFTS</h1>
     </div>
 
     <div class="collection-section">
         <div class="gallery-grid" id="grid-category"></div>
     </div>
 </div>
+
+<a href="/collection" class="back-to-cat-btn">
+    <i class="fas fa-arrow-left"></i> Back to Collections
+</a>
 
 <div id="lightbox" class="lightbox-overlay">
     <div class="lightbox-controls">

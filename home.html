@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Home | Zone Vault</title>
-  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="icon" href="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/NEW_LOGO_1_ltkmyu.png" type="image/png" />
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -321,13 +321,16 @@
         border: none; pointer-events: none; /* Lets clicks pass through the center */
     }
     
-    /* Logo-only pill: bigger perfect circle, no wordmark text */
+    /* Logo-only pill: circle, no wordmark text */
     .mobile-logo-container { 
         display: flex; align-items: center; justify-content: center; pointer-events: auto; 
         background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
         width: 42px; height: 42px; padding: 0; border-radius: 50%;
     }
     .mobile-logo-img { height: 28px; width: 28px; object-fit: contain; }
+    .mobile-logo-img.logo-light { display: none; }
+    body.light-mode .mobile-logo-img.logo-dark { display: none; }
+    body.light-mode .mobile-logo-img.logo-light { display: block; }
 
     /* =========================================
        11. BOTTOM NAVIGATION BAR (MOBILE) — FLOATING PILL
@@ -424,7 +427,8 @@
 
 <div class="mobile-header">
     <div class="mobile-logo-container">
-         <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" alt="Zone Vault" class="mobile-logo-img">
+         <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault" class="mobile-logo-img logo-dark">
+         <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/WHITE_THEME_blxmt7.png" alt="Zone Vault" class="mobile-logo-img logo-light">
     </div>
     <div style="display: flex; gap: 10px; pointer-events: auto;">
         <a href="javascript:void(0)" class="header-btn" onclick="toggleNotifModal()">

@@ -16,7 +16,7 @@
 
   <style>
     /* =========================================
-       1. VARIABLES & THEME ENGINE (MODERN SOLID)
+       1. VARIABLES & THEME ENGINE
        ========================================= */
     :root {
         --bg-color: #09090b; 
@@ -39,7 +39,6 @@
         
         --input-bg: #27272a;
         --banner-gradient: linear-gradient(135deg, #27272a, #18181b);
-
         --bottom-nav-height: 96px;
     }
 
@@ -60,31 +59,23 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
 
     body { 
-        background-color: var(--bg-color);
-        color: var(--text-main);
-        font-family: 'Outfit', sans-serif;
-        min-height: 100vh;
-        transition: background-color 0.3s ease, color 0.3s ease;
-        overflow-x: hidden;
-        padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
-        position: relative;
+        background-color: var(--bg-color); color: var(--text-main); font-family: 'Outfit', sans-serif;
+        min-height: 100vh; transition: background-color 0.3s ease, color 0.3s ease; overflow-x: hidden;
+        padding-left: calc(var(--sidebar-width-collapsed) + 40px); position: relative;
     }
 
     .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       2. SOLID SIDEBAR & MENUS 
+       2. UI COMPONENTS & NAV
        ========================================= */
     .sidebar-desktop {
         position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
         border-radius: 16px; width: var(--sidebar-width-collapsed);
-        background: var(--card-bg);
-        border: 1px solid var(--border-color); 
-        box-shadow: var(--shadow-subtle);
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
         z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        overflow: hidden; display: flex; flex-direction: column;
-        will-change: width; -webkit-transform: translateZ(0);
+        overflow: hidden; display: flex; flex-direction: column; will-change: width;
     }
     .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
     .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
@@ -108,14 +99,13 @@
     .nav-text { display: none; white-space: nowrap; margin-left: 12px; opacity: 0; transition: opacity 0.2s; }
     .sidebar-desktop:hover .nav-link { justify-content: flex-start; padding-left: 12px; }
     .sidebar-desktop:hover .nav-text { display: block; opacity: 1; transition-delay: 0.1s; }
-    
     .nav-link:hover { background: var(--hover-bg); color: var(--text-main); }
     .nav-link.active { color: var(--text-main); background: var(--hover-bg); font-weight: 600; }
     
     .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding: 0 10px; }
     .text-danger { color: var(--admin-color) !important; font-weight: 600; }
     .text-danger i { color: var(--admin-color) !important; }
-
+    
     .sidebar-user { display: flex; align-items: center; justify-content: center; padding: 10px; cursor: pointer; transition: 0.2s; margin-top: 5px; border-top: 1px solid var(--border-color); border-radius: 8px; }
     .sidebar-user:hover { background: var(--hover-bg); }
     .sidebar-user img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
@@ -126,31 +116,24 @@
     .sidebar-useremail { font-size: 10px; color: var(--text-muted); }
 
     /* =========================================
-       3. MODERN BUTTONS & MODAL 
+       3. NOTIFICATIONS & MODALS
        ========================================= */
     .hero-notif-btn, .header-btn {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        box-shadow: var(--shadow-subtle); 
-        color: var(--text-main);
-        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle); 
+        color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
     }
-    
     .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
     .header-btn { width: 40px; height: 40px; border-radius: 50%; font-size: 16px; pointer-events: auto; position: relative; }
-    
     .hero-notif-btn:hover, .header-btn:hover { background: var(--hover-bg); transform: translateY(-2px); box-shadow: var(--shadow-float); }
     
     .hero-notif-btn .badge, .header-btn .badge { 
-        position: absolute; top: 0px; right: 0px; width: 12px; height: 12px; 
-        background: var(--admin-color); border-radius: 50%; border: 2px solid var(--card-bg); display: none; 
+        position: absolute; top: 0px; right: 0px; width: 12px; height: 12px; background: var(--admin-color); border-radius: 50%; border: 2px solid var(--card-bg); display: none; 
     }
     .hero-notif-btn .badge.active, .header-btn .badge.active { display: block; }
 
     .notif-modal { 
         position: absolute !important; top: 85px; right: 40px; width: 340px; max-height: 400px; 
-        background: var(--card-bg); border: 1px solid var(--border-color); 
-        box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
     }
     .notif-modal.active { display: flex; animation: dropDown 0.2s ease; }
     @keyframes dropDown { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -164,44 +147,25 @@
     .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
     /* =========================================
-       4. PROFILE CONTENT (SOLID MATTE)
+       4. PROFILE LAYOUT & CARDS
        ========================================= */
-    .main-wrapper { 
-        max-width: 1000px; margin: 0 auto; width: 100%; padding-top: 40px; padding-bottom: 40px; padding-left: 20px; padding-right: 20px; position: relative;
-    }
-    
-    .glass-card {
-        background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow-subtle);
-    }
+    .main-wrapper { max-width: 1000px; margin: 0 auto; width: 100%; padding-top: 40px; padding-bottom: 40px; padding-left: 20px; padding-right: 20px; position: relative; }
+    .glass-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow-subtle); }
 
-    .banner { 
-        width: 100%; height: 180px; background: var(--banner-gradient); position: relative; transition: background 0.3s ease;
-    }
-
+    .banner { width: 100%; height: 180px; background: var(--banner-gradient); position: relative; transition: background 0.3s ease; }
     .banner.has-image { background-size: cover; background-position: center; }
-    
-    .cropper-container-wrapper { 
-        width: 100%; max-height: 400px; margin-top: 15px; background: #000; display: none; border-radius: 10px; overflow: hidden;
-    }
+    .cropper-container-wrapper { width: 100%; max-height: 400px; margin-top: 15px; background: #000; display: none; border-radius: 10px; overflow: hidden; }
 
-    .profile-body { 
-        padding: 0 30px 35px; position: relative; display: flex; 
-        flex-direction: column; align-items: center; text-align: center; gap: 0; 
-    }
+    .profile-body { padding: 0 30px 35px; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0; }
     
     .avatar-wrapper { margin-top: -65px; position: relative; cursor: pointer; display: inline-block; }
-    .profile-img {
-        width: 130px; height: 130px; border-radius: 50%; border: 4px solid var(--card-bg); object-fit: cover; background: var(--bg-color); transition: transform 0.2s;
-    }
+    .profile-img { width: 130px; height: 130px; border-radius: 50%; border: 4px solid var(--card-bg); object-fit: cover; background: var(--bg-color); transition: transform 0.2s; }
     .avatar-wrapper:hover .profile-img { transform: scale(1.02); filter: brightness(0.9); }
-    .avatar-icon {
-        position: absolute; bottom: 5px; right: 5px; background: var(--text-main); color: var(--bg-color);
-        width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid var(--card-bg);
-    }
+    .avatar-icon { position: absolute; bottom: 5px; right: 5px; background: var(--text-main); color: var(--bg-color); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid var(--card-bg); }
 
     .user-info { width: 100%; padding-top: 0; }
     .user-info h1 { font-size: 24px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; color: var(--text-main); }
-    .user-info p.email { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
+    .user-info p.email { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; letter-spacing: 0.5px; }
     .user-info p.role { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-main); margin-bottom: 20px; text-transform: uppercase;}
     .user-info p.bio { color: var(--text-main); font-size: 14px; max-width: 500px; margin: 0 auto 20px auto; line-height: 1.5; opacity: 0.9; }
     
@@ -216,30 +180,41 @@
     .styled-input { width: 100%; padding: 12px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); outline: none; font-family: inherit; font-size: 13px; transition: border-color 0.2s; }
     .styled-input:focus { border-color: var(--text-muted); }
     input[type="color"].styled-input { padding: 2px 4px; height: 42px; cursor: pointer; }
-    .edit-action-btns { justify-content: center !important; }
 
     .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 24px; }
-    
-    .card-header { 
-        padding: 18px 25px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 700; color: var(--text-muted); 
-        text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;
-    }
+    .card-header { padding: 18px 25px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
     .card-header .card-header-left { display: flex; align-items: center; gap: 10px; flex-grow: 1; }
     .eye-btn { margin-left: auto; cursor: pointer; font-size: 15px; color: var(--text-muted); transition: 0.2s; padding: 5px; }
     .eye-btn:hover { color: var(--text-main); transform: scale(1.1); }
+    
+    .card-content { padding: 25px; font-size: 14px; color: var(--text-main); }
+    
+    /* Privacy Text Styles */
+    .privacy-mask { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); font-size: 13px; font-style: italic; padding: 40px 20px !important; min-height: 150px; }
+    .privacy-icon { font-size: 24px; margin-bottom: 12px; opacity: 0.5; }
 
-    .card-content { padding: 25px; font-size: 14px; color: var(--text-main); min-height: 100px; flex: 1;}
+    /* Vertically Stacked Action Buttons */
+    .pref-action-btn {
+        display: flex; align-items: center; justify-content: flex-start; gap: 12px;
+        width: 100%; padding: 14px 20px; background: var(--input-bg); border: 1px solid var(--border-color); 
+        border-radius: 12px; color: var(--text-main); font-size: 13px; font-weight: 600;
+        cursor: pointer; transition: 0.2s; margin-bottom: 12px;
+    }
+    .pref-action-btn:last-child { margin-bottom: 0; }
+    .pref-action-btn:hover { background: var(--hover-bg); transform: translateY(-2px); }
+    .pref-action-btn i { font-size: 16px; width: 24px; text-align: center; }
+    .pref-action-btn.danger { color: var(--admin-color); }
+    .pref-action-btn.danger i { color: var(--admin-color); }
 
-    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; transition: background 0.2s; border-radius: 6px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
     .info-row:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-    .info-row.clickable:hover { background: var(--hover-bg); padding-left: 10px; padding-right: 10px; margin-left: -10px; margin-right: -10px; }
     .info-label { color: var(--text-muted); font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 8px;}
     .info-value { font-weight: 600; font-size: 13px; }
     .uid-badge { font-family: 'Monaco', 'Consolas', monospace; font-size: 11px; background: var(--input-bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); user-select: all; color: var(--text-muted); letter-spacing: 0.5px;}
 
     .history-item { display: flex; gap: 12px; margin-bottom: 15px; padding: 10px; border-radius: 12px; border: 1px solid transparent; cursor: default; pointer-events: none; }
     .history-thumb-wrapper { width: 120px; min-width: 120px; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid var(--border-color); }
-    .history-thumb-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transition: opacity 0.2s; }
+    .history-thumb-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
     .progress-bar-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.2); }
     .progress-bar-fill { height: 100%; background: var(--youtube-red); }
     .time-badge { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.8); color: white; font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: 600; }
@@ -252,67 +227,29 @@
     /* MODALS */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; align-items: center; justify-content: center; }
     .modal-box-avatar { background: var(--card-bg); border: 1px solid var(--border-color); padding: 25px; border-radius: 16px; width: 90%; max-width: 450px; color: var(--text-main); max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-float); }
-    
     #cardViewContent::-webkit-scrollbar { width: 6px; }
     #cardViewContent::-webkit-scrollbar-track { background: var(--input-bg); border-radius: 4px; }
     #cardViewContent::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-    #cardViewContent::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); color: var(--text-main); padding: 14px 28px; border-radius: 50px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.4s ease; }
     .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
-    
-    .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; }
-    .access-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 50px; border-radius: 16px; text-align: center; color: var(--text-main); max-width: 420px; width: 90%; box-shadow: var(--shadow-float); }
-    .access-icon-box { width: 70px; height: 70px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 28px; border-top: 1px solid rgba(239, 68, 68, 0.2); }
-    .access-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
-    .access-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
-    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
     /* =========================================
        5. MOBILE RESPONSIVENESS
        ========================================= */
-    .mobile-header { 
-        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
-        position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; 
-        background: transparent; border: none; pointer-events: none; 
-    }
-    
-    .mobile-logo-container { 
-        display: flex; align-items: center; justify-content: center; pointer-events: auto; 
-        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
-        height: 44px; width: 132px; padding: 2px 6px; border-radius: 14px;
-    }
+    .mobile-header { display: none; padding: 15px 20px; align-items: center; justify-content: space-between; position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; background: transparent; border: none; pointer-events: none; }
+    .mobile-logo-container { display: flex; align-items: center; justify-content: center; pointer-events: auto; background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle); height: 44px; width: 132px; padding: 2px 6px; border-radius: 14px; }
     .mobile-logo-img { width: 100%; height: 100%; object-fit: contain; }
     .mobile-logo-img.logo-light { display: none; }
     body.light-mode .mobile-logo-img.logo-dark { display: none; }
     body.light-mode .mobile-logo-img.logo-light { display: block; }
 
-    .bottom-nav-mobile {
-        display: none; position: fixed; bottom: 16px; left: 16px; right: 16px; width: auto;
-        background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 22px;
-        box-shadow: var(--shadow-float); z-index: 950;
-        padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
-        align-items: center; justify-content: space-around;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-    }
+    .bottom-nav-mobile { display: none; position: fixed; bottom: 16px; left: 16px; right: 16px; width: auto; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 22px; box-shadow: var(--shadow-float); z-index: 950; padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px)); align-items: center; justify-content: space-around; transition: transform 0.3s ease, opacity 0.3s ease; }
     .bottom-nav-mobile.hide-on-scroll { transform: translateY(140%); opacity: 0; }
-
-    .bottom-nav-link {
-        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 4px; text-decoration: none; color: var(--text-muted);
-        font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
-        padding: 6px 2px; border-radius: 14px; position: relative;
-        transition: color 0.2s ease, transform 0.15s ease;
-    }
+    .bottom-nav-link { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: var(--text-muted); font-size: 10px; font-weight: 600; letter-spacing: 0.2px; padding: 6px 2px; border-radius: 14px; position: relative; transition: color 0.2s ease, transform 0.15s ease; }
     .bottom-nav-link i { font-size: 19px; transition: transform 0.15s ease; }
-    .bottom-nav-link:active { transform: scale(0.92); }
     .bottom-nav-link.active { color: var(--text-main); background: var(--hover-bg); }
     .bottom-nav-link.active i { transform: translateY(-1px); }
-    .bottom-nav-link.active::before {
-        content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
-        width: 18px; height: 3px; border-radius: 3px; background: var(--text-main);
-    }
 
     @media (max-width: 900px) {
         .sidebar-desktop { display: none; }
@@ -320,47 +257,15 @@
         .mobile-header { display: flex; } 
         .bottom-nav-mobile { display: flex; }
         body { padding-left: 0; padding-bottom: var(--bottom-nav-height); }
-        
         .main-wrapper { padding-top: 80px; } 
         .notif-modal { position: fixed !important; top: 75px !important; right: 15px !important; width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; }
         .grid-container { grid-template-columns: 1fr; gap: 20px; }
-        
         .banner { height: 130px; }
         .banner.has-image { background-size: cover; }
-        
         .avatar-wrapper { margin-top: -50px; } 
         .profile-img { width: 95px; height: 95px; border-width: 4px; }
-
-        .mobile-quick-actions { display: flex !important; }
     }
 
-    .skeleton {
-        background: linear-gradient(90deg, var(--input-bg) 25%, var(--hover-bg) 50%, var(--input-bg) 75%);
-        background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; border-radius: 8px;
-    }
-    @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .skeleton-line { height: 12px; margin-bottom: 10px; }
-    .skeleton-line.short { width: 60%; }
-    .skeleton-line.medium { width: 80%; }
-    .skeleton-line:last-child { margin-bottom: 0; }
-    .skeleton-history-item { display: flex; gap: 12px; margin-bottom: 15px; }
-    .skeleton-history-item:last-child { margin-bottom: 0; }
-    .skeleton-thumb { width: 120px; min-width: 120px; aspect-ratio: 16/9; }
-    .skeleton-text-group { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-
-    .mobile-quick-actions {
-        display: none; width: 100%; max-width: 400px; margin: 20px auto 0; gap: 10px;
-    }
-    .quick-action-btn {
-        flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
-        background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px;
-        padding: 12px 8px; color: var(--text-main); font-size: 11px; font-weight: 600;
-        cursor: pointer; text-decoration: none; transition: 0.2s;
-    }
-    .quick-action-btn:hover { background: var(--hover-bg); }
-    .quick-action-btn i { font-size: 16px; }
-    .quick-action-btn.text-danger i,
-    .quick-action-btn.text-danger span { color: var(--admin-color); }
   </style>
 </head>
 <body>
@@ -370,7 +275,6 @@
     <span>Welcome to Profile</span>
 </div>
 
-<!-- CLEAR MOBILE HEADER -->
 <div class="mobile-header">
     <div class="mobile-logo-container">
          <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault" class="mobile-logo-img logo-dark">
@@ -384,7 +288,6 @@
     </div>
 </div>
 
-<!-- BOTTOM NAVIGATION BAR -->
 <nav class="bottom-nav-mobile" id="bottomNav">
     <a href="profile" class="bottom-nav-link active"><i class="fas fa-user"></i><span>Profile</span></a>
     <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
@@ -447,6 +350,7 @@
 </div>
 
 <div class="main-wrapper fade-in">
+    <!-- Main Profile Card -->
     <div class="glass-card">
         <div class="banner" id="profile-banner"></div>
         <div class="profile-body">
@@ -464,21 +368,6 @@
                     <button class="btn btn-secondary" onclick="toggleEditMode()">
                         <i class="fas fa-pencil-alt"></i> Edit Profile
                     </button>
-
-                    <div class="mobile-quick-actions">
-                        <div class="quick-action-btn" onclick="toggleTheme()">
-                            <i class="fas fa-cog"></i>
-                            <span>Theme</span>
-                        </div>
-                        <div class="quick-action-btn text-danger" style="cursor:default;">
-                            <i class="fas fa-shield-alt"></i>
-                            <span id="status-text-mobile">ADMIN</span>
-                        </div>
-                        <a href="javascript:void(0)" onclick="logout()" class="quick-action-btn text-danger">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Log Out</span>
-                        </a>
-                    </div>
                 </div>
 
                 <div id="edit-mode">
@@ -498,10 +387,9 @@
                         <textarea id="bioInput" class="styled-input" rows="3" placeholder="Tell us about yourself"></textarea>
                     </div>
                     <div class="input-group">
-                        <label>Banner Theme Color (Fallback)</label>
+                        <label>Banner Theme Color</label>
                         <div style="display:flex; align-items:center; gap:10px;">
                              <input type="color" id="bannerColorInput" class="styled-input" style="width: 80px;" value="#27272a">
-                             <span style="font-size:12px; color:var(--text-muted);">Pick a color for when no image is set.</span>
                         </div>
                     </div>
 
@@ -515,13 +403,50 @@
     </div>
 
     <div class="grid-container">
-        <!-- Account Status Card -->
-        <div class="glass-card" id="account-status-card">
+        
+        <!-- Preferences & Actions Box -->
+        <div class="glass-card" style="grid-column: 1 / -1;">
+            <div class="card-header">
+                <div class="card-header-left"><i class="fas fa-cogs"></i> Preferences & Actions</div>
+            </div>
+            <div class="card-content" style="padding: 20px;">
+                <!-- Vertical Button Layout format -->
+                <div class="pref-action-btn" onclick="toggleTheme()">
+                    <i class="fas fa-adjust"></i> Switch Theme
+                </div>
+                <div class="pref-action-btn danger" style="cursor: default;">
+                    <i class="fas fa-shield-alt"></i> <span id="status-text-card">ADMIN ACCESS</span>
+                </div>
+                <div class="pref-action-btn danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </div>
+            </div>
+        </div>
+
+        <!-- My Codes Box -->
+        <div class="glass-card" style="grid-column: 1 / -1;">
+            <div class="card-header">
+                <div class="card-header-left"><i class="fas fa-ticket-alt"></i> My Codes</div>
+            </div>
+            <div class="card-content" id="my-codes-content" style="padding: 20px;">
+                <!-- Dynamically populated or says NO CODE YET -->
+                <div style="text-align: center; color: var(--text-muted); font-size: 13px;">Loading codes...</div>
+            </div>
+        </div>
+
+        <!-- Account Status Card (Hidden default) -->
+        <div class="glass-card">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-id-card"></i> Account Status</div>
                 <i class="fas fa-eye eye-btn" title="View Details" onclick="openCardViewModal('account')"></i>
             </div>
-            <div class="card-content" id="account-status-content">
+            <!-- Visible Privacy Mask -->
+            <div class="card-content privacy-mask">
+                <i class="fas fa-lock privacy-icon"></i>
+                <p>Information hidden for privacy.<br>Click the eye icon to view.</p>
+            </div>
+            <!-- Hidden Actual Data -->
+            <div id="account-status-content" style="display: none;">
                 <div class="info-row">
                     <span class="info-label">Access Level</span>
                     <span id="user-role" class="info-value">Member</span>
@@ -537,68 +462,36 @@
             </div>
         </div>
 
-        <!-- Notifications Card -->
-        <div class="glass-card" id="notifications-card">
+        <!-- Notifications Card (Hidden default) -->
+        <div class="glass-card">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-bell"></i> Notifications</div>
                 <i class="fas fa-eye eye-btn" title="View All" onclick="openCardViewModal('notifications')"></i>
             </div>
-            <div class="card-content" id="notice-container">
-                <div class="skeleton skeleton-line medium"></div>
-                <div class="skeleton skeleton-line"></div>
-                <div class="skeleton skeleton-line short"></div>
+            <!-- Visible Privacy Mask -->
+            <div class="card-content privacy-mask">
+                <i class="fas fa-lock privacy-icon"></i>
+                <p>Information hidden for privacy.<br>Click the eye icon to view.</p>
             </div>
+            <!-- Hidden Actual Data -->
+            <div id="notice-container" style="display: none;"></div>
         </div>
         
-        <!-- Continue Watching Card -->
-        <div class="glass-card" style="grid-column: 1 / -1;" id="continue-watching-card">
+        <!-- Continue Watching Card (Hidden default) -->
+        <div class="glass-card" style="grid-column: 1 / -1;">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-history"></i> Continue Watching</div>
                 <i class="fas fa-eye eye-btn" title="View History" onclick="openCardViewModal('history')"></i>
             </div>
-            <div class="card-content" id="watched-list">
-                <div class="skeleton-history-item">
-                    <div class="skeleton skeleton-thumb"></div>
-                    <div class="skeleton-text-group">
-                        <div class="skeleton skeleton-line medium"></div>
-                        <div class="skeleton skeleton-line short"></div>
-                    </div>
-                </div>
+            <!-- Visible Privacy Mask -->
+            <div class="card-content privacy-mask">
+                <i class="fas fa-lock privacy-icon"></i>
+                <p>Information hidden for privacy.<br>Click the eye icon to view.</p>
             </div>
-        </div>
-        
-        <!-- NEW: My Codes Card -->
-        <div class="glass-card" id="my-codes-card" style="grid-column: 1 / -1;">
-            <div class="card-header">
-                <div class="card-header-left"><i class="fas fa-ticket-alt"></i> My Codes</div>
-                <i class="fas fa-eye eye-btn" title="View All" onclick="openCardViewModal('codes')"></i>
-            </div>
-            <div class="card-content" id="my-codes-content">
-                <div class="skeleton skeleton-line medium"></div>
-                <div class="skeleton skeleton-line"></div>
-                <div class="skeleton skeleton-line short"></div>
-            </div>
+            <!-- Hidden Actual Data -->
+            <div id="watched-list" style="display: none;"></div>
         </div>
 
-        <!-- Preferences & Actions Box -->
-        <div class="glass-card" style="grid-column: 1 / -1;">
-            <div class="card-header">
-                <div class="card-header-left"><i class="fas fa-cogs"></i> Preferences & Actions</div>
-            </div>
-            <div class="card-content" style="padding: 15px 25px;">
-                <div class="info-row clickable" onclick="toggleTheme()" style="cursor: pointer;">
-                    <span class="info-label"><i class="fas fa-adjust" style="width: 20px;"></i> Switch Theme</span>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 12px;"></i>
-                </div>
-                <div class="info-row" style="cursor: default;">
-                    <span class="info-label text-danger"><i class="fas fa-shield-alt" style="width: 20px;"></i> <span id="status-text-card">ADMIN ACCESS</span></span>
-                </div>
-                <div class="info-row clickable" onclick="logout()" style="cursor: pointer; border-bottom: none; padding-bottom: 0;">
-                    <span class="info-label text-danger"><i class="fas fa-sign-out-alt" style="width: 20px;"></i> Log Out</span>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 12px;"></i>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -624,18 +517,15 @@
             <h3 style="margin:0; font-size: 16px;">Change Profile Picture</h3>
             <button onclick="closeImageChangeModal()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;">&times;</button>
         </div>
-        
         <div class="modal-content" style="padding-top: 25px;">
             <div style="text-align: center; margin-bottom: 25px;">
                 <img id="current-photo-preview" src="https://via.placeholder.com/150" alt="Current Photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--text-main); box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
             </div>
-
             <div style="font-size: 13px; color: var(--text-main); margin-bottom: 25px; line-height: 1.6; padding: 15px; background: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
                 <p><i class="fas fa-file-image"></i> <strong>Accepted Formats:</strong> JPEG, PNG only.</p>
                 <p><i class="fas fa-expand-arrows-alt"></i> <strong>Max File Size:</strong> 10MB.</p>
                 <p style="margin-top: 15px; color: #ff6b6b; font-weight: 600;"><i class="fas fa-exclamation-triangle"></i> Important: Explicit or inappropriate content is strictly prohibited.</p>
             </div>
-
             <div style="text-align: center;">
                 <input type="file" id="fileInput" accept="image/jpeg, image/png" style="display: none;">
                 <button class="btn btn-primary" id="chooseFromGalleryBtn" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;">
@@ -653,24 +543,15 @@
             <h3 style="margin:0; font-size: 16px;">Update Cover Photo</h3>
             <button onclick="closeBannerModal()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;">&times;</button>
         </div>
-        
         <div class="modal-content" style="padding-top: 25px; text-align: center;">
-            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
-                Choose an image. You can reposition and crop it to fit the banner dimensions.
-            </div>
-
             <input type="file" id="bannerFileInput" accept="image/jpeg, image/png" style="display: none;">
-            
             <button class="btn btn-secondary" onclick="document.getElementById('bannerFileInput').click()" id="chooseBannerBtn" style="padding: 12px 25px;">
                 <i class="fas fa-images"></i> Select Image
             </button>
-            
             <div class="cropper-container-wrapper" id="cropperWrapper">
                 <img id="bannerCropperImg" src="" style="max-width: 100%; display: block;">
             </div>
-
             <div id="bannerUploadStatus" style="font-size: 13px; color: var(--text-muted); margin-top: 15px; display: none;"></div>
-            
             <div style="margin-top: 20px; display: none; justify-content: center; gap: 10px;" id="bannerCropActionBtns">
                 <button class="btn btn-primary" onclick="uploadCroppedBanner()"><i class="fas fa-check"></i> Save Cover</button>
                 <button class="btn btn-secondary" onclick="resetBannerModal()"><i class="fas fa-times"></i> Cancel</button>
@@ -684,27 +565,12 @@
         var current = (window.location.pathname.split('/').pop() || 'profile').replace('.html', '') || 'profile';
         document.querySelectorAll('.bottom-nav-link').forEach(function (link) {
             var page = link.getAttribute('href');
-            if (page === current) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
+            if (page === current) link.classList.add('active');
+            else link.classList.remove('active');
         });
-
-        var bottomNav = document.getElementById('bottomNav');
-        var lastScrollY = window.scrollY;
-        window.addEventListener('scroll', function () {
-            if (!bottomNav) return;
-            var currentScrollY = window.scrollY;
-            if (currentScrollY > lastScrollY && currentScrollY > 80) {
-                bottomNav.classList.add('hide-on-scroll');
-            } else {
-                bottomNav.classList.remove('hide-on-scroll');
-            }
-            lastScrollY = currentScrollY;
-        }, { passive: true });
     })();
 
+    // Dynamic Modal logic to show hidden data
     window.openCardViewModal = function(type) {
         const modal = document.getElementById('cardViewModal');
         const title = document.getElementById('cardViewTitle');
@@ -719,11 +585,7 @@
         } else if (type === 'history') {
             title.innerHTML = '<i class="fas fa-history"></i> Continue Watching';
             content.innerHTML = document.getElementById('watched-list').innerHTML;
-        } else if (type === 'codes') {
-            title.innerHTML = '<i class="fas fa-ticket-alt"></i> My Codes';
-            content.innerHTML = document.getElementById('my-codes-content').innerHTML;
         }
-        
         modal.style.display = 'flex';
     };
 

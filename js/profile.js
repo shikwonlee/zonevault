@@ -198,8 +198,7 @@ onAuthStateChanged(auth, user => {
             const statusTxt = isAdm ? "ADMIN ACCESS" : "MEMBER ACCESS";
             
             if(document.getElementById("status-text-pc")) document.getElementById("status-text-pc").innerText = statusTxt;
-            if(document.getElementById("status-text-mobile")) document.getElementById("status-text-mobile").innerText = isAdm ? "ADMIN" : "MEMBER";
-            if(document.getElementById("status-text-card")) document.getElementById("status-text-card").innerText = statusTxt; 
+            if(document.getElementById("status-text-card")) document.getElementById("status-text-card").innerText = isAdm ? "ADMIN" : "MEMBER"; 
 
             if(isAdm) {
                 roleEl.style.color = 'var(--admin-color)';
@@ -309,11 +308,10 @@ onAuthStateChanged(auth, user => {
             }
         });
 
-        // FETCH USER CODES (MY CODE)
+        // FETCH USER CODES (MY CODE) - HIDDEN
         onValue(ref(db, 'userCodes/' + uid), snap => {
             const codesContainer = document.getElementById('my-codes-content');
             if (!snap.exists()) {
-                // If user has no codes, display NO CODE YET exactly as requested
                 codesContainer.innerHTML = `
                 <div style="text-align: center; color: var(--text-muted); font-size: 14px; font-weight: 600; padding: 20px 0; letter-spacing: 1px;">
                     NO CODE YET.
@@ -371,7 +369,7 @@ window.logout = function() {
     }
 }
 
-// ... All Avatar and Security logic remains exactly the same below here
+// ... Avatar / Banner Update Logic Remains Unchanged
 const avatarModal = document.getElementById('imageChangeModal');
 const avatarFileInput = document.getElementById('fileInput');
 const chooseAvatarBtn = document.getElementById('chooseFromGalleryBtn');

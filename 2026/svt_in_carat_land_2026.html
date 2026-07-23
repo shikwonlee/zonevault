@@ -58,14 +58,14 @@
 
   <style>
     /* =========================================
-       1. VARIABLES & THEME ENGINE (GRAY THEME)
+       1. VARIABLES & THEME ENGINE (GRAY THEME, SOLID - NO BLUR)
        ========================================= */
     :root {
         --bg-color: #0a0a0c;
         --bg-gradient: radial-gradient(circle at top right, #1a1a24, #0a0a0c);
         --text-main: #fcfcfc;
         --text-muted: #8e8e99;
-        --card-bg: rgba(22, 22, 28, 0.7);
+        --card-bg: #17171b; /* SOLID - no blur needed */
         --glass-border: 1px solid rgba(255, 255, 255, 0.05);
         --accent: #a1a1aa; /* GRAY ACCENT */
         --playlist-hover: rgba(255, 255, 255, 0.04);
@@ -78,7 +78,7 @@
         --bg-gradient: radial-gradient(circle at top right, #ffffff, #f0f2f5);
         --text-main: #111111;
         --text-muted: #555555;
-        --card-bg: rgba(255, 255, 255, 0.9);
+        --card-bg: #ffffff; /* SOLID - no blur needed */
         --glass-border: 1px solid rgba(0, 0, 0, 0.06);
         --accent: #555555; /* GRAY ACCENT */
         --playlist-hover: rgba(0, 0, 0, 0.03);
@@ -94,7 +94,7 @@
         color: var(--text-main);
         font-family: 'Inter', sans-serif;
         margin: 0;
-        padding: 30px 20px 0;
+        padding: 30px 20px;
         min-height: 100vh;
         transition: background 0.4s ease, color 0.4s ease;
     }
@@ -116,24 +116,19 @@
         }
         .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; gap: 0; }
         .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #playlist, .center-logo, .back-btn { display: none !important; }
+        #playlist, .title-box, .back-to-video-btn { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; }
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
 
     /* =========================================
-       2. LAYOUT - CINEMATIC SPLIT
+       2. LAYOUT - VIDEO LEFT / PLAYLIST RIGHT
        ========================================= */
-    .center-logo { display: flex; justify-content: center; margin-bottom: 30px; }
-    .center-logo img { width: 55px; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); transition: transform 0.3s; }
-    .center-logo img:hover { transform: scale(1.05); }
-
     .main-layout {
         max-width: 1600px; width: 100%; margin: 0 auto;
         display: grid;
         grid-template-columns: 1fr;
         gap: 20px;
-        padding-bottom: 30px;
     }
 
     @media (min-width: 800px) and (max-width: 1099px) {
@@ -144,13 +139,13 @@
         .main-layout { grid-template-columns: 3fr 1.2fr; gap: 32px; align-items: start; }
     }
 
-    .video-wrapper-left { width: 100%; position: sticky; top: 30px; z-index: 1; }
+    .video-wrapper-left { width: 100%; position: sticky; top: 30px; z-index: 1; display: flex; flex-direction: column; gap: 16px; }
      
     #poster-container {
         width: 100%; aspect-ratio: 16/9; background-size: cover; background-position: center;
         background-image: url('https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png'); 
         display: flex; align-items: center; justify-content: center; cursor: pointer;
-        position: relative; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+        position: relative; border-radius: 20px; box-shadow: none;
         overflow: hidden; transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
@@ -163,8 +158,7 @@
     #poster-container:hover::after { opacity: 0.8; }
 
     #poster-overlay {
-        background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.3); padding: 18px 40px; border-radius: 50px;
+        background: rgba(40, 40, 45, 0.75); border: 1px solid rgba(255, 255, 255, 0.3); padding: 18px 40px; border-radius: 50px;
         color: white; font-weight: 700; font-size: 14px; pointer-events: none; text-transform: uppercase; letter-spacing: 3px;
         z-index: 2; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(0); transition: transform 0.3s;
     }
@@ -172,11 +166,35 @@
 
     #player-container { 
         display: none; width: 100%; aspect-ratio: 16/9; border-radius: 20px; 
-        overflow: hidden; position: relative; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.7);
+        overflow: hidden; position: relative; box-shadow: none;
         touch-action: none; background: #000; border: var(--glass-border);
     }
     .art-video-player { width: 100%; height: 100%; }
     .art-layer-mobile { pointer-events: auto !important; }
+
+    /* Title box - separate card below the video */
+    .title-box {
+        width: 100%; background: var(--card-bg); border: var(--glass-border);
+        border-radius: 16px; padding: 20px 24px; box-shadow: none;
+    }
+    .title-box .current-episode-label {
+        font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase;
+        letter-spacing: 3px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .title-box .current-episode-label::before {
+        content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+        display: inline-block; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite;
+    }
+    #main-title {
+        font-size: 20px; font-weight: 700; color: var(--text-main); line-height: 1.3;
+        margin: 0; letter-spacing: -0.4px;
+    }
+    #main-title:empty::before { content: 'Select an Episode to Begin'; color: var(--text-muted); font-weight: 500; font-size: 15px; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(1.5); }
+    }
 
     /* =========================================
        3. CUSTOM GESTURES & BUTTONS
@@ -201,8 +219,7 @@
     .art-layer-skipIntroLayer { position: absolute !important; bottom: 80px !important; right: 30px !important; z-index: 98 !important; }
 
     .next-ep-btn, .skip-intro-btn {
-        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 8px;
+        background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 8px;
         font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer;
         transition: all 0.3s ease; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         display: flex; align-items: center; gap: 8px; animation: fadeInBtn 0.5s ease forwards; pointer-events: auto;
@@ -216,42 +233,25 @@
     @keyframes fadeInBtn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       4. PLAYLIST SECTION
+       4. PLAYLIST SECTION (RIGHT SIDE, ORIGINAL LIST STYLE)
        ========================================= */
     #playlist { width: 100%; height: fit-content; position: relative; z-index: 10; }
 
     .playlist-card {
-        background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-        border: var(--glass-border); border-radius: 20px; overflow: hidden;
-        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); display: flex; flex-direction: column; 
+        background: var(--card-bg); border: var(--glass-border); border-radius: 20px; overflow: hidden;
+        box-shadow: none; display: flex; flex-direction: column; 
         max-height: calc(100vh - 180px); 
     }
 
-    .current-episode-header {
-        padding: 28px 24px 20px; border-bottom: var(--glass-border);
-        background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%); position: relative;
-    }
-
-    .current-episode-label {
+    .playlist-header {
+        padding: 22px 24px 16px; border-bottom: var(--glass-border);
         font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase;
-        letter-spacing: 3px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+        letter-spacing: 3px; display: flex; align-items: center; gap: 8px;
     }
-
-    .current-episode-label::before {
+    .playlist-header::before {
         content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
         display: inline-block; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite;
     }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(1.5); }
-    }
-
-    #main-title {
-        font-size: 22px; font-weight: 700; color: var(--text-main); line-height: 1.3;
-        margin: 0; min-height: 56px; display: flex; align-items: center; letter-spacing: -0.5px;
-    }
-    #main-title:empty::before { content: 'Select an Episode to Begin'; color: var(--text-muted); font-weight: 500; font-size: 16px; }
 
     #playlist-items { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
     #playlist-items::-webkit-scrollbar { width: 6px; }
@@ -304,33 +304,30 @@
        5. RESPONSIVE DESIGN
        ========================================= */
     @media (max-width: 1099px) {
-        body { padding: 20px 16px 0; }
-        .main-layout { padding-bottom: 20px; }
-        .center-logo { margin-bottom: 20px; }
+        body { padding: 20px 16px; }
         #poster-container, #player-container { border-radius: 16px; }
         .playlist-card { max-height: none; } 
         #playlist-items { max-height: 400px; } 
-        .current-episode-header { padding: 20px 16px; }
-        #main-title { font-size: 18px; min-height: auto; }
+        .title-box { padding: 16px 18px; }
+        #main-title { font-size: 17px; }
         .playlist-img-wrapper { width: 90px; }
         .playlist-title { font-size: 13px; }
     }
 
-    /* Back Button */
-    .back-btn {
-        position: fixed; bottom: 30px; left: 30px; width: 50px; height: 50px;
-        background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        z-index: 100; cursor: pointer; text-decoration: none;
+    /* Back Button - text style */
+    .back-to-video-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        position: fixed; bottom: 25px; left: 25px; z-index: 1500;
+        background: transparent; color: var(--text-main); border: none;
+        font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+        cursor: pointer; text-decoration: none; padding: 0; box-shadow: none;
+        transition: opacity 0.2s ease;
     }
-    .back-btn:hover { background: var(--text-main); transform: scale(1.1) translateX(-4px); }
-    .back-btn svg { stroke: var(--text-main); transition: stroke 0.3s; width: 22px; height: 22px; margin-right: 2px; }
-    .back-btn:hover svg { stroke: var(--bg-color); }
+    .back-to-video-btn:hover { opacity: 0.7; }
+    .back-to-video-btn i { font-size: 14px; }
 
     @media (max-width: 768px) {
-        .back-btn { width: 44px; height: 44px; bottom: 20px; left: 20px; }
-        .back-btn svg { width: 18px; height: 18px; }
+        .back-to-video-btn { bottom: 16px; left: 16px; font-size: 13px; }
     }
 
     /* --- ADMIN NOTIFICATION TOAST --- */
@@ -340,7 +337,7 @@
         color: white; padding: 12px 30px; border-radius: 50px;
         font-weight: 700; font-size: 14px; z-index: 20000;
         box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
-        border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
         display: flex; align-items: center; gap: 12px;
         transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         pointer-events: none; letter-spacing: 0.5px; text-transform: uppercase;
@@ -350,9 +347,9 @@
 
     /* Access Denied Modal */
     .access-denied-modal {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.95); color: #fff;
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(5, 5, 6, 0.98); color: #fff;
         display: flex; align-items: center; justify-content: center; z-index: 11000; flex-direction: column; text-align: center;
-        backdrop-filter: blur(20px); padding: 20px; opacity: 0; animation: fadeIn 0.5s forwards;
+        padding: 20px; opacity: 0; animation: fadeIn 0.5s forwards;
     }
     @keyframes fadeIn { to { opacity: 1; } }
      
@@ -362,11 +359,10 @@
     }
     .access-denied-modal button:hover { background: white; color: black; transform: translateY(-3px); }
 
-    /* --- ULTIMATE SUBTITLE STYLING (CSS + RESPONSIVE) --- */
+    /* --- SUBTITLE STYLING --- */
     .art-subtitle {
         color: #ffffff !important;
         background: transparent !important;
-        /* Heavy Shadow + Outline Effect */
         text-shadow: 
             2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 
             1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000, 
@@ -375,9 +371,7 @@
         line-height: 1.5 !important;
         transition: font-size 0.2s ease;
     }
-    /* DESKTOP SIZE */
     .art-subtitle { font-size: 20px !important; }
-    /* MOBILE SIZE */
     @media (max-width: 768px) { .art-subtitle { font-size: 14px !important; } }
 
   </style>
@@ -389,10 +383,6 @@
 
 <div id="adminToast" class="admin-toast">
     <i class="fas fa-shield-alt"></i> You are using ADMIN ACCOUNT
-</div>
-
-<div class="center-logo">
-  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
 </div>
 
 <div class="main-layout">
@@ -425,24 +415,23 @@
            </div>
        </div>
     </div>
+
+    <div class="title-box">
+        <div class="current-episode-label">Now Playing</div>
+        <h2 id="main-title"></h2>
+    </div>
   </div>
 
   <div id="playlist">
     <div class="playlist-card">
-        <div class="current-episode-header">
-            <div class="current-episode-label">Now Playing</div>
-            <h2 id="main-title"></h2>
-        </div>
-        
+        <div class="playlist-header">Episodes</div>
         <div id="playlist-items"></div>
     </div>
   </div>
 </div> 
 
-<a href="https://zonevault.live/videos" class="back-btn">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M15 18l-6-6 6-6" />
-  </svg>
+<a href="https://zonevault.live/videos" class="back-to-video-btn">
+  <i class="fas fa-arrow-left"></i> Back to Video
 </a>
 
 <script>
@@ -638,6 +627,7 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
           theme: '#a1a1aa', // GRAY THEME RESTORED
           autoOrientation: true,
           isMobile: false, // Disable default gestures so our custom overlay works
+          backdrop: false, // Prevent the blurred backdrop layer from overlapping the title box below
           setting: true, 
           moreVideoAttr: {
               playsInline: true,

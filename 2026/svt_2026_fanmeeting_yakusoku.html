@@ -165,7 +165,7 @@
     #poster-container:hover::after { opacity: 0.8; }
 
     #poster-overlay {
-        background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.3); padding: 18px 40px; border-radius: 50px;
         color: white; font-weight: 700; font-size: 14px; pointer-events: none; text-transform: uppercase; letter-spacing: 3px;
         z-index: 2; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(0); transition: transform 0.3s;
@@ -217,7 +217,7 @@
     .art-layer-skipIntroLayer { position: absolute !important; bottom: 80px !important; right: 30px !important; z-index: 98 !important; }
 
     .next-ep-btn, .skip-intro-btn {
-        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        background: rgba(0, 0, 0, 0.7);
         border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 8px;
         font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer;
         transition: all 0.3s ease; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -237,7 +237,7 @@
     #playlist { width: 100%; height: fit-content; position: relative; z-index: 10; }
 
     .playlist-card {
-        background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        background: var(--card-bg);
         border: var(--glass-border); border-radius: 20px; overflow: hidden;
         box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); display: flex; flex-direction: column; 
         max-height: calc(100vh - 180px); 
@@ -349,7 +349,7 @@
         color: white; padding: 12px 30px; border-radius: 50px;
         font-weight: 700; font-size: 14px; z-index: 20000;
         box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
-        border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
         display: flex; align-items: center; gap: 12px;
         transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         pointer-events: none; letter-spacing: 0.5px; text-transform: uppercase;
@@ -361,7 +361,7 @@
     .access-denied-modal {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.95); color: #fff;
         display: flex; align-items: center; justify-content: center; z-index: 11000; flex-direction: column; text-align: center;
-        backdrop-filter: blur(20px); padding: 20px; opacity: 0; animation: fadeIn 0.5s forwards;
+        padding: 20px; opacity: 0; animation: fadeIn 0.5s forwards;
     }
     @keyframes fadeIn { to { opacity: 1; } }
      

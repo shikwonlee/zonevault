@@ -627,6 +627,7 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
           theme: '#a1a1aa', // GRAY THEME RESTORED
           autoOrientation: true,
           isMobile: false, // Disable default gestures so our custom overlay works
+          backdrop: false, // Prevent the blurred backdrop layer from overlapping the title box below
           setting: true, 
           moreVideoAttr: {
               playsInline: true,

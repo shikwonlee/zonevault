@@ -58,14 +58,14 @@
 
   <style>
     /* =========================================
-       1. VARIABLES & THEME ENGINE (GRAY THEME)
+       1. VARIABLES & THEME ENGINE (GRAY THEME, SOLID - NO BLUR)
        ========================================= */
     :root {
         --bg-color: #0a0a0c;
         --bg-gradient: radial-gradient(circle at top right, #1a1a24, #0a0a0c);
         --text-main: #fcfcfc;
         --text-muted: #8e8e99;
-        --card-bg: rgba(22, 22, 28, 0.7);
+        --card-bg: #17171b; /* SOLID - no blur needed */
         --glass-border: 1px solid rgba(255, 255, 255, 0.05);
         --accent: #a1a1aa; /* GRAY ACCENT */
         --playlist-hover: rgba(255, 255, 255, 0.04);
@@ -78,7 +78,7 @@
         --bg-gradient: radial-gradient(circle at top right, #ffffff, #f0f2f5);
         --text-main: #111111;
         --text-muted: #555555;
-        --card-bg: rgba(255, 255, 255, 0.9);
+        --card-bg: #ffffff; /* SOLID - no blur needed */
         --glass-border: 1px solid rgba(0, 0, 0, 0.06);
         --accent: #555555; /* GRAY ACCENT */
         --playlist-hover: rgba(0, 0, 0, 0.03);
@@ -94,7 +94,7 @@
         color: var(--text-main);
         font-family: 'Inter', sans-serif;
         margin: 0;
-        padding: 30px 20px 110px;
+        padding: 30px 20px;
         min-height: 100vh;
         transition: background 0.4s ease, color 0.4s ease;
     }
@@ -115,26 +115,31 @@
             display: flex; align-items: center; justify-content: center;
         }
         .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; gap: 0; }
-        .stage-column { height: 100%; gap: 0; }
         .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #playlist, .now-playing-strip, .back-to-video-btn { display: none !important; }
+        #playlist, .title-box, .back-to-video-btn { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; }
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
 
     /* =========================================
-       2. LAYOUT - STACKED CINEMATIC + SHELF
+       2. LAYOUT - VIDEO LEFT / PLAYLIST RIGHT
        ========================================= */
     .main-layout {
-        max-width: 1200px; width: 100%; margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 32px;
+        max-width: 1600px; width: 100%; margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
 
-    .stage-column { display: flex; flex-direction: column; gap: 18px; }
+    @media (min-width: 800px) and (max-width: 1099px) {
+        .main-layout { grid-template-columns: 1.6fr 1fr; gap: 24px; align-items: start; }
+    }
 
-    .video-wrapper-left { width: 100%; max-width: 920px; margin: 0 auto; position: relative; z-index: 1; }
+    @media (min-width: 1100px) {
+        .main-layout { grid-template-columns: 3fr 1.2fr; gap: 32px; align-items: start; }
+    }
+
+    .video-wrapper-left { width: 100%; position: sticky; top: 30px; z-index: 1; display: flex; flex-direction: column; gap: 16px; }
      
     #poster-container {
         width: 100%; aspect-ratio: 16/9; background-size: cover; background-position: center;
@@ -153,8 +158,7 @@
     #poster-container:hover::after { opacity: 0.8; }
 
     #poster-overlay {
-        background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.3); padding: 18px 40px; border-radius: 50px;
+        background: rgba(40, 40, 45, 0.75); border: 1px solid rgba(255, 255, 255, 0.3); padding: 18px 40px; border-radius: 50px;
         color: white; font-weight: 700; font-size: 14px; pointer-events: none; text-transform: uppercase; letter-spacing: 3px;
         z-index: 2; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(0); transition: transform 0.3s;
     }
@@ -168,17 +172,29 @@
     .art-video-player { width: 100%; height: 100%; }
     .art-layer-mobile { pointer-events: auto !important; }
 
-    /* Now playing strip under the video */
-    .now-playing-strip {
-        width: 100%; max-width: 920px; margin: 0 auto;
-        display: flex; align-items: center; justify-content: space-between; gap: 16px;
-        flex-wrap: wrap;
+    /* Title box - separate card below the video */
+    .title-box {
+        width: 100%; background: var(--card-bg); border: var(--glass-border);
+        border-radius: 16px; padding: 20px 24px; box-shadow: 0 15px 30px -10px rgba(0,0,0,0.25);
+    }
+    .title-box .current-episode-label {
+        font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase;
+        letter-spacing: 3px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .title-box .current-episode-label::before {
+        content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+        display: inline-block; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite;
     }
     #main-title {
         font-size: 20px; font-weight: 700; color: var(--text-main); line-height: 1.3;
-        margin: 0; letter-spacing: -0.3px;
+        margin: 0; letter-spacing: -0.4px;
     }
     #main-title:empty::before { content: 'Select an Episode to Begin'; color: var(--text-muted); font-weight: 500; font-size: 15px; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(1.5); }
+    }
 
     /* =========================================
        3. CUSTOM GESTURES & BUTTONS
@@ -203,8 +219,7 @@
     .art-layer-skipIntroLayer { position: absolute !important; bottom: 80px !important; right: 30px !important; z-index: 98 !important; }
 
     .next-ep-btn, .skip-intro-btn {
-        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 8px;
+        background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 8px;
         font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer;
         transition: all 0.3s ease; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         display: flex; align-items: center; gap: 8px; animation: fadeInBtn 0.5s ease forwards; pointer-events: auto;
@@ -218,59 +233,43 @@
     @keyframes fadeInBtn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       4. PLAYLIST SECTION - HORIZONTAL SHELF
+       4. PLAYLIST SECTION (RIGHT SIDE, ORIGINAL LIST STYLE)
        ========================================= */
-    #playlist { width: 100%; position: relative; z-index: 10; }
+    #playlist { width: 100%; height: fit-content; position: relative; z-index: 10; }
 
     .playlist-card {
-        background: var(--card-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-        border: var(--glass-border); border-radius: 20px; overflow: hidden;
-        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
-        padding: 24px 24px 20px;
+        background: var(--card-bg); border: var(--glass-border); border-radius: 20px; overflow: hidden;
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); display: flex; flex-direction: column; 
+        max-height: calc(100vh - 180px); 
     }
 
-    .shelf-label {
+    .playlist-header {
+        padding: 22px 24px 16px; border-bottom: var(--glass-border);
         font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase;
-        letter-spacing: 3px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        letter-spacing: 3px; display: flex; align-items: center; gap: 8px;
     }
-
-    .shelf-label::before, .current-episode-label::before {
+    .playlist-header::before {
         content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
         display: inline-block; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite;
     }
 
-    .current-episode-label {
-        font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase;
-        letter-spacing: 3px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(1.5); }
-    }
-
-    #playlist-items {
-        display: flex; flex-direction: row; gap: 16px;
-        overflow-x: auto; overflow-y: hidden; padding-bottom: 10px;
-        scroll-snap-type: x proximity;
-    }
-    #playlist-items::-webkit-scrollbar { height: 6px; }
-    #playlist-items::-webkit-scrollbar-track { background: transparent; margin: 0 10px; }
+    #playlist-items { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    #playlist-items::-webkit-scrollbar { width: 6px; }
+    #playlist-items::-webkit-scrollbar-track { background: transparent; margin: 10px 0; }
     #playlist-items::-webkit-scrollbar-thumb { background: rgba(142, 142, 153, 0.3); border-radius: 10px; }
     #playlist-items::-webkit-scrollbar-thumb:hover { background: rgba(142, 142, 153, 0.6); }
 
     .playlist-item {
-        display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 10px; border-radius: 14px;
+        display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: 14px;
         background: transparent; border: 1px solid transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
         cursor: pointer; position: relative;
-        width: 220px; flex-shrink: 0; scroll-snap-align: start;
     }
     .playlist-item:hover { background: var(--playlist-hover); transform: scale(1.02); }
     .playlist-item.active { background: var(--active-episode); border: 1px solid var(--active-border); }
     .playlist-item.locked { opacity: 0.3; filter: grayscale(100%); cursor: not-allowed; pointer-events: none; }
 
     .playlist-img-wrapper {
-        position: relative; width: 100%; aspect-ratio: 16/9; flex-shrink: 0;
+        position: relative; width: 110px; aspect-ratio: 16/9; flex-shrink: 0;
         border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .playlist-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
@@ -282,7 +281,7 @@
     .playlist-item:hover .playlist-img-wrapper::after { opacity: 1; }
     .playlist-item.active .playlist-img-wrapper::after { display: none; }
 
-    .playlist-text { display: flex; flex-direction: row; align-items: center; flex: 1; min-width: 0; justify-content: space-between; gap: 8px; }
+    .playlist-text { display: flex; flex-direction: column; flex: 1; min-width: 0; justify-content: center; }
     .playlist-title { 
         font-size: 14px; font-weight: 600; color: var(--text-main); line-height: 1.4;
         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -290,7 +289,7 @@
     .playlist-item.active .playlist-title { color: var(--accent); }
 
     /* Playing Indicator */
-    .playing-indicator { display: none; align-items: center; gap: 3px; flex-shrink: 0; }
+    .playing-indicator { display: none; align-items: center; gap: 3px; margin-left: auto; padding-left: 8px; }
     .playlist-item.active .playing-indicator { display: flex; }
 
     .bar {
@@ -305,20 +304,17 @@
        5. RESPONSIVE DESIGN
        ========================================= */
     @media (max-width: 1099px) {
-        body { padding: 20px 16px 110px; }
+        body { padding: 20px 16px; }
         #poster-container, #player-container { border-radius: 16px; }
-        .playlist-card { padding: 20px 16px 16px; }
+        .playlist-card { max-height: none; } 
+        #playlist-items { max-height: 400px; } 
+        .title-box { padding: 16px 18px; }
         #main-title { font-size: 17px; }
-        .playlist-item { width: 170px; }
+        .playlist-img-wrapper { width: 90px; }
+        .playlist-title { font-size: 13px; }
     }
 
-    @media (max-width: 768px) {
-        .playlist-item { width: 150px; }
-        .now-playing-strip { max-width: 100%; }
-        .video-wrapper-left { max-width: 100%; }
-    }
-
-    /* Back Button - text style, matches Carat Land collection back link */
+    /* Back Button - text style */
     .back-to-video-btn {
         display: inline-flex; align-items: center; gap: 8px;
         position: fixed; bottom: 25px; left: 25px; z-index: 1500;
@@ -341,7 +337,7 @@
         color: white; padding: 12px 30px; border-radius: 50px;
         font-weight: 700; font-size: 14px; z-index: 20000;
         box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
-        border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
         display: flex; align-items: center; gap: 12px;
         transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         pointer-events: none; letter-spacing: 0.5px; text-transform: uppercase;
@@ -351,9 +347,9 @@
 
     /* Access Denied Modal */
     .access-denied-modal {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.95); color: #fff;
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(5, 5, 6, 0.98); color: #fff;
         display: flex; align-items: center; justify-content: center; z-index: 11000; flex-direction: column; text-align: center;
-        backdrop-filter: blur(20px); padding: 20px; opacity: 0; animation: fadeIn 0.5s forwards;
+        padding: 20px; opacity: 0; animation: fadeIn 0.5s forwards;
     }
     @keyframes fadeIn { to { opacity: 1; } }
      
@@ -363,11 +359,10 @@
     }
     .access-denied-modal button:hover { background: white; color: black; transform: translateY(-3px); }
 
-    /* --- ULTIMATE SUBTITLE STYLING (CSS + RESPONSIVE) --- */
+    /* --- SUBTITLE STYLING --- */
     .art-subtitle {
         color: #ffffff !important;
         background: transparent !important;
-        /* Heavy Shadow + Outline Effect */
         text-shadow: 
             2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 
             1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000, 
@@ -376,9 +371,7 @@
         line-height: 1.5 !important;
         transition: font-size 0.2s ease;
     }
-    /* DESKTOP SIZE */
     .art-subtitle { font-size: 20px !important; }
-    /* MOBILE SIZE */
     @media (max-width: 768px) { .art-subtitle { font-size: 14px !important; } }
 
   </style>
@@ -393,39 +386,37 @@
 </div>
 
 <div class="main-layout">
-  <div class="stage-column">
-    <div class="video-wrapper-left">
-      <div id="poster-container">
-        <div id="poster-overlay">Play Episode</div>
-      </div>
-      <div id="player-container">
-         <div id="artplayer" class="art-video-player"></div>
-         
-         <div id="click-catcher" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; cursor:pointer;"></div>
-         <div class="gesture-overlay">
-             <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
-                 <div>
-                     <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
-                     <span>-10s</span>
-                 </div>
-             </div>
-             <div id="icon-forward" class="gesture-icon" style="left: 80%;">
-                 <div>
-                     <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
-                     <span>+10s</span>
-                 </div>
-             </div>
-             <div id="icon-play" class="gesture-icon" style="left: 50%;">
-                 <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-             </div>
-             <div id="icon-pause" class="gesture-icon" style="left: 50%;">
-                 <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-             </div>
-         </div>
-      </div>
+  <div class="video-wrapper-left">
+    <div id="poster-container">
+      <div id="poster-overlay">Play Episode</div>
+    </div>
+    <div id="player-container">
+       <div id="artplayer" class="art-video-player"></div>
+       
+       <div id="click-catcher" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; cursor:pointer;"></div>
+       <div class="gesture-overlay">
+           <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
+               <div>
+                   <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
+                   <span>-10s</span>
+               </div>
+           </div>
+           <div id="icon-forward" class="gesture-icon" style="left: 80%;">
+               <div>
+                   <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
+                   <span>+10s</span>
+               </div>
+           </div>
+           <div id="icon-play" class="gesture-icon" style="left: 50%;">
+               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+           </div>
+           <div id="icon-pause" class="gesture-icon" style="left: 50%;">
+               <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+           </div>
+       </div>
     </div>
 
-    <div class="now-playing-strip">
+    <div class="title-box">
         <div class="current-episode-label">Now Playing</div>
         <h2 id="main-title"></h2>
     </div>
@@ -433,7 +424,7 @@
 
   <div id="playlist">
     <div class="playlist-card">
-        <div class="shelf-label">Episodes</div>
+        <div class="playlist-header">Episodes</div>
         <div id="playlist-items"></div>
     </div>
   </div>
@@ -870,7 +861,7 @@ playlistData.forEach(ep => {
 
   epDiv.appendChild(imgWrapper); 
   epDiv.appendChild(textDiv);
-  textDiv.appendChild(indicator);
+  epDiv.appendChild(indicator);
 
   epDiv.addEventListener('click', () => loadAndPlayEpisode(ep.id, true));
   playlistContainer.appendChild(epDiv);

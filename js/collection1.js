@@ -194,6 +194,7 @@ function showAccessDeniedModal() {
 // 6. CATEGORY MENU (each card links to its own page)
 // ==========================================
 const categoryMenu = [
+     { title: "VERNON THE 8 [V8] SPECIAL GIFTS ", href: "/special_gift/v8.html", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1785555567/vernon_special_gift_e2se87.jpg" },
     { title: "SEVENTEEN in CARATLAND SPECIAL GIFTS ", href: "/special_gift/caratland_2026", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783219918/8f5acef9e251a0dcbc61d351b16a947d12e03aa275cfddc18fa9e0b568b14526_jzaen9.jpg" },
     { title: "SEVENTEEN 'YAKUSOKU' Osaka SPECIAL GIFTS ", href: "/special_gift/yakusoku", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783266525/photo_2026-07-05_23-05-40_nuly3c.jpg" },
     { title: "DxS SERENADE SPECIAL GIFTS ", href: "/special_gift/dxs_serenade", thumb: "https://res.cloudinary.com/rabnzafj/image/upload/v1783267073/DXS_SERENADE_DK_SPECIAL_GIFT_aosirx.png" },

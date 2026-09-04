@@ -70,7 +70,7 @@ if (savedVideosCategory) activeCategory = savedVideosCategory;
 if (!isNaN(savedVideosPage) && savedVideosPage > 0) currentPaginationPage = savedVideosPage;
 
 const data = [
-  {id:"v16", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", category:"CONCERT", title:"2026 DINO X PICHEOLIN 吉BOARD SHOW ", hashtags:"c: uvvul", link:"2026/dxp2026"},   
+  {id:"v16", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", category:"CONCERT", title:"2026 DINO X PICHEOLIN 吉BOARD SHOW ", hashtags:"c: uvvul", link:"2026/dinoxpicheolin"},   
   {id:"v15", thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp", category:"CONCERT", title:"2026 VERNON THE 8 [V8] LIVE - GOYANG", hashtags:"c: uvvul", link:"2026/vernon_the8_v8"},
   {id:"v14", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", category:"FAN MEET", title:"2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", hashtags:"c: uvvul", link:"2026/svt_in_carat_land_2026"},
   {id:"v13", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png", category:"FAN MEET", title:"SEVENTEEN 2026 JAPAN FANMEETING'YAKUSOKU' Osaka", hashtags:"c: uvvul", link:"2026/svt_2026_fanmeeting_yakusoku"},

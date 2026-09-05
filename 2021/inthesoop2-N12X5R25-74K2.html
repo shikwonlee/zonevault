@@ -114,7 +114,7 @@
         }
         .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; gap: 0; }
         .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #playlist, .center-logo, .back-btn { display: none !important; }
+        #playlist, .back-to-video-btn { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; }
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
@@ -134,10 +134,6 @@
     /* =========================================
        2. LAYOUT - CINEMATIC SPLIT
        ========================================= */
-    .center-logo { display: flex; justify-content: center; margin-bottom: 30px; }
-    .center-logo img { width: 55px; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); transition: transform 0.3s; }
-    .center-logo img:hover { transform: scale(1.05); }
-
     .main-layout {
         max-width: 1600px; width: 100%; margin: 0 auto;
         display: grid;
@@ -258,7 +254,7 @@
         border: var(--glass-border); border-radius: 20px; overflow: hidden;
         box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
         display: flex; flex-direction: column; 
-        /* THE REAL FIX: Adjusted 100px to 180px to account for the logo & padding. No more annoying desktop scroll! */
+        /* Keep the playlist compact on desktop. */
         max-height: calc(100vh - 180px); 
     }
 
@@ -350,8 +346,6 @@
        ========================================= */
     @media (max-width: 1099px) {
         body { padding: 20px 16px; }
-        .center-logo { margin-bottom: 20px; }
-        
         #poster-container, #player-container { border-radius: 16px; }
         .playlist-card { max-height: none; } /* On mobile, allowing flow restores overlap behavior */
         #playlist-items { max-height: 400px; } 
@@ -363,21 +357,20 @@
         .playlist-title { font-size: 13px; }
     }
 
-    /* Back Button */
-    .back-btn {
-        position: fixed; bottom: 30px; left: 30px; width: 50px; height: 50px;
-        background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        z-index: 100; cursor: pointer; text-decoration: none;
+    /* Back Button - text style from the original version */
+    .back-to-video-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        position: fixed; bottom: 25px; left: 25px; z-index: 1500;
+        background: transparent; color: var(--text-main); border: none;
+        font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+        cursor: pointer; text-decoration: none; padding: 0; box-shadow: none;
+        transition: opacity 0.2s ease;
     }
-    .back-btn:hover { background: var(--text-main); transform: scale(1.1) translateX(-4px); }
-    .back-btn svg { stroke: var(--text-main); transition: stroke 0.3s; width: 22px; height: 22px; margin-right: 2px; }
-    .back-btn:hover svg { stroke: var(--bg-color); }
+    .back-to-video-btn:hover { opacity: 0.7; }
+    .back-to-video-btn i { font-size: 14px; }
 
     @media (max-width: 768px) {
-        .back-btn { width: 44px; height: 44px; bottom: 20px; left: 20px; }
-        .back-btn svg { width: 18px; height: 18px; }
+        .back-to-video-btn { bottom: 16px; left: 16px; font-size: 13px; }
     }
 
     /* Access Denied Modal */
@@ -406,10 +399,6 @@
 
 <div class="noise-overlay"></div>
 
-<div class="center-logo">
-  <img src="https://uploads.onecompiler.io/43ddry4jt/43s3sjvch/Zone%20Vault%20logo.png" loading="lazy" alt="Zone Vault Logo">
-</div>
-
 <div class="main-layout">
 
   <div class="video-wrapper-left">
@@ -435,10 +424,8 @@
 
 </div> 
 
-<a href="https://zonevault.live/videos" class="back-btn">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M15 18l-6-6 6-6" />
-  </svg>
+<a href="https://zonevault.live/videos" class="back-to-video-btn">
+  <i class="fas fa-arrow-left"></i> Back to Video
 </a>
 
 <script>
@@ -467,7 +454,44 @@ const posterContainer = document.getElementById('poster-container');
 const playerContainer = document.getElementById('player-container');
 const mainTitle = document.getElementById('main-title');
 window.currentEpData = null;
-let art = null; 
+let art = null;
+let currentSubtitleUrls = [];
+let episodeLoadToken = 0;
+let currentHistoryKey = null;
+let lastSavedHistory = null;
+
+function isAllowedMediaUrl(value) {
+    try {
+        const url = new URL(value, window.location.href);
+        return url.protocol === 'https:';
+    } catch (_) {
+        return false;
+    }
+}
+
+function cleanupPlayer() {
+    if (art && art.hls) {
+        art.hls.destroy();
+        art.hls = null;
+    }
+    if (art) {
+        art.destroy(false);
+        art = null;
+    }
+    currentSubtitleUrls.forEach(url => URL.revokeObjectURL(url));
+    currentSubtitleUrls = [];
+}
+
+function formatTime(seconds) {
+    seconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
 
 // --- 2. FIREBASE SETUP ---
 const firebaseConfig = {
@@ -484,237 +508,201 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 // --- 3. ARTPLAYER & LOGIC ---
-function loadAndPlayEpisode(epId, updateUrl = true) {
+async function loadAndPlayEpisode(epId, updateUrl = true) {
     const ep = playlistData.find(item => item.id === epId);
     if (!ep) return;
 
     const today = new Date();
-    if (ep.date) {
-        const releaseDate = new Date(ep.date);
-        if (releaseDate > today) {
-            alert(`This episode is not yet available.\nRelease Date: ${ep.date}`);
-            return; 
-        }
+    if (ep.date && new Date(ep.date) > today) {
+        alert(`This episode is not yet available.\nRelease Date: ${ep.date}`);
+        return;
     }
 
+    const loadToken = ++episodeLoadToken;
+    const pageIdentifier = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+    const historyKey = `${ep.id}_${pageIdentifier}`;
+
     if (updateUrl) {
-        const newUrl = window.location.pathname + '?v=' + ep.id;
-        history.pushState({id: ep.id}, '', newUrl);
+        history.pushState({ id: ep.id }, '', `${window.location.pathname}?v=${encodeURIComponent(ep.id)}`);
     }
 
     window.currentEpData = ep;
-    posterContainer.style.display = "none";
-    playerContainer.style.display = "block";
-
+    currentHistoryKey = historyKey;
+    lastSavedHistory = null;
+    posterContainer.style.display = 'none';
+    playerContainer.style.display = 'block';
     document.querySelectorAll('.playlist-item').forEach(item => {
-        item.classList.remove('active', 'is-paused');
-        if(item.dataset.id === epId) item.classList.add('active');
+        item.classList.toggle('active', item.dataset.id === epId);
+        item.classList.remove('is-paused');
     });
 
-    let pageIdentifier = window.location.pathname.split("/").pop().replace(".html", "");
-    if (!pageIdentifier || pageIdentifier === "") pageIdentifier = "index"; 
-    
-    const uniqueHistoryKey = `${ep.id}_${pageIdentifier}`;
+    let snapshot;
+    try {
+        snapshot = await db.ref(`inthesoop2/${ep.id}`).once('value');
+    } catch (error) {
+        console.error('Video metadata request failed:', error);
+        if (loadToken === episodeLoadToken) alert('Video unavailable');
+        return;
+    }
+    if (loadToken !== episodeLoadToken) return;
 
-    db.ref(`inthesoop2/${ep.id}`).once('value').then(snapshot => {
-      const data = snapshot.val();
-      if(!data || !data.url) { alert("Video unavailable"); return; }
+    const data = snapshot.val();
+    if (!data || !isAllowedMediaUrl(data.url)) {
+        alert('Video unavailable or invalid media URL');
+        return;
+    }
 
-      let artSubtitles = [];
-      if (data.subtitles) {
-          Object.entries(data.subtitles).forEach(([lang, url]) => {
-              artSubtitles.push({
-                  html: lang.toUpperCase(),
-                  url: url,
-                  default: lang === 'en'
-              });
-          });
-      }
+    const subtitles = [];
+    if (data.subtitles && typeof data.subtitles === 'object') {
+        Object.entries(data.subtitles).forEach(([lang, url]) => {
+            if (isAllowedMediaUrl(url)) {
+                subtitles.push({ html: String(lang).toUpperCase(), url, default: lang === 'en' });
+            }
+        });
+    }
 
-      // Updates Title in Playlist Header
-      if(data.title) mainTitle.textContent = data.title;
-      else mainTitle.textContent = ep.title;
+    mainTitle.textContent = data.title || ep.title;
 
-      // ==============================================================
-      // 1. IF PLAYER ALREADY EXISTS: SWITCH URL (KEEPS FULLSCREEN)
-      // ==============================================================
-      if (art) {
-          art.switchUrl(data.url, data.title || ep.title);
-          art.poster = ep.image;
+    // Reuse the existing player, but invalidate all callbacks from the previous load.
+    if (art) {
+        try {
+            art.switchUrl(data.url, data.title || ep.title);
+            art.poster = ep.image;
+            if (subtitles.length && art.subtitle) {
+                const defaultSub = subtitles.find(s => s.default) || subtitles[0];
+                art.subtitle.switch(defaultSub.url, { name: defaultSub.html });
+            } else if (art.subtitle) {
+                art.subtitle.switch('', { name: 'None' });
+            }
+        } catch (error) {
+            console.error('Player switch failed:', error);
+            cleanupPlayer();
+        }
+    }
 
-          // Update subtitles for the new episode
-          if (artSubtitles.length > 0) {
-              const defaultSub = artSubtitles.find(s => s.default) || artSubtitles[0];
-              art.subtitle.switch(defaultSub.url, { name: defaultSub.html });
-          } else {
-              art.subtitle.switch('', { name: 'None' });
-          }
+    if (!art) {
+        const defaultSubtitle = subtitles.find(s => s.default) || subtitles[0];
+        art = new Artplayer({
+            container: '#artplayer',
+            url: data.url,
+            title: data.title || ep.title,
+            poster: ep.image,
+            volume: 0.5,
+            isLive: false,
+            muted: false,
+            autoplay: true,
+            setting: true,
+            fullscreen: true,
+            miniProgressBar: true,
+            autoOrientation: true,
+            lock: true,
+            fastForward: true,
+            mutex: true,
+            backdrop: true,
+            playsInline: true,
+            autoPlayback: true,
+            airplay: true,
+            theme: '#a1a1aa',
+            subtitle: {
+                url: defaultSubtitle ? defaultSubtitle.url : '',
+                type: 'vtt',
+                encoding: 'utf-8',
+                style: { color: '#ffffff', textAlign: 'center', background: 'none' }
+            },
+            moreVideoAttr: {
+                playsInline: true,
+                'webkit-playsinline': true,
+                'x5-video-player-type': 'h5',
+                'x5-video-player-fullscreen': 'true',
+                'x5-video-orientation': 'landscape'
+            },
+            customType: {
+                m3u8(video, url) {
+                    if (art && art.hls) art.hls.destroy();
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(url);
+                        hls.attachMedia(video);
+                        if (art) art.hls = hls;
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = url;
+                    }
+                }
+            }
+        });
 
-          // Fetch watch history for the new episode and resume if needed
-          const user = auth.currentUser;
-          if (user) {
-              db.ref('watchHistory/' + user.uid + '/' + uniqueHistoryKey).once('value').then(snap => {
-                  const saved = snap.val();
-                  art.once('video:loadedmetadata', () => {
-                      if (saved && saved.currentTime > 0) {
-                          art.currentTime = saved.currentTime;
-                          art.notice.show = 'Resumed video';
-                      }
-                      art.play();
-                  });
-              });
-          } else {
-              art.play();
-          }
-          
-          return; // Exit the function so we don't recreate the player
-      }
+        art.layers.add({
+            name: 'nextEpLayer',
+            html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
+            style: { display: 'none' }
+        });
+        const nextButton = art.layers.nextEpLayer && art.layers.nextEpLayer.querySelector('.next-ep-btn');
+        if (nextButton) {
+            nextButton.addEventListener('click', event => {
+                event.stopPropagation();
+                window.playNextEpisodeGlobal();
+            });
+        }
 
-      // ==============================================================
-      // 2. IF FIRST TIME: INITIALIZE PLAYER
-      // ==============================================================
-      art = new Artplayer({
-          container: '#artplayer',
-          url: data.url,
-          title: data.title || ep.title,
-          poster: ep.image,
-          volume: 0.5,
-          isLive: false,
-          muted: false,
-          autoplay: true,
-          setting: true,
-          fullscreen: true,
-          miniProgressBar: true,
-          autoOrientation: true,
-          lock: true,
-          fastForward: true,
-          mutex: true,
-          backdrop: true,
-          playsInline: true,
-          autoPlayback: true,
-          airplay: true,
-          theme: '#a1a1aa',
-          
-          subtitle: {
-              url: artSubtitles.find(s => s.default)?.url || '',
-              type: 'vtt',
-              encoding: 'utf-8',
-              style: {
-                  color: '#ffffff',
-                  textAlign: 'center',
-                  background: 'none'
-              }
-          },
+        if (subtitles.length) {
+            art.setting.add({
+                html: 'Subtitles', width: 200,
+                selector: subtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
+                onSelect(item) {
+                    art.subtitle.switch(item.url, { name: item.html });
+                    return item.html;
+                }
+            });
+        }
 
-          moreVideoAttr: {
-              playsInline: true,
-              'webkit-playsinline': true,
-              'x5-video-player-type': 'h5',
-              'x5-video-player-fullscreen': 'true',
-              'x5-video-orientation': 'landscape'
-          },
-          
-          customType: {
-              m3u8: function (video, url) {
-                  // Clean up previous HLS instance when switching URLs to prevent memory leaks
-                  if (art && art.hls) {
-                      art.hls.destroy();
-                  }
-                  if (Hls.isSupported()) {
-                      const hls = new Hls();
-                      hls.loadSource(url);
-                      hls.attachMedia(video);
-                      if (art) art.hls = hls; // Save reference for future cleanup
-                  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                      video.src = url;
-                  }
-              },
-          },
-      });
+        art.on('play', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.remove('is-paused')));
+        art.on('pause', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.add('is-paused')));
 
-      // ADD NEXT EPISODE BUTTON LAYER
-      art.layers.add({
-          name: 'nextEpLayer',
-          html: '<button class="next-ep-btn" onclick="event.stopPropagation(); window.playNextEpisodeGlobal();">Next Episode ⏭</button>',
-          style: { display: 'none' } 
-      });
+        art.on('video:timeupdate', () => {
+            if (!art || !window.currentEpData || !currentHistoryKey) return;
+            const now = Date.now();
+            if (art.duration > 0 && art.layers.nextEpLayer) {
+                const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
+                const hasNext = currentIndex >= 0 && currentIndex < playlistData.length - 1;
+                art.layers.nextEpLayer.style.display = (art.duration - art.currentTime <= 60 && hasNext) ? 'block' : 'none';
+            }
+            if (auth.currentUser && !art.video.paused && (!lastSavedHistory || now - lastSavedHistory > 5000)) {
+                const historyData = {
+                    id: window.currentEpData.id,
+                    title: window.currentEpData.title,
+                    image: window.currentEpData.image,
+                    currentTime: Number(art.currentTime) || 0,
+                    duration: Number(art.duration) || 0,
+                    timestamp: now,
+                    page: pageIdentifier
+                };
+                db.ref(`watchHistory/${auth.currentUser.uid}/${currentHistoryKey}`).update(historyData)
+                    .catch(error => console.error('Watch history save failed:', error));
+                lastSavedHistory = now;
+            }
+        });
+    }
 
-      if(artSubtitles.length > 0) {
-          art.setting.add({
-              html: 'Subtitles',
-              width: 200,
-              selector: artSubtitles.map(s => {
-                  return { html: s.html, url: s.url, default: s.default };
-              }),
-              onSelect: function (item) {
-                  art.subtitle.switch(item.url, { name: item.html });
-                  return item.html;
-              },
-          });
-      }
+    let saved = null;
+    if (auth.currentUser) {
+        try {
+            saved = (await db.ref(`watchHistory/${auth.currentUser.uid}/${historyKey}`).once('value')).val();
+        } catch (error) {
+            console.error('Watch history read failed:', error);
+        }
+    }
+    if (loadToken !== episodeLoadToken || !art) return;
 
-      // Sync soundbar animation with video play/pause
-      art.on('play', () => {
-          document.querySelectorAll('.playlist-item.active').forEach(item => {
-              item.classList.remove('is-paused');
-          });
-      });
-
-      art.on('pause', () => {
-          document.querySelectorAll('.playlist-item.active').forEach(item => {
-              item.classList.add('is-paused');
-          });
-      });
-
-      const user = auth.currentUser;
-      if (user) {
-          db.ref('watchHistory/' + user.uid + '/' + uniqueHistoryKey).once('value').then(snap => {
-              const saved = snap.val();
-              if (saved && saved.currentTime > 0) {
-                  art.on('ready', () => {
-                      art.seek = saved.currentTime;
-                      art.play();
-                      art.notice.show = 'Resumed video';
-                  });
-              }
-          });
-      }
-
-      let lastSave = 0;
-      art.on('video:timeupdate', () => {
-          const now = Date.now();
-          
-          // Next Episode Visibility Logic (60 seconds remaining)
-          if (art.duration > 0 && art.layers.nextEpLayer) {
-              const timeLeft = art.duration - art.currentTime;
-              const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
-              const hasNext = currentIndex >= 0 && currentIndex < playlistData.length - 1;
-
-              if (timeLeft <= 60 && hasNext) {
-                  art.layers.nextEpLayer.style.display = 'block';
-              } else {
-                  art.layers.nextEpLayer.style.display = 'none';
-              }
-          }
-
-          // Use the dynamic global ID so history tracks correctly when playing multiple episodes sequentially
-          if (auth.currentUser && art && !art.video.paused && now - lastSave > 5000) {
-              const dynamicHistoryKey = `${window.currentEpData.id}_${pageIdentifier}`;
-              const historyData = {
-                  id: window.currentEpData.id,
-                  title: window.currentEpData.title,
-                  image: window.currentEpData.image,
-                  currentTime: art.currentTime,
-                  duration: art.duration || 0,
-                  timestamp: now,
-                  page: pageIdentifier
-              };
-              db.ref('watchHistory/' + auth.currentUser.uid + '/' + dynamicHistoryKey).update(historyData);
-              lastSave = now;
-          }
-      });
-      
-    }).catch(err => console.error(err));
+    const resume = () => {
+        if (loadToken !== episodeLoadToken || !art) return;
+        if (saved && Number(saved.currentTime) > 0 && Number(saved.currentTime) < (art.duration || Infinity)) {
+            art.currentTime = Number(saved.currentTime);
+            art.notice.show = `Resumed from ${formatTime(saved.currentTime)}`;
+        }
+        art.play().catch(() => {});
+    };
+    if (art.video.readyState >= 1) resume();
+    else art.once('video:loadedmetadata', resume);
 }
 
 window.addEventListener('popstate', (event) => {
@@ -724,7 +712,8 @@ window.addEventListener('popstate', (event) => {
         playerContainer.style.display = "none"; 
         mainTitle.textContent = '';
         document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('active', 'is-paused'));
-        if(art) art.pause(); 
+        episodeLoadToken++;
+        cleanupPlayer();
     }
 });
 
@@ -826,17 +815,22 @@ window.addEventListener('DOMContentLoaded', () => {
   function showAccessDeniedModal() {
     const modal = document.createElement('div');
     modal.className = 'access-denied-modal';
-    modal.innerHTML = `
-      <strong>🚫 Access Denied</strong>
-      <div>You cannot access this page directly.<br>
-      Please go through the homepage or allowed sections.</div>
-      <div id="redirectTimer" style="margin-top:10px; opacity: 0.7;">Redirecting in 3 seconds...</div>
-      <button onclick="goBack()">Go Back</button>
-    `;
+    const heading = document.createElement('strong');
+    heading.textContent = '🚫 Access Denied';
+    const message = document.createElement('div');
+    message.innerHTML = 'You cannot access this page directly.<br>Please go through the homepage or allowed sections.';
+    const timer = document.createElement('div');
+    timer.id = 'redirectTimer';
+    timer.style.cssText = 'margin-top:10px; opacity:0.7;';
+    timer.textContent = 'Redirecting in 3 seconds...';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Go Back';
+    button.addEventListener('click', goBack);
+    modal.append(heading, message, timer, button);
     document.body.appendChild(modal);
 
     let countdown = 3;
-    const timer = document.getElementById('redirectTimer');
     const interval = setInterval(() => {
       countdown--;
       timer.textContent = `Redirecting in ${countdown} seconds...`;

@@ -115,12 +115,11 @@
         }
         .main-layout { max-width: 100% !important; width: 100% !important; height: 100vh; justify-content: center; gap: 0; }
         .video-wrapper-left { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #playlist, .back-to-video-btn { display: none !important; }
+        #playlist, .title-box, .back-to-video-btn { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; }
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
 
-    /* Subtitle Styling */
     .art-subtitle {
         color: #ffffff !important;
         background: transparent !important;
@@ -172,6 +171,9 @@
         position: sticky;
         top: 30px;
         z-index: 1; 
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
     }
      
     #poster-container {
@@ -214,7 +216,6 @@
     .art-video-player { width: 100%; height: 100%; }
     .art-layer-mobile { pointer-events: auto !important; }
 
-    /* Click catcher for custom double-tap gestures: leaves space for bottom control bar */
     #click-catcher {
         position: absolute;
         top: 0;
@@ -225,7 +226,6 @@
         cursor: pointer;
     }
 
-    /* Gesture Overlay Styles */
     .gesture-overlay { position: absolute; top: 0; left: 0; bottom: 0; right: 0; pointer-events: none; overflow: hidden; z-index: 20; }
     .gesture-icon {
         position: absolute; top: 50%; transform: translate(-50%, -50%);
@@ -240,6 +240,35 @@
         0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
         20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
         100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    /* TITLE BOX STYLING BELOW VIDEO */
+    .title-box {
+        width: 100%; 
+        background: var(--card-bg); 
+        backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        border: var(--glass-border);
+        border-radius: 16px; 
+        padding: 20px 24px; 
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
+    }
+    .title-box .current-episode-label {
+        font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase;
+        letter-spacing: 3px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .title-box .current-episode-label::before {
+        content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+        display: inline-block; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite;
+    }
+    #main-title {
+        font-size: 20px; font-weight: 700; color: var(--text-main); line-height: 1.3;
+        margin: 0; letter-spacing: -0.4px;
+    }
+    #main-title:empty::before { content: 'Select an Episode to Begin'; color: var(--text-muted); font-weight: 500; font-size: 15px; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(1.5); }
     }
 
     /* =========================================
@@ -283,7 +312,7 @@
     }
 
     /* =========================================
-       4. PLAYLIST SECTION (TITLE CARD KEPT HERE)
+       4. PLAYLIST SECTION
        ========================================= */
     #playlist { 
         width: 100%;
@@ -301,33 +330,16 @@
         max-height: calc(100vh - 180px); 
     }
 
-    .current-episode-header {
-        padding: 28px 24px 20px; border-bottom: var(--glass-border);
-        background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
-        position: relative;
-    }
-
-    .current-episode-label {
+    .playlist-header {
+        padding: 22px 24px 16px; 
+        border-bottom: var(--glass-border);
         font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase;
-        letter-spacing: 3px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+        letter-spacing: 3px; display: flex; align-items: center; gap: 8px;
     }
-
-    .current-episode-label::before {
+    .playlist-header::before {
         content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
         display: inline-block; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite;
     }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(1.5); }
-    }
-
-    #main-title {
-        font-size: 22px; font-weight: 700; color: var(--text-main); line-height: 1.3;
-        margin: 0; min-height: 56px; display: flex; align-items: center; letter-spacing: -0.5px;
-    }
-
-    #main-title:empty::before { content: 'Select an Episode to Begin'; color: var(--text-muted); font-weight: 500; font-size: 16px; }
 
     #playlist-items { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
     #playlist-items::-webkit-scrollbar { width: 6px; }
@@ -365,7 +377,6 @@
     .playlist-item.active .playlist-title { color: var(--accent); }
     .playlist-date { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-top: 6px; letter-spacing: 0.5px; }
 
-    /* Playing Indicator */
     .playing-indicator { display: none; align-items: center; gap: 3px; margin-left: auto; padding-left: 8px; }
     .playlist-item.active .playing-indicator { display: flex; }
 
@@ -392,14 +403,13 @@
         .playlist-card { max-height: none; }
         #playlist-items { max-height: 400px; } 
 
-        .current-episode-header { padding: 20px 16px; }
-        #main-title { font-size: 18px; min-height: auto; }
+        .title-box { padding: 16px 18px; }
+        #main-title { font-size: 17px; }
 
         .playlist-img-wrapper { width: 90px; }
         .playlist-title { font-size: 13px; }
     }
 
-    /* Back Button (Kept intact) */
     .back-to-video-btn {
         display: inline-flex; align-items: center; gap: 8px;
         position: fixed; bottom: 25px; left: 25px; z-index: 1500;
@@ -415,7 +425,6 @@
         .back-to-video-btn { bottom: 16px; left: 16px; font-size: 13px; }
     }
 
-    /* Access Denied Modal */
     .access-denied-modal {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.95); color: #fff;
         display: flex; align-items: center; justify-content: center; z-index: 11000; flex-direction: column; text-align: center;
@@ -450,7 +459,6 @@
     <div id="player-container">
        <div id="artplayer" class="art-video-player"></div>
        
-       <!-- Custom Gestures Overlay -->
        <div id="click-catcher"></div>
        <div class="gesture-overlay">
            <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
@@ -473,15 +481,17 @@
            </div>
        </div>
     </div>
+
+    <!-- TITLE BOX BELOW VIDEO -->
+    <div class="title-box">
+        <div class="current-episode-label">Now Playing</div>
+        <h2 id="main-title"></h2>
+    </div>
   </div>
 
   <div id="playlist">
     <div class="playlist-card">
-        <div class="current-episode-header">
-            <div class="current-episode-label">Now Playing</div>
-            <h2 id="main-title"></h2>
-        </div>
-        
+        <div class="playlist-header">Episodes</div>
         <div id="playlist-items"></div>
     </div>
   </div>
@@ -493,7 +503,6 @@
 </a>
 
 <script>
-// --- GLOBAL FUNCTIONS FOR BUTTON LAYERS ---
 window.playNextEpisodeGlobal = function() {
     if (!window.currentEpData) return;
     const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
@@ -511,7 +520,6 @@ window.skipIntroGlobal = function() {
     if (art.layers.skipIntroLayer) art.layers.skipIntroLayer.style.display = 'none';
 };
 
-// --- 1. CONFIG & PLAYLIST DATA ---
 const playlistData = [
   { id: "1", title: "EP1. READY TO TIME OFF", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
   { id: "2", title: "EP2. Thank you for your support", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
@@ -532,7 +540,6 @@ let episodeLoadToken = 0;
 let currentHistoryKey = null;
 let lastSavedHistory = null;
 
-// Poster click starts the first episode
 posterContainer.addEventListener('click', () => {
     if (playlistData.length > 0) {
         loadAndPlayEpisode(playlistData[0].id, true);
@@ -572,7 +579,6 @@ function formatTime(seconds) {
     return `${minutes}:${String(secs).padStart(2, '0')}`;
 }
 
-// --- 2. FIREBASE SETUP ---
 const firebaseConfig = {
   apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
   authDomain: "tvnstream-b4497.firebaseapp.com",
@@ -586,7 +592,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// --- 3. ARTPLAYER & PLAYBACK LOGIC ---
 async function loadAndPlayEpisode(epId, updateUrl = true) {
     const ep = playlistData.find(item => item.id === epId);
     if (!ep) return;
@@ -634,7 +639,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         return;
     }
 
-    // Subtitle processing (Supports both object dictionary and single URL string)
     const subtitles = [];
     if (data.subtitles) {
         if (typeof data.subtitles === 'string' && isAllowedMediaUrl(data.subtitles)) {
@@ -697,7 +701,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
                     hls.attachMedia(video);
                     if (artInstance) artInstance.hls = hls;
 
-                    // Dynamic Quality Menu from HLS Playlist Levels
                     hls.on(Hls.Events.MANIFEST_PARSED, function () {
                         const levels = hls.levels.map((level, index) => {
                             return { html: (level.height ? level.height + 'P' : 'Unknown'), level: level.height, index: index };
@@ -716,7 +719,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         }
     });
 
-    // Button Layers: Next Episode & Skip Intro
     art.layers.add({
         name: 'nextEpLayer',
         html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
@@ -757,19 +759,16 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
     art.on('play', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.remove('is-paused')));
     art.on('pause', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.add('is-paused')));
 
-    // Time Update & Button Visibilities
     art.on('video:timeupdate', () => {
         if (!art || !window.currentEpData || !currentHistoryKey) return;
         const now = Date.now();
         
-        // Next Episode Button visibility
         if (art.duration > 0 && art.layers.nextEpLayer) {
             const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
             const hasNext = currentIndex >= 0 && currentIndex < playlistData.length - 1;
             art.layers.nextEpLayer.style.display = (art.duration - art.currentTime <= 60 && hasNext) ? 'block' : 'none';
         }
 
-        // Skip Intro Button visibility
         if (window.introEndTime > 0 && art.layers.skipIntroLayer) {
             if (!window.hasSkippedIntro && art.currentTime > 0 && art.currentTime < window.introEndTime) {
                 art.layers.skipIntroLayer.style.display = 'block';
@@ -778,7 +777,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
             }
         }
 
-        // Periodic Watch History Save
         if (auth.currentUser && !art.video.paused && (!lastSavedHistory || now - lastSavedHistory > 5000)) {
             const historyData = {
                 id: window.currentEpData.id,
@@ -795,7 +793,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         }
     });
 
-    // Resume Playback Logic
     let saved = null;
     if (auth.currentUser) {
         try {
@@ -819,7 +816,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
     else art.once('video:loadedmetadata', resume);
 }
 
-// --- 4. CUSTOM GESTURES (Configured once globally) ---
 const catcher = document.getElementById('click-catcher');
 let clickTimer = null;
 let lastTapTime = 0;
@@ -862,7 +858,6 @@ if (catcher) {
     });
 }
 
-// History back
 window.addEventListener('popstate', (event) => {
     if (event.state && event.state.id) loadAndPlayEpisode(event.state.id, false);
     else { 
@@ -875,7 +870,6 @@ window.addEventListener('popstate', (event) => {
     }
 });
 
-// Render Playlist
 playlistData.forEach(ep => {
   const epDiv = document.createElement('div');
   epDiv.className = 'playlist-item';
@@ -926,7 +920,6 @@ playlistData.forEach(ep => {
   playlistContainer.appendChild(epDiv);
 });
 
-// Load episode from query parameter if provided
 window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const videoId = urlParams.get('v');
@@ -936,7 +929,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- ACCESS CODE (KEPT INTACT AS REQUESTED) -->
 <script>
   const allowedPaths = [
     '/index.html',

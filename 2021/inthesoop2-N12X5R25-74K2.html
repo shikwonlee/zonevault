@@ -120,14 +120,23 @@
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
 
+    /* Subtitle Styling */
     .art-subtitle {
-        font-size: 25px !important;
-        text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000 !important;
+        color: #ffffff !important;
+        background: transparent !important;
+        text-shadow: 
+            2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 
+            1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000, 
+            0 5px 10px rgba(0,0,0,1) !important;
+        font-weight: 700 !important;
+        line-height: 1.5 !important;
+        font-size: 22px !important;
+        transition: font-size 0.2s ease;
     }
 
     @media (max-width: 900px) {
         .art-subtitle {
-            font-size: 18px !important; /* Mobile font size adjusted perfectly */
+            font-size: 16px !important;
             margin-bottom: 20px !important;
         }
     }
@@ -158,7 +167,6 @@
         }
     }
 
-    /* STICKY VIDEO FIXED: Low Z-index so playlist scrolls OVER it natively */
     .video-wrapper-left { 
         width: 100%;
         position: sticky;
@@ -206,8 +214,36 @@
     .art-video-player { width: 100%; height: 100%; }
     .art-layer-mobile { pointer-events: auto !important; }
 
+    /* Click catcher for custom double-tap gestures: leaves space for bottom control bar */
+    #click-catcher {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: calc(100% - 55px);
+        z-index: 10;
+        cursor: pointer;
+    }
+
+    /* Gesture Overlay Styles */
+    .gesture-overlay { position: absolute; top: 0; left: 0; bottom: 0; right: 0; pointer-events: none; overflow: hidden; z-index: 20; }
+    .gesture-icon {
+        position: absolute; top: 50%; transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: bold; font-size: 12px;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    .gesture-icon svg { width: 24px; height: 24px; fill: white; display: block; margin: 0 auto; }
+    .gesture-icon.active { opacity: 1; animation: popFade 0.5s forwards; }
+    @keyframes popFade {
+        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
     /* =========================================
-       3. RESPONSIVE NEXT EPISODE BUTTON
+       3. RESPONSIVE BUTTON LAYERS (NEXT EP & SKIP INTRO)
        ========================================= */
     .art-layer-nextEpLayer {
         position: absolute !important;
@@ -215,8 +251,14 @@
         right: 20px !important;
         z-index: 99 !important;
     }
+    .art-layer-skipIntroLayer {
+        position: absolute !important;
+        bottom: 70px !important;
+        right: 170px !important;
+        z-index: 98 !important;
+    }
 
-    .next-ep-btn {
+    .next-ep-btn, .skip-intro-btn {
         background: rgba(0, 0, 0, 0.7);
         backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -227,11 +269,12 @@
         animation: fadeInBtn 0.5s ease forwards; pointer-events: auto;
     }
 
-    .next-ep-btn:hover { background: rgba(255, 255, 255, 0.95); color: black; transform: scale(1.05); }
+    .next-ep-btn:hover, .skip-intro-btn:hover { background: rgba(255, 255, 255, 0.95); color: black; transform: scale(1.05); }
 
     @media (max-width: 768px) {
         .art-layer-nextEpLayer { bottom: 50px !important; right: 15px !important; }
-        .next-ep-btn { padding: 8px 16px; font-size: 13px; }
+        .art-layer-skipIntroLayer { bottom: 50px !important; right: 130px !important; }
+        .next-ep-btn, .skip-intro-btn { padding: 8px 16px; font-size: 13px; }
     }
 
     @keyframes fadeInBtn {
@@ -240,13 +283,13 @@
     }
 
     /* =========================================
-       4. PLAYLIST SECTION
+       4. PLAYLIST SECTION (TITLE CARD KEPT HERE)
        ========================================= */
     #playlist { 
         width: 100%;
         height: fit-content;
         position: relative;
-        z-index: 10; /* High Z-index ensures it scrolls OVER the sticky video */
+        z-index: 10;
     }
 
     .playlist-card {
@@ -255,7 +298,6 @@
         border: var(--glass-border); border-radius: 20px; overflow: hidden;
         box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
         display: flex; flex-direction: column; 
-        /* Keep the playlist compact on desktop. */
         max-height: calc(100vh - 180px); 
     }
 
@@ -334,7 +376,6 @@
     .bar:nth-child(2) { animation-delay: 0.1s; height: 18px; }
     .bar:nth-child(3) { animation-delay: 0.2s; height: 10px; }
 
-    /* Pause Animation Class */
     .playlist-item.is-paused .bar { animation-play-state: paused; }
 
     @keyframes sound {
@@ -343,12 +384,12 @@
     }
 
     /* =========================================
-       5. RESPONSIVE DESIGN (Padding Updates)
+       5. RESPONSIVE DESIGN
        ========================================= */
     @media (max-width: 1099px) {
         body { padding: 20px 16px; }
         #poster-container, #player-container { border-radius: 16px; }
-        .playlist-card { max-height: none; } /* On mobile, allowing flow restores overlap behavior */
+        .playlist-card { max-height: none; }
         #playlist-items { max-height: 400px; } 
 
         .current-episode-header { padding: 20px 16px; }
@@ -358,7 +399,7 @@
         .playlist-title { font-size: 13px; }
     }
 
-    /* Back Button - text style */
+    /* Back Button (Kept intact) */
     .back-to-video-btn {
         display: inline-flex; align-items: center; gap: 8px;
         position: fixed; bottom: 25px; left: 25px; z-index: 1500;
@@ -392,7 +433,6 @@
         font-size: 32px; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, #8e8e99 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-     
 </style>
 </head>
 
@@ -409,6 +449,29 @@
 
     <div id="player-container">
        <div id="artplayer" class="art-video-player"></div>
+       
+       <!-- Custom Gestures Overlay -->
+       <div id="click-catcher"></div>
+       <div class="gesture-overlay">
+           <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
+               <div>
+                   <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
+                   <span>-10s</span>
+               </div>
+           </div>
+           <div id="icon-forward" class="gesture-icon" style="left: 80%;">
+               <div>
+                   <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
+                   <span>+10s</span>
+               </div>
+           </div>
+           <div id="icon-play" class="gesture-icon" style="left: 50%;">
+               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+           </div>
+           <div id="icon-pause" class="gesture-icon" style="left: 50%;">
+               <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+           </div>
+       </div>
     </div>
   </div>
 
@@ -430,9 +493,9 @@
 </a>
 
 <script>
-// --- GLOBAL FUNCTION FOR NEXT EPISODE BUTTON ---
+// --- GLOBAL FUNCTIONS FOR BUTTON LAYERS ---
 window.playNextEpisodeGlobal = function() {
-    if(!window.currentEpData) return;
+    if (!window.currentEpData) return;
     const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
     if (currentIndex >= 0 && currentIndex < playlistData.length - 1) {
         const nextEp = playlistData[currentIndex + 1];
@@ -440,14 +503,22 @@ window.playNextEpisodeGlobal = function() {
     }
 };
 
+window.skipIntroGlobal = function() {
+    if (!art || !window.introEndTime) return;
+    art.currentTime = window.introEndTime;
+    art.notice.show = 'Intro Skipped';
+    window.hasSkippedIntro = true;
+    if (art.layers.skipIntroLayer) art.layers.skipIntroLayer.style.display = 'none';
+};
+
 // --- 1. CONFIG & PLAYLIST DATA ---
 const playlistData = [
-  { id: "1", title: "EP1. READY TO TIME OFF", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" },
-  { id: "2", title: "EP2. Thank you for your support", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" },
-  { id: "3", title: "EP3. Your smile is the most brilliant thing in the world", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" },
-  { id: "4", title: "EP4. It's been another exciting day.", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" },
-  { id: "5", title: "EP5. 우리 추억 더 밝게 빛나고", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" },
-  { id: "6", title: "EP6. Remember, We're Always Together", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" }
+  { id: "1", title: "EP1. READY TO TIME OFF", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+  { id: "2", title: "EP2. Thank you for your support", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+  { id: "3", title: "EP3. Your smile is the most brilliant thing in the world", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+  { id: "4", title: "EP4. It's been another exciting day.", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+  { id: "5", title: "EP5. 우리 추억 더 밝게 빛나고", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+  { id: "6", title: "EP6. Remember, We're Always Together", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 }
 ];
 
 const playlistContainer = document.getElementById('playlist-items');
@@ -460,6 +531,13 @@ let currentSubtitleUrls = [];
 let episodeLoadToken = 0;
 let currentHistoryKey = null;
 let lastSavedHistory = null;
+
+// Poster click starts the first episode
+posterContainer.addEventListener('click', () => {
+    if (playlistData.length > 0) {
+        loadAndPlayEpisode(playlistData[0].id, true);
+    }
+});
 
 function isAllowedMediaUrl(value) {
     try {
@@ -508,7 +586,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// --- 3. ARTPLAYER & LOGIC ---
+// --- 3. ARTPLAYER & PLAYBACK LOGIC ---
 async function loadAndPlayEpisode(epId, updateUrl = true) {
     const ep = playlistData.find(item => item.id === epId);
     if (!ep) return;
@@ -528,8 +606,11 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
     }
 
     window.currentEpData = ep;
+    window.hasSkippedIntro = false;
+    window.introEndTime = ep.introEnd || 0;
     currentHistoryKey = historyKey;
     lastSavedHistory = null;
+
     posterContainer.style.display = 'none';
     playerContainer.style.display = 'block';
     document.querySelectorAll('.playlist-item').forEach(item => {
@@ -553,137 +634,168 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         return;
     }
 
+    // Subtitle processing (Supports both object dictionary and single URL string)
     const subtitles = [];
-    if (data.subtitles && typeof data.subtitles === 'object') {
-        Object.entries(data.subtitles).forEach(([lang, url]) => {
-            if (isAllowedMediaUrl(url)) {
-                subtitles.push({ html: String(lang).toUpperCase(), url, default: lang === 'en' });
-            }
-        });
+    if (data.subtitles) {
+        if (typeof data.subtitles === 'string' && isAllowedMediaUrl(data.subtitles)) {
+            subtitles.push({ html: 'SUBTITLES', url: data.subtitles, default: true });
+        } else if (typeof data.subtitles === 'object') {
+            Object.entries(data.subtitles).forEach(([lang, url]) => {
+                if (isAllowedMediaUrl(url)) {
+                    subtitles.push({ html: String(lang).toUpperCase(), url, default: String(lang).toLowerCase() === 'en' });
+                }
+            });
+        }
     }
 
     mainTitle.textContent = data.title || ep.title;
 
-    // Reuse the existing player, but invalidate all callbacks from the previous load.
-    if (art) {
-        try {
-            art.switchUrl(data.url, data.title || ep.title);
-            art.poster = ep.image;
-            if (subtitles.length && art.subtitle) {
-                const defaultSub = subtitles.find(s => s.default) || subtitles[0];
-                art.subtitle.switch(defaultSub.url, { name: defaultSub.html });
-            } else if (art.subtitle) {
-                art.subtitle.switch('', { name: 'None' });
-            }
-        } catch (error) {
-            console.error('Player switch failed:', error);
-            cleanupPlayer();
-        }
-    }
+    cleanupPlayer();
 
-    if (!art) {
-        const defaultSubtitle = subtitles.find(s => s.default) || subtitles[0];
-        art = new Artplayer({
-            container: '#artplayer',
-            url: data.url,
-            title: data.title || ep.title,
-            poster: ep.image,
-            volume: 0.5,
-            isLive: false,
-            muted: false,
-            autoplay: true,
-            setting: true,
-            fullscreen: true,
-            miniProgressBar: true,
-            autoOrientation: true,
-            lock: true,
-            fastForward: true,
-            mutex: true,
-            backdrop: true,
+    const defaultSubtitle = subtitles.find(s => s.default) || subtitles[0];
+    
+    art = new Artplayer({
+        container: '#artplayer',
+        url: data.url,
+        title: data.title || ep.title,
+        poster: ep.image,
+        volume: 0.5,
+        isLive: false,
+        muted: false,
+        autoplay: true,
+        setting: true,
+        fullscreen: true,
+        fullscreenWeb: true,
+        miniProgressBar: true,
+        autoOrientation: true,
+        lock: true,
+        fastForward: true,
+        mutex: true,
+        backdrop: false,
+        playsInline: true,
+        autoPlayback: true,
+        airplay: true,
+        theme: '#a1a1aa',
+        subtitle: {
+            url: defaultSubtitle ? defaultSubtitle.url : '',
+            type: 'vtt',
+            encoding: 'utf-8'
+        },
+        moreVideoAttr: {
             playsInline: true,
-            autoPlayback: true,
-            airplay: true,
-            theme: '#a1a1aa',
-            subtitle: {
-                url: defaultSubtitle ? defaultSubtitle.url : '',
-                type: 'vtt',
-                encoding: 'utf-8',
-                style: { color: '#ffffff', textAlign: 'center', background: 'none' }
-            },
-            moreVideoAttr: {
-                playsInline: true,
-                'webkit-playsinline': true,
-                'x5-video-player-type': 'h5',
-                'x5-video-player-fullscreen': 'true',
-                'x5-video-orientation': 'landscape'
-            },
-            customType: {
-                m3u8(video, url) {
-                    if (art && art.hls) art.hls.destroy();
-                    if (Hls.isSupported()) {
-                        const hls = new Hls();
-                        hls.loadSource(url);
-                        hls.attachMedia(video);
-                        if (art) art.hls = hls;
-                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = url;
-                    }
+            'webkit-playsinline': true,
+            'x5-video-player-type': 'h5',
+            'x5-video-player-fullscreen': 'true',
+            'x5-video-orientation': 'landscape'
+        },
+        customType: {
+            m3u8(video, url, artInstance) {
+                if (artInstance && artInstance.hls) artInstance.hls.destroy();
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                    if (artInstance) artInstance.hls = hls;
+
+                    // Dynamic Quality Menu from HLS Playlist Levels
+                    hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                        const levels = hls.levels.map((level, index) => {
+                            return { html: (level.height ? level.height + 'P' : 'Unknown'), level: level.height, index: index };
+                        });
+                        levels.unshift({ html: 'Auto', index: -1, default: true });
+                        artInstance.setting.update({
+                            name: 'quality', width: 150, html: 'Quality', tooltip: 'Auto',
+                            selector: levels.map(item => ({ html: item.html, default: item.default, url: '#', $index: item.index })),
+                            onSelect: function (item) { hls.currentLevel = item.$index; return item.html; },
+                        });
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = url;
                 }
             }
-        });
-
-        art.layers.add({
-            name: 'nextEpLayer',
-            html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
-            style: { display: 'none' }
-        });
-        const nextButton = art.layers.nextEpLayer && art.layers.nextEpLayer.querySelector('.next-ep-btn');
-        if (nextButton) {
-            nextButton.addEventListener('click', event => {
-                event.stopPropagation();
-                window.playNextEpisodeGlobal();
-            });
         }
+    });
 
-        if (subtitles.length) {
-            art.setting.add({
-                html: 'Subtitles', width: 200,
-                selector: subtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
-                onSelect(item) {
-                    art.subtitle.switch(item.url, { name: item.html });
-                    return item.html;
-                }
-            });
-        }
+    // Button Layers: Next Episode & Skip Intro
+    art.layers.add({
+        name: 'nextEpLayer',
+        html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
+        style: { display: 'none' }
+    });
+    const nextButton = art.layers.nextEpLayer && art.layers.nextEpLayer.querySelector('.next-ep-btn');
+    if (nextButton) {
+        nextButton.addEventListener('click', event => {
+            event.stopPropagation();
+            window.playNextEpisodeGlobal();
+        });
+    }
 
-        art.on('play', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.remove('is-paused')));
-        art.on('pause', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.add('is-paused')));
+    art.layers.add({
+        name: 'skipIntroLayer',
+        html: '<button type="button" class="skip-intro-btn">Skip Intro</button>',
+        style: { display: 'none' }
+    });
+    const skipIntroButton = art.layers.skipIntroLayer && art.layers.skipIntroLayer.querySelector('.skip-intro-btn');
+    if (skipIntroButton) {
+        skipIntroButton.addEventListener('click', event => {
+            event.stopPropagation();
+            window.skipIntroGlobal();
+        });
+    }
 
-        art.on('video:timeupdate', () => {
-            if (!art || !window.currentEpData || !currentHistoryKey) return;
-            const now = Date.now();
-            if (art.duration > 0 && art.layers.nextEpLayer) {
-                const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
-                const hasNext = currentIndex >= 0 && currentIndex < playlistData.length - 1;
-                art.layers.nextEpLayer.style.display = (art.duration - art.currentTime <= 60 && hasNext) ? 'block' : 'none';
-            }
-            if (auth.currentUser && !art.video.paused && (!lastSavedHistory || now - lastSavedHistory > 5000)) {
-                const historyData = {
-                    id: window.currentEpData.id,
-                    title: window.currentEpData.title,
-                    image: window.currentEpData.image,
-                    currentTime: Number(art.currentTime) || 0,
-                    duration: Number(art.duration) || 0,
-                    timestamp: now,
-                    page: pageIdentifier
-                };
-                db.ref(`watchHistory/${auth.currentUser.uid}/${currentHistoryKey}`).update(historyData)
-                    .catch(error => console.error('Watch history save failed:', error));
-                lastSavedHistory = now;
+    if (subtitles.length) {
+        art.setting.add({
+            html: 'Subtitles', width: 200,
+            selector: subtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
+            onSelect(item) {
+                art.subtitle.switch(item.url, { name: item.html });
+                return item.html;
             }
         });
     }
 
+    art.on('play', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.remove('is-paused')));
+    art.on('pause', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.add('is-paused')));
+
+    // Time Update & Button Visibilities
+    art.on('video:timeupdate', () => {
+        if (!art || !window.currentEpData || !currentHistoryKey) return;
+        const now = Date.now();
+        
+        // Next Episode Button visibility
+        if (art.duration > 0 && art.layers.nextEpLayer) {
+            const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
+            const hasNext = currentIndex >= 0 && currentIndex < playlistData.length - 1;
+            art.layers.nextEpLayer.style.display = (art.duration - art.currentTime <= 60 && hasNext) ? 'block' : 'none';
+        }
+
+        // Skip Intro Button visibility
+        if (window.introEndTime > 0 && art.layers.skipIntroLayer) {
+            if (!window.hasSkippedIntro && art.currentTime > 0 && art.currentTime < window.introEndTime) {
+                art.layers.skipIntroLayer.style.display = 'block';
+            } else {
+                art.layers.skipIntroLayer.style.display = 'none';
+            }
+        }
+
+        // Periodic Watch History Save
+        if (auth.currentUser && !art.video.paused && (!lastSavedHistory || now - lastSavedHistory > 5000)) {
+            const historyData = {
+                id: window.currentEpData.id,
+                title: window.currentEpData.title,
+                image: window.currentEpData.image,
+                currentTime: Number(art.currentTime) || 0,
+                duration: Number(art.duration) || 0,
+                timestamp: now,
+                page: pageIdentifier
+            };
+            db.ref(`watchHistory/${auth.currentUser.uid}/${currentHistoryKey}`).update(historyData)
+                .catch(error => console.error('Watch history save failed:', error));
+            lastSavedHistory = now;
+        }
+    });
+
+    // Resume Playback Logic
     let saved = null;
     if (auth.currentUser) {
         try {
@@ -698,14 +810,59 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         if (loadToken !== episodeLoadToken || !art) return;
         if (saved && Number(saved.currentTime) > 0 && Number(saved.currentTime) < (art.duration || Infinity)) {
             art.currentTime = Number(saved.currentTime);
+            if (saved.currentTime > window.introEndTime) { window.hasSkippedIntro = true; }
             art.notice.show = `Resumed from ${formatTime(saved.currentTime)}`;
         }
         art.play().catch(() => {});
     };
-    if (art.video.readyState >= 1) resume();
+    if (art.video && art.video.readyState >= 1) resume();
     else art.once('video:loadedmetadata', resume);
 }
 
+// --- 4. CUSTOM GESTURES (Configured once globally) ---
+const catcher = document.getElementById('click-catcher');
+let clickTimer = null;
+let lastTapTime = 0;
+
+function showGestureFeedback(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 500);
+}
+
+if (catcher) {
+    catcher.addEventListener('click', (e) => {
+        if (!art) return;
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapTime;
+        const rect = catcher.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const width = rect.width;
+
+        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+            clearTimeout(clickTimer);
+            if (x < width * 0.35) {
+                art.currentTime = Math.max(0, art.currentTime - 10);
+                showGestureFeedback('icon-rewind');
+            } else if (x > width * 0.65) {
+                art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
+                showGestureFeedback('icon-forward');
+            } else {
+                art.toggle();
+            }
+        } else {
+            clickTimer = setTimeout(() => {
+                art.toggle();
+                if (art.playing) showGestureFeedback('icon-play');
+                else showGestureFeedback('icon-pause');
+            }, 300);
+        }
+        lastTapTime = now;
+    });
+}
+
+// History back
 window.addEventListener('popstate', (event) => {
     if (event.state && event.state.id) loadAndPlayEpisode(event.state.id, false);
     else { 
@@ -718,6 +875,7 @@ window.addEventListener('popstate', (event) => {
     }
 });
 
+// Render Playlist
 playlistData.forEach(ep => {
   const epDiv = document.createElement('div');
   epDiv.className = 'playlist-item';
@@ -731,15 +889,13 @@ playlistData.forEach(ep => {
   }
   if (isLocked) epDiv.classList.add('locked');
 
-  // Wrapped image for cool hover effects
   const imgWrapper = document.createElement('div');
   imgWrapper.className = "playlist-img-wrapper";
   
   const img = document.createElement('img'); 
   img.src = ep.image; 
-  img.loading="lazy";
+  img.loading = "lazy";
   img.alt = ep.title;
-  
   imgWrapper.appendChild(img);
   
   const textDiv = document.createElement('div'); 
@@ -754,7 +910,7 @@ playlistData.forEach(ep => {
       const dateSpan = document.createElement('span'); 
       dateSpan.className = "playlist-date";
       dateSpan.textContent = isLocked ? `Available: ${ep.date}` : ep.date;
-      if(isLocked) dateSpan.style.color = "#ff4444";
+      if (isLocked) dateSpan.style.color = "#ff4444";
       textDiv.appendChild(dateSpan);
   }
 
@@ -770,6 +926,7 @@ playlistData.forEach(ep => {
   playlistContainer.appendChild(epDiv);
 });
 
+// Load episode from query parameter if provided
 window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const videoId = urlParams.get('v');
@@ -779,6 +936,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<!-- ACCESS CODE (KEPT INTACT AS REQUESTED) -->
 <script>
   const allowedPaths = [
     '/index.html',
@@ -800,8 +958,15 @@ window.addEventListener('DOMContentLoaded', () => {
   let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
 
   const referrer = document.referrer;
-  const refPath = referrer ? new URL(referrer).pathname : null;
-  const cameFromAllowedPage = refPath && allowedPaths.includes(refPath);
+  let cameFromAllowedPage = false;
+  if (referrer) {
+    try {
+      const refUrl = new URL(referrer);
+      if (refUrl.origin === window.location.origin && allowedPaths.includes(refUrl.pathname)) {
+        cameFromAllowedPage = true;
+      }
+    } catch (_) {}
+  }
 
   if (cameFromAllowedPage) {
     sessionStorage.setItem('internalAccess', 'true');

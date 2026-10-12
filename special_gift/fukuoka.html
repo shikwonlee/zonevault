@@ -12,6 +12,26 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <link rel="stylesheet" href="css/fukuoka.css">
+  <script>
+    (function() {
+        function applyTheme(theme) {
+            if (theme === "light" || theme === "#ffffff" || theme === "white") {
+                document.documentElement.classList.add("light-mode");
+                if (document.body) document.body.classList.add("light-mode");
+            } else {
+                document.documentElement.classList.remove("light-mode");
+                if (document.body) document.body.classList.remove("light-mode");
+            }
+        }
+        const savedTheme = localStorage.getItem("zoneTheme") || localStorage.getItem("zoneVaultTheme");
+        if (savedTheme) { applyTheme(savedTheme); } 
+        else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) { applyTheme("light"); }
+
+        window.addEventListener("storage", (e) => {
+            if (e.key === "zoneTheme" || e.key === "zoneVaultTheme") { applyTheme(e.newValue); }
+        });
+    })();
+  </script>
 </head>
 <body>
 

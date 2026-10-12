@@ -29,10 +29,14 @@ window.dataLayer = window.dataLayer || [];
         function applyTheme(theme) {
             if (theme === 'light' || theme === '#ffffff' || theme === 'white') {
                 document.documentElement.classList.add('light-mode');
-                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f8f9fa');
+                if (document.body) document.body.classList.add('light-mode');
+                const meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', '#f8f9fa');
             } else {
                 document.documentElement.classList.remove('light-mode');
-                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0a0a0c');
+                if (document.body) document.body.classList.remove('light-mode');
+                const meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', '#0a0a0c');
             }
         }
         const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme');
@@ -515,18 +519,20 @@ window.addEventListener('DOMContentLoaded', () => {
 // ----------------------------------------
 
 const allowedPaths = [
-    '/index.html',
-    '/home.html',
-    '/nanabnb.html',
-    '/newtour.html',
-    '/hxwfanconcert.html',
-    '/svtholiday.html',
-    '/arenatour.html',
-    '/svtjapanconcert.html',
-    '/touragain.html',
-    '/gallery.html',
-    '/profile.html',
-    '/soon.html'
+    '/index', '/index.html', '/',
+    '/home', '/home.html',
+    '/videos', '/videos.html',
+    '/collection', '/collection.html',
+    '/profile', '/profile.html',
+    '/nanabnb', '/nanabnb.html',
+    '/newtour', '/newtour.html',
+    '/hxwfanconcert', '/hxwfanconcert.html',
+    '/svtholiday', '/svtholiday.html',
+    '/arenatour', '/arenatour.html',
+    '/svtjapanconcert', '/svtjapanconcert.html',
+    '/touragain', '/touragain.html',
+    '/gallery', '/gallery.html',
+    '/admin', '/admin.html'
   ];
 
   const currentPage = window.location.pathname;
@@ -572,7 +578,7 @@ const allowedPaths = [
       timer.textContent = `Redirecting in ${countdown} seconds...`;
       if (countdown <= 0) {
         clearInterval(interval);
-        window.location.href = "index.html";
+        window.location.href = "/index";
       }
     }, 1000);
   }
@@ -580,3 +586,26 @@ const allowedPaths = [
   function goBack() {
     window.history.back();
   }
+
+// /* sync-theme-domready */
+function syncThemeAndPoster() {
+    const isLight = document.documentElement.classList.contains('light-mode') || 
+                    localStorage.getItem('zoneTheme') === 'light' || 
+                    localStorage.getItem('zoneVaultTheme') === 'light';
+    if (isLight) {
+        document.documentElement.classList.add('light-mode');
+        if (document.body) document.body.classList.add('light-mode');
+    }
+    const poster = document.getElementById('poster-container');
+    if (poster && !poster.style.backgroundImage) {
+        const thumb = (typeof THUMBNAIL !== 'undefined' && THUMBNAIL) 
+            ? THUMBNAIL 
+            : (typeof playlistData !== 'undefined' && playlistData.length > 0 && playlistData[0].image ? playlistData[0].image : '');
+        if (thumb) poster.style.backgroundImage = 'url("' + thumb + '")';
+    }
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncThemeAndPoster);
+} else {
+    syncThemeAndPoster();
+}

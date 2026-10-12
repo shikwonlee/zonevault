@@ -25,7 +25,10 @@
         --bottom-nav-height: 96px;
     }
 
-    body.light-mode {
+    html.light-mode,
+    html.light-mode body,
+    body.light-mode,
+    .light-mode {
         /* SOLID LIGHT THEME (MATTE) */
         --bg-color: #f4f4f5;
         --card-bg: #ffffff;
@@ -40,6 +43,12 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
+
+    html {
+        background-color: var(--bg-color);
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
 
     body { 
         background-color: var(--bg-color);

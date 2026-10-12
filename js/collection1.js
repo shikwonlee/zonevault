@@ -45,13 +45,21 @@ function updateDynamicURL(uid, role, status) {
 // Welcome toast removed
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
+    const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme') || 'dark';
+    if (savedTheme === 'light' || savedTheme === '#ffffff' || savedTheme === 'white') {
+        document.body.classList.add('light-mode');
+        document.documentElement.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.documentElement.classList.remove('light-mode');
+    }
 }
 window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
+    document.documentElement.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode') || document.documentElement.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
+    localStorage.setItem('zoneVaultTheme', isLight ? 'light' : 'dark');
 }
 initTheme();
 

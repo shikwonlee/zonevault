@@ -100,13 +100,21 @@ window.addEventListener('load', () => {
 });
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
+    const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme') || 'dark';
+    if (savedTheme === 'light' || savedTheme === '#ffffff' || savedTheme === 'white') {
+        document.body.classList.add('light-mode');
+        document.documentElement.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.documentElement.classList.remove('light-mode');
+    }
 }
 window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
+    document.documentElement.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode') || document.documentElement.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
+    localStorage.setItem('zoneVaultTheme', isLight ? 'light' : 'dark');
 }
 initTheme();
 
@@ -188,17 +196,19 @@ function renderGrid(page) {
         const isFav = favorites.includes(item.id) ? 'active' : '';
         const starIcon = favorites.includes(item.id) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
         
+        const safeLink = '/' + item.link.replace(/^\//, '');
+        const cleanTitle = (item.title || '').replace(/"/g, '&quot;');
         el.innerHTML = `
-          <div class="thumb-wrapper">
-            <img src="${item.thumb}" loading="lazy" alt="${item.title}">
+          <div class="thumb-wrapper" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'" style="cursor: pointer;" title="Watch ${cleanTitle}">
+            <img src="${item.thumb}" loading="lazy" alt="${cleanTitle}" onerror="this.onerror=null; this.src='https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png';">
             <div class="countdown-badge" data-date="${item.releaseDate || ''}"></div>
           </div>
           <div class="card-body">
             <div class="video-meta">${item.category}</div>
-            <div class="video-title">${item.title}</div>
+            <div class="video-title" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'" style="cursor: pointer;" title="Watch ${cleanTitle}">${item.title}</div>
             <div class="video-hashtags">${item.hashtags}</div>
             <div class="card-actions">
-                <button class="btn-watch" onclick="window.location.href='${item.link}'">WATCH</button>
+                <button class="btn-watch" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'">WATCH</button>
                 <button class="btn-fav ${isFav}" onclick="toggleFavorite('${item.id}')">${starIcon}</button>
             </div>
           </div>
@@ -288,14 +298,15 @@ window.openFavoriteModal = function() {
             if (item) {
                 const el = document.createElement('div');
                 el.className = 'fav-list-item';
+                const safeLink = '/' + item.link.replace(/^\//, '');
                 el.innerHTML = `
-                    <img src="${item.thumb}" class="fav-thumb" loading="lazy">
+                    <img src="${item.thumb}" class="fav-thumb" loading="lazy" onerror="this.onerror=null; this.src='https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png';">
                     <div class="fav-list-info">
                         <div class="fav-list-title">${item.title}</div>
                         <div class="fav-list-cat">${item.category}</div>
                     </div>
                     <div class="fav-actions">
-                        <button class="btn-watch" onclick="window.location.href='${item.link}'" style="padding: 5px 12px; font-size:10px;"><i class="fas fa-play"></i></button>
+                        <button class="btn-watch" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'" style="padding: 5px 12px; font-size:10px;"><i class="fas fa-play"></i></button>
                         <button class="fav-btn-remove" onclick="toggleFavorite('${item.id}'); openFavoriteModal();"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `;

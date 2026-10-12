@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Create Account | Zone Vault</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1.0, viewport-fit=cover"/>
   
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon-new.png" type="image/png">
@@ -14,148 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <style>
-    :root {
-        --bg-color: #050505;
-        --text-main: #ffffff;
-        --text-muted: #a1a1aa;
-        --card-bg: #121212;
-        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-        --input-bg: rgba(255, 255, 255, 0.05);
-        --accent: #38bdf8;
-        --color-weak: #ef4444;   
-        --color-medium: #eab308; 
-        --color-strong: #22c55e; 
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
-
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      font-family: 'Outfit', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .bg-gradient {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
-      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05), transparent 40%);
-    }
-    
-    .noise-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
-      z-index: -1;
-    }
-
-    #back-btn {
-      position: fixed; top: 30px; left: 30px;
-      width: 40px; height: 40px; border-radius: 50%;
-      background: var(--card-bg); border: var(--glass-border);
-      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: 0.2s; z-index: 10;
-    }
-    #back-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); transform: scale(1.05); }
-
-    .glass-card {
-      background: var(--card-bg); border: var(--glass-border);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      border-radius: 24px; padding: 40px;
-      width: 100%; max-width: 420px; position: relative;
-      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      margin: 20px;
-    }
-
-    @keyframes popIn {
-      from { opacity: 0; transform: scale(0.95) translateY(10px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    h2 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--text-main); }
-    .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
-
-    .input-icon-group { position: relative; margin-bottom: 16px; }
-    .input-icon-group .input-icon {
-      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-      color: var(--text-muted); font-size: 14px; transition: 0.3s;
-    }
-    .input-icon-group .toggle-password {
-      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-      color: var(--text-muted); font-size: 14px; cursor: pointer; transition: 0.3s; z-index: 5;
-    }
-    .input-icon-group .toggle-password:hover { color: var(--text-main); }
-
-    .input-icon-group .at-prefix {
-      position: absolute; left: 40px; top: 50%; transform: translateY(-50%);
-      color: var(--text-muted); font-size: 14px; font-weight: 500;
-    }
-    .telegram-input { padding-left: 56px !important; }
-
-    input[type="text"], input[type="email"], input[type="password"] {
-      width: 100%; padding: 14px 40px 14px 44px;
-      background: var(--input-bg); border: var(--glass-border);
-      border-radius: 12px; color: var(--text-main); font-size: 14px; border-color: transparent; transition: 0.3s;
-    }
-    input::placeholder { color: var(--text-muted); opacity: 0.7; }
-    input:focus { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
-
-    .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 5px; }
-    .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--color-strong); }
-    .checkbox-group label { font-size: 13px; color: var(--text-muted); }
-    .checkbox-group a { color: var(--text-main); font-weight: 600; }
-
-    .password-criteria { list-style: none; padding: 0; margin: -10px 0 15px 5px; font-size: 12px; display: none; }
-    .password-criteria.active { display: block; }
-    .password-criteria li { color: var(--text-muted); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
-    .password-criteria li.valid { color: var(--color-strong); }
-    .password-criteria li.invalid i::before { content: "\f00d"; }
-    .password-criteria li.valid i::before { content: "\f00c"; }
-
-    .strength-meter-container { margin-top: 5px; margin-bottom: 20px; padding: 0 4px; display: none; }
-    .strength-meter-container.active { display: block; }
-    .strength-bars { display: flex; gap: 4px; margin-bottom: 6px; }
-    .bar-segment { height: 3px; flex: 1; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: 0.3s; }
-    .strength-text { text-align: right; font-size: 11px; font-weight: 600; color: var(--text-muted); }
-
-    .button-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
-    button { width: 100%; padding: 14px; border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    
-    .action-btn { background: var(--text-main); color: #000; }
-    .action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-    .action-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
-    .google-btn { background: transparent; color: var(--text-main); border: 1px solid var(--glass-border); }
-    .google-btn:hover:not(:disabled) { background: rgba(255,255,255,0.05); border-color: var(--text-main); }
-    .google-btn img { height: 18px; }
-
-    .switch-link { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 20px; }
-    .switch-link a { color: var(--text-main); text-decoration: none; font-weight: 600; cursor: pointer;}
-    .switch-link a:hover { text-decoration: underline; }
-
-    .hidden { display: none !important; }
-
-    .status-icon { font-size: 3rem; margin-bottom: 20px; display: block; text-align: center; }
-    .status-icon.float { animation: float 3s ease-in-out infinite; }
-    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-
-    .text-center { text-align: center; }
-    .text-center h3 { font-size: 18px; margin-bottom: 10px; color: var(--text-main); }
-    .text-center p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
-
-    #approved h3 { font-size: 22px; font-weight: 700; margin-top: 15px; color: var(--color-strong); }
-    #approved i { font-size: 40px; color: var(--color-strong); animation: unlockPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom: 10px; display: inline-block; }
-    @keyframes unlockPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
-
-    @media (max-width: 480px) {
-      .glass-card { padding: 30px 25px; background: transparent; border: none; box-shadow: none; }
-      #back-btn { top: 20px; left: 20px; }
-    }
-  </style>
+  <link rel="stylesheet" href="css/register.css">
 </head>
 <body>
 

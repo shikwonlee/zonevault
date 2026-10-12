@@ -1,23 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, onValue, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-init.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
 
 console.log("✅ Collection.js successfully loaded!");
 
-// ---------- FIREBASE CONFIG ----------
-const firebaseConfig = {
-    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-    authDomain: "tvnstream-b4497.firebaseapp.com",
-    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-    projectId: "tvnstream-b4497",
-    storageBucket: "tvnstream-b4497.appspot.com",
-    messagingSenderId: "308384754214",
-    appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+// Instantly apply user info from cache
+applyCachedUserToUI();
 
 // ==========================================
 // 1. THE MAINTENANCE KILL SWITCH (REALTIME)
@@ -53,12 +42,7 @@ function updateDynamicURL(uid, role, status) {
 // ==========================================
 // 3. UI, THEMES & TOAST
 // ==========================================
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        document.getElementById('toast').classList.add('show');
-        setTimeout(() => { document.getElementById('toast').classList.remove('show'); }, 4000);
-    }, 1000);
-});
+// Welcome toast removed
 
 function initTheme() {
     const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
@@ -73,6 +57,7 @@ initTheme();
 
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
+        clearCachedUser();
         signOut(auth).then(() => window.location.replace("/index"));
     }
 }
@@ -140,6 +125,16 @@ onAuthStateChanged(auth, user => {
             const pic = data.profilePicture || "https://via.placeholder.com/150";
             const role = (data.role || "member").toLowerCase();
             const isAdm = role === 'admin';
+
+            setCachedUser({
+                uid: user.uid,
+                email: user.email,
+                name: name,
+                profilePicture: pic,
+                role: role,
+                isAdmin: isAdm,
+                status: data.status || "approved"
+            });
 
             if(document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = name;
             if(document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = user.email;

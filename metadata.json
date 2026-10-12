@@ -1,0 +1,8 @@
+{
+  "name": "Zone Vault",
+  "description": "Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

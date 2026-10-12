@@ -1,18 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { db } from "./firebase-init.js";
 
-console.log("✅ Maintenance.js loaded!");
-
-// --- 1. FIREBASE SETUP & KILL SWITCH AUTO-REDIRECT ---
-const firebaseConfig = {
-    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-    authDomain: "tvnstream-b4497.firebaseapp.com",
-    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-    projectId: "tvnstream-b4497"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app); 
+console.log("✅ Maintenance.js loaded!"); 
 
 // Listen to the Kill Switch.
 const maintenanceRef = ref(db, 'settings/maintenanceMode');

@@ -1,23 +1,13 @@
 // ==========================================
 // 1. FIREBASE AUTHENTICATION & DATABASE SYNC
 // ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-init.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-    authDomain: "tvnstream-b4497.firebaseapp.com",
-    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-    projectId: "tvnstream-b4497",
-    storageBucket: "tvnstream-b4497.appspot.com",
-    messagingSenderId: "308384754214",
-    appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+// Instantly hydrate sidebar user profile from cache (0ms delay)
+applyCachedUserToUI();
 
 // --- NOTIFICATIONS (bell dropdown) ---
 // IMPORTANT: This is only started AFTER we confirm the user is authenticated
@@ -115,6 +105,16 @@ const userEmail = user.email || "";
     userName = data.name || data.telegramUsername || "Vault Member";
     userPic = data.profilePicture || "https://via.placeholder.com/150";
 
+    // Cache user profile for instant transitions on all pages
+    setCachedUser({
+        uid: user.uid,
+        email: userEmail,
+        name: userName,
+        profilePicture: userPic,
+        status: data.status,
+        role: data.role || "member",
+        isAdmin: (data.role || "").toLowerCase() === 'admin'
+    });
 
             // --- C. UPDATE UI ---
             // Desktop Sidebar only — the mobile slide-out sidebar was removed
@@ -185,10 +185,7 @@ window.closeInfoModal = function(event) {
 
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
-        localStorage.removeItem("internalAccess");
-        localStorage.removeItem("accessID");
-        localStorage.removeItem("fromIndex");
-        localStorage.removeItem("isAdmin");
+        clearCachedUser();
         
         signOut(auth).then(() => {
             window.location.replace("login.html"); 
@@ -203,13 +200,7 @@ window.logout = function() {
 // 3. UI AND CAROUSEL LOGIC 
 // ==========================================
 function initializeUI() {
-    setTimeout(() => {
-        const toast = document.getElementById('toast');
-        if(toast) {
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 4000);
-        }
-    }, 1000);
+    // Welcome toast removed
 
     const slideData = [
         { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", title: "DXS [SERENADE ON STAGE] ICHEON" },
@@ -311,4 +302,24 @@ if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initializeUI);
 } else {
     initializeUI();
+}
+
+// ==========================================
+// SCROLL / PAGE LOAD REVEAL ANIMATION FOR HERO
+// ==========================================
+function triggerHeroRevealAnimation() {
+    const heroBox = document.querySelector('.hero-content-box');
+    const heroImg = document.getElementById('mainDisplay');
+    
+    // Add revealed class smoothly
+    requestAnimationFrame(() => {
+        if (heroBox) heroBox.classList.add('hero-revealed');
+        if (heroImg) heroImg.classList.add('hero-revealed');
+    });
+}
+
+if (document.readyState === 'complete') {
+    triggerHeroRevealAnimation();
+} else {
+    window.addEventListener('load', triggerHeroRevealAnimation);
 }

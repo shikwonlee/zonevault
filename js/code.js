@@ -1,26 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signOut
+  createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getDatabase, ref, onValue, get, update
+  ref, onValue, get, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-init.js";
 
 console.log("✅ Code.js (Quick Access) loaded!");
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-  authDomain: "tvnstream-b4497.firebaseapp.com",
-  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-  projectId: "tvnstream-b4497",
-  storageBucket: "tvnstream-b4497.appspot.com",
-  messagingSenderId: "308384754214",
-  appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
 
 // Maintenance Kill Switch
 const maintenanceRef = ref(db, 'settings/maintenanceMode');

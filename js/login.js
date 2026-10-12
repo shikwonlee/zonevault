@@ -1,31 +1,18 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, signInWithEmailAndPassword, onAuthStateChanged,
+  signInWithEmailAndPassword, onAuthStateChanged,
   reload, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getDatabase, ref, onValue, get, set, update
+  ref, onValue, get, set, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import {
   getMessaging, getToken, onMessage
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+import { app, auth, db } from "./firebase-init.js";
+import { setCachedUser } from "./user-cache.js";
 
 console.log("✅ Login.js loaded: DUAL-SEARCH + PURE FIREBASE AUTO-LOGIN");
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-  authDomain: "tvnstream-b4497.firebaseapp.com",
-  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-  projectId: "tvnstream-b4497",
-  storageBucket: "tvnstream-b4497.appspot.com",
-  messagingSenderId: "308384754214",
-  appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
-  measurementId: "G-VFNH70R4D9"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
 const provider = new GoogleAuthProvider();
 const messaging = getMessaging(app);
 
@@ -121,6 +108,17 @@ async function checkJoinRequest(user) {
           if (userStatus === "approved") {
               updateDynamicURL(currentUid, userData.role || "user", "approved");
               
+              setCachedUser({
+                  uid: currentUid,
+                  email: user.email,
+                  name: userData.name || userData.telegramUsername || "Vault Member",
+                  profilePicture: userData.profilePicture || "https://via.placeholder.com/150",
+                  status: userStatus,
+                  role: userData.role || "member",
+                  accessID: userAccessID,
+                  isAdmin: (userData.role || "").toLowerCase() === 'admin'
+              });
+
               if (!userData.status || !userData.accessID) {
                   await update(userRef, { status: "approved", accessID: userAccessID });
               }

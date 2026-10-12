@@ -1,23 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 console.log("✅ hoshixwoozi.js successfully loaded!");
 
 // ---------- FIREBASE CONFIG ----------
-const firebaseConfig = {
-    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-    authDomain: "tvnstream-b4497.firebaseapp.com",
-    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-    projectId: "tvnstream-b4497",
-    storageBucket: "tvnstream-b4497.appspot.com",
-    messagingSenderId: "308384754214",
-    appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import { auth, db } from "/js/firebase-init.js";
 
 // ==========================================
 // 1. THE MAINTENANCE KILL SWITCH (REALTIME)

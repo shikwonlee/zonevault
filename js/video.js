@@ -1,12 +1,10 @@
+import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, get, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { auth, db } from "./firebase-init.js";
-import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
+
+cleanStaleCaches();
 
 console.log("✅ Videos.js successfully loaded!");
-
-// Instantly hydrate sidebar from cache (0ms delay)
-applyCachedUserToUI();
 
 // ==========================================
 // 1. THE MAINTENANCE KILL SWITCH (REALTIME)
@@ -91,7 +89,10 @@ const data = [
 // 4. UI INITIALIZATION & THEMES
 // ==========================================
 window.addEventListener('load', () => {
-    // Welcome toast removed
+    setTimeout(() => {
+        document.getElementById('toast').classList.add('show');
+        setTimeout(() => { document.getElementById('toast').classList.remove('show'); }, 4000);
+    }, 1000);
     
     if (!sessionStorage.getItem('infoModalShown')) {
         document.getElementById('infoModal').classList.add('active');
@@ -245,24 +246,16 @@ function startCountdown() {
 // ==========================================
 // 7. FAVORITES LOGIC
 // ==========================================
-// Restore favorites from local cache for instant star indicators
-try {
-    const cachedFavs = localStorage.getItem('zone_cached_favorites');
-    if (cachedFavs) favorites = JSON.parse(cachedFavs);
-} catch (e) {}
-
 function loadFavoritesFromFirebase() {
     if (!userId) return;
     onValue(ref(db, 'users/' + userId + '/favorites'), snapshot => {
         favorites = snapshot.val() || [];
-        try { localStorage.setItem('zone_cached_favorites', JSON.stringify(favorites)); } catch (e) {}
         renderGrid(currentPaginationPage); 
     });
 }
 
 function saveFavoritesToFirebase() {
     if (!userId) return;
-    try { localStorage.setItem('zone_cached_favorites', JSON.stringify(favorites)); } catch (e) {}
     set(ref(db, 'users/' + userId + '/favorites'), favorites);
 }
 
@@ -373,7 +366,6 @@ window.toggleNotifModal = function() {
 // ==========================================
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
-        clearCachedUser();
         signOut(auth).then(() => window.location.replace("index"));
     }
 }
@@ -392,17 +384,6 @@ onAuthStateChanged(auth, user => {
             const role = (data.role || "member").toLowerCase();
             const isAdm = role === 'admin';
             
-            // Persist to user cache for all pages
-            setCachedUser({
-                uid: user.uid,
-                email: user.email,
-                name: name,
-                profilePicture: pic,
-                role: role,
-                isAdmin: isAdm,
-                status: data.status || "approved"
-            });
-
             if(!window.isKickedOut) {
                 if(document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = name;
                 if(document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = user.email;
@@ -429,7 +410,6 @@ onAuthStateChanged(auth, user => {
         });
     } else {
         if(!window.isKickedOut) {
-            clearCachedUser();
             window.location.replace("index");
         }
     }

@@ -2,184 +2,217 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Zone Vault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Zone Vault – Private Community & Streaming</title>
   <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon-new.png" type="image/png">
   <meta name="theme-color" content="#050505">
 
-  <meta name="title" content="Zone Vault">
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="Zone Vault – Private Community & Streaming">
   <meta name="description" content="Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
-  <meta property="og:title" content="Zone Vault">
-  <meta property="og:description" content="Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
 
+  <!-- Open Graph / Facebook / Discord / Telegram -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Zone Vault">
+  <meta property="og:url" content="https://zonevault.site/">
+  <meta property="og:title" content="Zone Vault – Private Community & Streaming">
+  <meta property="og:description" content="Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
+  <meta property="og:image" content="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter / Discord Large Summary Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zonevault">
+  <meta name="twitter:title" content="Zone Vault – Private Community & Streaming">
+  <meta name="twitter:description" content="Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
+  <meta name="twitter:image" content="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png">
+
+  <!-- Google Fonts & Font Awesome -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Zone Vault",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "All",
+    "description": "Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar."
+  }
+  </script>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1B2RJ659GL');
+  </script>
+
+  <!-- Modular Stylesheet -->
   <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
 
-  <div id="auth-loader">
-      <div class="spinner"></div>
-      <div style="font-size: 12px; color: #888; letter-spacing: 1px;">ZONE VAULT</div>
-  </div>
-
   <div id="main-app-content">
-      <div class="bg-gradient"></div>
-      <div class="noise-overlay"></div>
-      <div id="particle-container"></div>
+    <div class="bg-gradient"></div>
+    <div class="noise-overlay"></div>
+    <div id="particle-container"></div>
 
-      <header id="navbar">
-        <div class="logo">
-          <img class="logo-img-desktop" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault">
-          <img class="logo-img-mobile" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/2_nratjn.png" alt="Zone Vault">
-        </div>
-        <div class="header-buttons">
-          <button class="nav-link" onclick="openAbout()">About</button>
-          <button class="btn-primary" onclick="openModal()" style="padding: 9px 22px; font-size: 12px;">Get Access</button>
-        </div>
-      </header>
+    <header id="navbar">
+      <div class="logo">
+        <img class="logo-img-desktop" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault">
+        <img class="logo-img-mobile" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/2_nratjn.png" alt="Zone Vault">
+      </div>
+      <div class="header-buttons">
+        <button class="nav-link" onclick="openAbout()">About</button>
+        <button class="btn-primary" onclick="openModal()" style="padding: 9px 22px; font-size: 12px;">Get Access</button>
+      </div>
+    </header>
 
-      <main>
-        <div class="hero-grid">
+    <main>
+      <div class="hero-grid">
+        <div class="welcome">
+          <div class="badge"><span class="dot"></span> Zone Vault 2.0</div>
+          <h1>Watch. Enjoy.<br><em>Stay private.</em></h1>
+          <p>Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.</p>
 
-          <div class="welcome">
-            <div class="badge"><span class="dot"></span> Zone Vault 2.0</div>
-            <h1>Watch. Enjoy.<br><em>Stay private.</em></h1>
-            <p>Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.</p>
-
-            <div class="cta-group">
-              <button onclick="openModal()" class="btn-primary">
-                  <i class="fas fa-lock"></i> Get Access
-              </button>
-              <a href="download" class="btn-outline">
-                 <i class="fab fa-android"></i> Download App
-              </a>
-            </div>
-
-          </div>
-
-        </div>
-      </main>
-
-      <div class="modal-overlay" id="welcomeModal" style="display:none;">
-        <div class="modal-box">
-          <div class="modal-header">
-            <span>Join Zone Vault</span>
-            <button class="close-btn" onclick="closeModal()">&times;</button>
-          </div>
-          <div class="modal-content">
-            <div style="width: 60px; height: 60px; background: var(--accent-dim); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(255,255,255,0.2);">
-                <i class="fas fa-lock" style="font-size: 24px; color: var(--accent);"></i>
-            </div>
-            <p>To maintain security and exclusivity, Zone Vault requires an account. Please log in or register to continue.</p>
-            <div class="modal-actions">
-              <a href="login" class="btn-primary btn-full">Log In to Account</a>
-              <a href="register" class="btn-outline btn-full">Create New Account</a>
-              <a href="code" class="btn-outline btn-full">Use Access Code</a>
-            </div>
+          <div class="cta-group">
+            <button onclick="openModal()" class="btn-primary">
+              <i class="fas fa-lock"></i> Get Access
+            </button>
+            <a href="download" class="btn-outline">
+              <i class="fab fa-android"></i> Download App
+            </a>
           </div>
         </div>
       </div>
+    </main>
 
-      <div class="modal-overlay" id="aboutModal" style="display:none;">
-        <div class="modal-box">
-          <div class="modal-header">
-            <span>Platform Overview</span>
-            <button class="close-btn" onclick="closeAbout()">&times;</button>
+    <!-- Welcome / Get Access Modal -->
+    <div class="modal-overlay" id="welcomeModal" style="display:none;">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span>Join Zone Vault</span>
+          <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-content">
+          <div style="width: 60px; height: 60px; background: var(--accent-dim); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(255,255,255,0.2);">
+            <i class="fas fa-lock" style="font-size: 24px; color: var(--accent);"></i>
           </div>
-          <div class="modal-content" style="text-align: left;">
-            <h2 style="margin-top:0;">How Zone Vault Works</h2>
-            <p>
-              Zone Vault is a private platform created for <strong>exclusive VODs</strong>.
-              We use a secure <strong>permission-based system</strong> to verify each user and ensure that only
-              approved accounts can access this site.
-            </p>
+          <p>To maintain security and exclusivity, Zone Vault requires an account. Please log in or register to continue.</p>
+          <div class="modal-actions">
+            <a href="login" class="btn-primary btn-full">Log In to Account</a>
+            <a href="register" class="btn-outline btn-full">Create New Account</a>
+            <a href="code" class="btn-outline btn-full">Use Access Code</a>
+          </div>
+        </div>
+      </div>
+    </div>
 
-            <h2>How Can I Get Access?</h2>
-            <p>
+    <!-- About / Overview Modal -->
+    <div class="modal-overlay" id="aboutModal" style="display:none;">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span>Platform Overview</span>
+          <button class="close-btn" onclick="closeAbout()">&times;</button>
+        </div>
+        <div class="modal-content" style="text-align: left;">
+          <h2 style="margin-top:0;">How Zone Vault Works</h2>
+          <p>
+            Zone Vault is a private platform created for <strong>exclusive VODs</strong>.
+            We use a secure <strong>permission-based system</strong> to verify each user and ensure that only
+            approved accounts can access this site.
+          </p>
+
+          <h2>How Can I Get Access?</h2>
+          <p>
             To access this site, you need to <strong>join one of the private streams</strong> we host. Before the stream day, the admin will <strong>send you a complete step-by-step guide</strong> on how to register, log in, and access the site properly.
-            </p>
+          </p>
 
-            <h2>How can i make sure my Information is Secured?</h2>
-            <p>
-              Your privacy and safety are our top priority. We do not store personal information on the site itself.
-              All user data—including your email and profile details—is securely stored in our
-              <strong>database</strong>.
-            </p>
-            <p>
-              For safety, please create a <strong>unique password</strong> specifically for Zone Vault and avoid reusing your email password.
-            </p>
+          <h2>How can I make sure my Information is Secured?</h2>
+          <p>
+            Your privacy and safety are our top priority. We do not store personal information on the site itself.
+            All user data—including your email and profile details—is securely stored in our
+            <strong>database</strong>.
+          </p>
+          <p>
+            For safety, please create a <strong>unique password</strong> specifically for Zone Vault and avoid reusing your email password.
+          </p>
 
-            <h2>How the Videos Works?</h2>
-            <p>
-              Zone Vault uses <strong>HLS (HTTP Live Streaming)</strong> with <strong>Plyr</strong>, providing smooth, adaptive
-              playback on all devices. Video sources are protected through database, preventing copying and sharing.
-            </p>
+          <h2>How the Videos Works?</h2>
+          <p>
+            Zone Vault uses <strong>HLS (HTTP Live Streaming)</strong> with <strong>Plyr</strong>, providing smooth, adaptive
+            playback on all devices. Video sources are protected through database, preventing copying and sharing.
+          </p>
 
-            <p>To improve performance and flexibility, we are now separating subtitles from the video files.</p>
+          <p>To improve performance and flexibility, we are now separating subtitles from the video files.</p>
 
-            <h3>Player Features</h3>
-            <ul>
-              <li>Double-tap left → rewind</li>
-              <li>Double-tap right → fast-forward</li>
-              <li>Double-tap center → pause/play</li>
-              <li>Hold for 3 seconds on desktop → show full controls</li>
-              <li>Auto-adjusting video quality based on internet speed</li>
-              <li>Responsive UI for all devices</li>
-            </ul>
+          <h3>Player Features</h3>
+          <ul>
+            <li>Double-tap left → rewind</li>
+            <li>Double-tap right → fast-forward</li>
+            <li>Double-tap center → pause/play</li>
+            <li>Hold for 3 seconds on desktop → show full controls</li>
+            <li>Auto-adjusting video quality based on internet speed</li>
+            <li>Responsive UI for all devices</li>
+          </ul>
 
-            <h2>How Can I Access the Videos?</h2>
-            <p>
-              Some videos are <strong>free</strong>, while others require access code.
-              But we have upgraded from access codes to a <strong>permission-access</strong>, allowing us (the admin)
-              to control or give the user a access on specific videos.
+          <h2>How Can I Access the Videos?</h2>
+          <p>
+            Some videos are <strong>free</strong>, while others require access code.
+            But we have upgraded from access codes to a <strong>permission-access</strong>, allowing us (the admin)
+            to control or give the user a access on specific videos.
+          </p>
 
-              This upgrade ensures fairness for everyone, and keeps the system more secure and organized.
-            </p>
+          <h2>Profile Features</h2>
+          <p>You can now personalize your profile with:</p>
+          <ul>
+            <li>Custom display name</li>
+            <li>Editable bio</li>
+            <li>Uploadable banner image</li>
+            <li>Auto-color adapting background based on your banner</li>
+          </ul>
 
-            <h2>Profile Features</h2>
-            <p>You can now personalize your profile with:</p>
-            <ul>
-              <li>Custom display name</li>
-              <li>Editable bio</li>
-              <li>Uploadable banner image</li>
-              <li>Auto-color adapting background based on your banner</li>
-            </ul>
+          <h2>Tips for the Best Experience</h2>
+          <ul>
+            <li>Use modern browsers like <strong>Chrome, Edge, or Safari</strong>.</li>
+            <li>Keep your browser updated for smooth playback.</li>
+            <li>Use a stable internet connection for the best video quality.</li>
+            <li>For support, contact the admin via email.</li>
+          </ul>
 
-            <h2>Tips for the Best Experience</h2>
-            <ul>
-              <li>Use modern browsers like <strong>Chrome, Edge, or Safari</strong>.</li>
-              <li>Keep your browser updated for smooth playback.</li>
-              <li>Use a stable internet connection for the best video quality.</li>
-              <li>For support, contact the admin via email.</li>
-            </ul>
-
-            <div style="margin-top: 30px; text-align: center;">
-                <button class="btn-primary" onclick="closeAbout()">Got it</button>
-            </div>
+          <div style="margin-top: 30px; text-align: center;">
+            <button class="btn-primary" onclick="closeAbout()">Got it</button>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="app-notification" id="appNotification">
-        <button class="app-notification-close" onclick="closeAppNotification()" aria-label="Close">&times;</button>
-        <div class="app-notification-icon">
-            <i class="fab fa-android"></i>
-        </div>
-        <div class="app-notification-text">
-            <h4>Get the App</h4>
-            <p>Experience Zone Vault seamlessly. Download the Android APK now!</p>
-        </div>
-        <a href="https://drive.usercontent.google.com/download?id=1yj5y_9FfKqFav3Je4HTY2500lkimF17u&export=download&authuser=2&confirm=t&uuid=f7a13376-b2a1-4327-bf8a-0be231c808ed&at=ABswASYmNuJI03pj_DEN8xDuK55K:1783503691864" class="btn-download" download>Download</a>
+    <!-- App Notification Banner -->
+    <div class="app-notification" id="appNotification">
+      <button class="app-notification-close" onclick="closeAppNotification()" aria-label="Close">&times;</button>
+      <div class="app-notification-icon">
+        <i class="fab fa-android"></i>
       </div>
+      <div class="app-notification-text">
+        <h4>Get the App</h4>
+        <p>Experience Zone Vault seamlessly. Download the Android APK now!</p>
+      </div>
+      <a href="https://drive.usercontent.google.com/download?id=1yj5y_9FfKqFav3Je4HTY2500lkimF17u&export=download&authuser=2&confirm=t&uuid=f7a13376-b2a1-4327-bf8a-0be231c808ed&at=ABswASYmNuJI03pj_DEN8xDuK55K:1783503691864" class="btn-download" download>Download</a>
+    </div>
 
   </div>
 
+  <!-- Modular Page Controller -->
   <script type="module" src="js/index.js"></script>
 </body>
 </html>

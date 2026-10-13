@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "node server.js",
     "build": "echo 'Build complete' && exit 0",
-    "lint": "node -e \"console.log('Lint passed')\"",
-    "start": "node server.js"
+    "start": "node server.js",
+    "lint": "node --check server.js"
   },
   "dependencies": {
     "express": "^4.21.2"

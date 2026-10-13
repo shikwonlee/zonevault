@@ -32,32 +32,24 @@
   gtag('config', 'G-1B2RJ659GL');
 </script>
 
-
-  <script>
-    (function() {
-        function applyTheme(theme) {
-            if (theme === "light" || theme === "#ffffff" || theme === "white") {
-                document.documentElement.classList.add("light-mode");
-                if (document.body) document.body.classList.add("light-mode");
-                const meta = document.querySelector('meta[name="theme-color"]');
-                if (meta) meta.setAttribute("content", "#f8f9fa");
-            } else {
-                document.documentElement.classList.remove("light-mode");
-                if (document.body) document.body.classList.remove("light-mode");
-                const meta = document.querySelector('meta[name="theme-color"]');
-                if (meta) meta.setAttribute("content", "#0a0a0c");
-            }
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('zoneVaultTheme');
+    if(savedTheme) {
+      const style = document.createElement('style');
+      style.innerHTML = `
+        body { 
+          background: ${savedTheme} !important; 
+          background-size: cover !important;
+          background-attachment: fixed !important;
+          background-repeat: no-repeat !important;
+          min-height: 100vh;
         }
-        const savedTheme = localStorage.getItem("zoneTheme") || localStorage.getItem("zoneVaultTheme");
-        if (savedTheme) { applyTheme(savedTheme); } 
-        else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) { applyTheme("light"); }
-
-        window.addEventListener("storage", (e) => {
-            if (e.key === "zoneTheme" || e.key === "zoneVaultTheme") { applyTheme(e.newValue); }
-        });
-    })();
-  </script>
-
+      `;
+      document.head.appendChild(style);
+    }
+  })();
+</script>
 
 <link rel="stylesheet" href="css/new_tour_inJapan_FukuokaShow.css">
   <link rel="stylesheet" href="css/new_tour_inJapan_FukuokaShow.css">
@@ -220,7 +212,6 @@ const playlistData = [
 
 const playlistContainer = document.getElementById('playlist-items');
 const posterContainer = document.getElementById('poster-container');
-if (posterContainer) { posterContainer.style.backgroundImage = 'url("https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png")'; }
 const playerContainer = document.getElementById('player-container');
 const mainTitle = document.getElementById('main-title');
 const playerBadge = document.getElementById('player-status-badge');

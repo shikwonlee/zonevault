@@ -5,21 +5,449 @@
   <title>Videos | Zone Vault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <!-- Video Player Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
+  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="icon" href="favicon-new.png" type="image/png" />
-  <link rel="manifest" href="manifest.json">
+  
   <meta name="theme-color" content="#0a0a0c">
 
-  <link rel="stylesheet" href="css/player.css">
+  <style>
+    /* === 1. VARIABLES & THEME ENGINE === */
+    :root {
+      --bg-color: #0a0a0c;
+      --bg-gradient: radial-gradient(circle at top right, #1a1a24, #0a0a0c);
+      --text-main: #fcfcfc;
+      --text-muted: #8e8e99;
+      --card-bg: #141418;
+      --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+      --accent: #a1a1aa;
+      --playlist-hover: rgba(255, 255, 255, 0.04);
+      --active-episode: rgba(161, 161, 170, 0.12); 
+      --active-border: rgba(161, 161, 170, 0.4); 
+    }
+
+    html.light-mode {
+      --bg-color: #f8f9fa;
+      --bg-gradient: radial-gradient(circle at top right, #ffffff, #f0f2f5);
+      --text-main: #111111;
+      --text-muted: #666666;
+      --card-bg: #ffffff;
+      --glass-border: 1px solid rgba(0, 0, 0, 0.08);
+      --accent: #52525b;
+      --playlist-hover: rgba(0, 0, 0, 0.03);
+      --active-episode: rgba(82, 82, 91, 0.08); 
+      --active-border: rgba(82, 82, 91, 0.4); 
+    }
+
+    *, *::before, *::after { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-color);
+      background-image: var(--bg-gradient);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 30px 24px;
+      min-height: 100vh;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .noise-overlay {
+      position: fixed; 
+      inset: 0;
+      width: 100%; 
+      height: 100%;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+      pointer-events: none; 
+      z-index: -1;
+    }
+
+    /* === 2. LAYOUT === */
+    .main-layout {
+      max-width: 1560px; 
+      width: 100%; 
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 992px) {
+      .main-layout { 
+        grid-template-columns: 1fr 380px; 
+        gap: 28px; 
+        align-items: start; 
+      }
+    }
+
+    @media (min-width: 1300px) {
+      .main-layout { 
+        grid-template-columns: 1fr 420px; 
+        gap: 32px; 
+      }
+    }
+
+    .video-wrapper-left { 
+      width: 100%; 
+      position: sticky; 
+      top: 24px; 
+      z-index: 5; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 16px; 
+    }
+
+    #poster-container {
+      width: 100%; 
+      aspect-ratio: 16/9; 
+      background-size: cover; 
+      background-position: center;
+      background-color: #000;
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer;
+      position: relative; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      border: var(--glass-border);
+      transition: transform 0.3s ease;
+    }
+
+    #poster-container::after {
+      content: ''; 
+      position: absolute; 
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%);
+      z-index: 1; 
+    }
+    #poster-container:hover { transform: scale(1.01); }
+
+    #poster-overlay {
+      background: rgba(20, 20, 25, 0.85); 
+      border: 1px solid rgba(255, 255, 255, 0.25); 
+      padding: 14px 32px; 
+      border-radius: 40px;
+      color: white; 
+      font-weight: 700; 
+      font-size: 13px; 
+      text-transform: uppercase; 
+      letter-spacing: 2px;
+      z-index: 2; 
+      backdrop-filter: blur(8px);
+    }
+
+    /* === 3. PLAYER CONTAINER === */
+    #player-container { 
+      display: none; 
+      width: 100%; 
+      aspect-ratio: 16/9; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      position: relative; 
+      background: #000; 
+      border: var(--glass-border);
+    }
+
+    .art-video-player { 
+      width: 100% !important; 
+      height: 100% !important; 
+    }
+
+    /* Gestures overlay */
+    .gesture-overlay { 
+      position: absolute; 
+      inset: 0;
+      pointer-events: none; 
+      overflow: hidden; 
+      z-index: 20; 
+    }
+
+    .gesture-icon {
+      position: absolute; 
+      top: 50%; 
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7); 
+      border-radius: 50%; 
+      width: 58px; 
+      height: 58px;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      color: white; 
+      font-weight: 700; 
+      font-size: 11px;
+      opacity: 0; 
+      transition: opacity 0.2s;
+    }
+
+    .gesture-icon svg { 
+      width: 22px; 
+      height: 22px; 
+      fill: white; 
+      display: block; 
+      margin: 0 auto; 
+    }
+
+    .gesture-icon.active { 
+      opacity: 1; 
+      animation: popFade 0.5s forwards; 
+    }
+
+    @keyframes popFade {
+      0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+      30% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    /* Layers: Next Ep & Skip Intro */
+    .art-layer-nextEpLayer, .art-layer-skipIntroLayer {
+      position: absolute !important;
+      bottom: 60px !important;
+      right: 20px !important;
+      z-index: 30 !important;
+    }
+
+    .next-ep-btn, .skip-intro-btn {
+      background: rgba(15, 15, 20, 0.85); 
+      border: 1px solid rgba(255, 255, 255, 0.25); 
+      color: white; 
+      padding: 8px 16px; 
+      border-radius: 6px; 
+      font-size: 12px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .next-ep-btn:hover, .skip-intro-btn:hover {
+      background: rgba(255, 255, 255, 0.95);
+      color: #000;
+      transform: scale(1.04);
+    }
+
+    /* Subtitles */
+    .art-subtitle {
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 19px !important;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    /* === 4. TITLE CARD === */
+    .title-box {
+      width: 100%; 
+      background: var(--card-bg); 
+      border: var(--glass-border);
+      border-radius: 14px; 
+      padding: 18px 22px; 
+    }
+
+    .title-box .current-episode-label {
+      font-size: 10px; 
+      font-weight: 800; 
+      color: var(--accent); 
+      text-transform: uppercase;
+      letter-spacing: 2px; 
+      margin-bottom: 8px; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px;
+    }
+
+    .title-box .current-episode-label::before {
+      content: ''; 
+      width: 6px; 
+      height: 6px; 
+      background: var(--accent); 
+      border-radius: 50%;
+      display: inline-block; 
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    #main-title {
+      font-size: 18px; 
+      font-weight: 700; 
+      color: var(--text-main); 
+      line-height: 1.35;
+      letter-spacing: -0.3px;
+    }
+
+    #main-title:empty::before { 
+      content: 'Select an episode'; 
+      color: var(--text-muted); 
+      font-weight: 500; 
+    }
+
+    /* === 5. PLAYLIST SECTION === */
+    #playlist { 
+      width: 100%; 
+    }
+
+    .playlist-card {
+      background: var(--card-bg); 
+      border: var(--glass-border); 
+      border-radius: 16px; 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      max-height: calc(100vh - 120px); 
+    }
+
+    .playlist-header {
+      padding: 18px 20px 14px; 
+      border-bottom: var(--glass-border); 
+      font-size: 11px; 
+      font-weight: 800; 
+      color: var(--accent); 
+      text-transform: uppercase; 
+      letter-spacing: 2px; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
+
+    .playlist-header::before {
+      content: ''; 
+      width: 5px; 
+      height: 5px; 
+      background: var(--accent); 
+      border-radius: 50%; 
+    }
+
+    #playlist-items { 
+      padding: 12px; 
+      overflow-y: auto; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px; 
+    }
+
+    #playlist-items::-webkit-scrollbar { width: 5px; }
+    #playlist-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 8px; }
+
+    .playlist-item {
+      display: flex; 
+      align-items: center; 
+      gap: 14px; 
+      padding: 8px; 
+      border-radius: 12px; 
+      background: transparent; 
+      border: 1px solid transparent; 
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease; 
+      cursor: pointer; 
+    }
+
+    .playlist-item:hover { 
+      background: var(--playlist-hover); 
+      transform: translateX(2px);
+    }
+
+    .playlist-item.active { 
+      background: var(--active-episode); 
+      border: 1px solid var(--active-border); 
+    }
+
+    /* Fixed Thumbnail Framing */
+    .playlist-img-wrapper {
+      position: relative; 
+      width: 110px; 
+      aspect-ratio: 16/9;
+      flex-shrink: 0; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      background-color: #000;
+    }
+
+    .playlist-img-wrapper img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      object-position: center;
+      display: block;
+    }
+
+    .playlist-text { 
+      display: flex; 
+      flex-direction: column; 
+      flex: 1; 
+      min-width: 0; 
+      gap: 4px;
+    }
+
+    .playlist-title { 
+      font-size: 13px; 
+      font-weight: 600; 
+      color: var(--text-main); 
+      line-height: 1.35; 
+      display: -webkit-box; 
+      -webkit-line-clamp: 2; 
+      -webkit-box-orient: vertical; 
+      overflow: hidden; 
+    }
+
+    .playlist-item.active .playlist-title { 
+      color: #fff; 
+    }
+
+    .playing-indicator { 
+      display: none; 
+      align-items: center; 
+      gap: 3px; 
+      margin-left: auto; 
+      padding-right: 6px; 
+    }
+
+    .playlist-item.active .playing-indicator { 
+      display: flex; 
+    }
+
+    .bar {
+      width: 3px; 
+      height: 12px; 
+      background: var(--accent); 
+      border-radius: 2px; 
+      animation: sound 1s ease-in-out infinite; 
+    }
+    .bar:nth-child(2) { animation-delay: 0.15s; height: 16px; }
+    .bar:nth-child(3) { animation-delay: 0.3s; height: 8px; }
+    .playlist-item.is-paused .bar { animation-play-state: paused; }
+
+    @keyframes sound {
+      0%, 100% { height: 6px; }
+      50% { height: 16px; }
+    }
+
+    .back-to-video-btn {
+      display: inline-flex; 
+      align-items: center; 
+      gap: 8px;
+      position: fixed; 
+      bottom: 24px; 
+      left: 24px; 
+      z-index: 100;
+      color: var(--text-muted); 
+      text-decoration: none; 
+      font-size: 13px; 
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .back-to-video-btn:hover { color: #fff; }
+  </style>
 </head>
 
 <body>
@@ -34,8 +462,8 @@
     <div id="player-container">
        <div id="artplayer" class="art-video-player"></div>
        
-       <!-- Covers the upper 80% only so Artplayer controls are 100% clickable -->
-       <div id="click-catcher" style="position:absolute; top:0; left:0; width:100%; height:calc(100% - 55px); z-index:12;"></div>
+       <!-- Binigyan ng space ang ibaba para malayang ma-click ang controls nang walang obstruction -->
+       <div id="click-catcher" style="position:absolute; top:0; left:0; width:100%; height:calc(100% - 56px); z-index:10;"></div>
        
        <div class="gesture-overlay">
            <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
@@ -78,6 +506,358 @@
   <i class="fas fa-arrow-left"></i> Back to Video
 </a>
 
-<script src="js/inthesoop2-N12X5R25-74K2.js"></script>
+<script>
+  // ========================================================
+  // 1. THEME ENGINE & ACCESS CONTROL
+  // ========================================================
+  (function initTheme() {
+    function applyTheme(t) {
+      const isLight = t === 'light' || t === '#ffffff' || t === 'white';
+      document.documentElement.classList.toggle('light-mode', isLight);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', isLight ? '#f8f9fa' : '#0a0a0c');
+    }
+    const saved = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme');
+    if (saved) { applyTheme(saved); }
+    else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) { applyTheme('light'); }
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'zoneTheme' || e.key === 'zoneVaultTheme') applyTheme(e.newValue);
+    });
+  })();
+
+  // ========================================================
+  // 2. FIREBASE SETUP
+  // ========================================================
+  (function initFirebase() {
+    const cfg = {
+      apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+      authDomain: "tvnstream-b4497.firebaseapp.com",
+      databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+      projectId: "tvnstream-b4497",
+      storageBucket: "tvnstream-b4497.appspot.com",
+      messagingSenderId: "308384754214",
+      appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
+    };
+    if (typeof firebase !== "undefined" && !firebase.apps.length) {
+      firebase.initializeApp(cfg);
+    }
+  })();
+
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+  // ========================================================
+  // 3. PLAYLIST DATA & ELEMENTS
+  // ========================================================
+  const playlistData = [
+    { id: "1", epNum: "EP1", title: "READY TO TIME OFF", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+    { id: "2", epNum: "EP2", title: "Thank you for your support", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+    { id: "3", epNum: "EP3", title: "Your smile is the most brilliant thing in the world", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+    { id: "4", epNum: "EP4", title: "It's been another exciting day.", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+    { id: "5", epNum: "EP5", title: "우리 추억 더 밝게 빛나고", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
+    { id: "6", epNum: "EP6", title: "Remember, We're Always Together", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 }
+  ];
+
+  let art = null;
+  let episodeLoadToken = 0;
+  let currentHistoryKey = null;
+  let lastSavedHistory = null;
+  window.currentEpData = null;
+
+  const playlistContainer = document.getElementById('playlist-items');
+  const posterContainer = document.getElementById('poster-container');
+  const playerContainer = document.getElementById('player-container');
+  const mainTitle = document.getElementById('main-title');
+
+  if (posterContainer && playlistData.length > 0) {
+    posterContainer.style.backgroundImage = `url('${playlistData[0].image}')`;
+  }
+
+  function cleanupPlayer() {
+    if (art && art.hls) {
+      art.hls.destroy();
+      art.hls = null;
+    }
+    if (art) {
+      art.destroy(false);
+      art = null;
+    }
+  }
+
+  window.playNextEpisodeGlobal = function() {
+    if (!window.currentEpData) return;
+    const idx = playlistData.findIndex(item => item.id === window.currentEpData.id);
+    if (idx >= 0 && idx < playlistData.length - 1) {
+      loadAndPlayEpisode(playlistData[idx + 1].id, true);
+    }
+  };
+
+  window.skipIntroGlobal = function() {
+    if (!art || !window.introEndTime) return;
+    art.currentTime = window.introEndTime;
+    art.notice.show = 'Intro Skipped';
+    window.hasSkippedIntro = true;
+    if (art.layers.skipIntroLayer) art.layers.skipIntroLayer.style.display = 'none';
+  };
+
+  // ========================================================
+  // 4. LOAD & INITIALIZE ARTPLAYER
+  // ========================================================
+  async function loadAndPlayEpisode(epId, updateUrl = true) {
+    const ep = playlistData.find(item => item.id === epId);
+    if (!ep) return;
+
+    const loadToken = ++episodeLoadToken;
+    const historyKey = `${ep.id}_inthesoop2`;
+
+    if (updateUrl) {
+      history.pushState({ id: ep.id }, '', `${window.location.pathname}?v=${encodeURIComponent(ep.id)}`);
+    }
+
+    window.currentEpData = ep;
+    window.introEndTime = ep.introEnd || 0;
+    window.hasSkippedIntro = false;
+    currentHistoryKey = historyKey;
+
+    posterContainer.style.display = 'none';
+    playerContainer.style.display = 'block';
+
+    document.querySelectorAll('.playlist-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.id === epId);
+      item.classList.remove('is-paused');
+    });
+
+    let snapshot;
+    try {
+      snapshot = await db.ref(`inthesoop2/${ep.id}`).once('value');
+    } catch (e) {
+      if (loadToken === episodeLoadToken) alert('Failed to connect to video server.');
+      return;
+    }
+
+    if (loadToken !== episodeLoadToken) return;
+    const data = snapshot.val();
+    if (!data || !data.url) {
+      alert('Video source is not available.');
+      return;
+    }
+
+    mainTitle.textContent = `${ep.epNum}. ${data.title || ep.title}`;
+    cleanupPlayer();
+
+    const subtitles = [];
+    if (data.subtitles) {
+      if (typeof data.subtitles === 'string') {
+        subtitles.push({ html: 'SUBTITLES', url: data.subtitles, default: true });
+      } else if (typeof data.subtitles === 'object') {
+        Object.entries(data.subtitles).forEach(([lang, url]) => {
+          subtitles.push({ html: String(lang).toUpperCase(), url, default: String(lang).toLowerCase() === 'en' });
+        });
+      }
+    }
+
+    const defaultSubtitle = subtitles.find(s => s.default) || subtitles[0];
+
+    // Artplayer Setup
+    art = new Artplayer({
+      container: '#artplayer',
+      url: data.url,
+      title: data.title || ep.title,
+      poster: ep.image,
+      volume: 0.7,
+      autoplay: true,
+      setting: true,
+      fullscreen: true,
+      fullscreenWeb: true,
+      miniProgressBar: true,
+      playsInline: true,
+      theme: '#a1a1aa',
+      subtitle: {
+        url: defaultSubtitle ? defaultSubtitle.url : '',
+        type: 'vtt',
+        encoding: 'utf-8'
+      },
+      customType: {
+        m3u8(video, url, artInstance) {
+          if (artInstance && artInstance.hls) artInstance.hls.destroy();
+          if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            artInstance.hls = hls;
+
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+              const levels = hls.levels.map((level, index) => ({
+                html: (level.height ? level.height + 'P' : 'Auto'),
+                index: index
+              }));
+              levels.unshift({ html: 'Auto', index: -1, default: true });
+              artInstance.setting.update({
+                name: 'quality', width: 140, html: 'Quality', tooltip: 'Auto',
+                selector: levels.map(item => ({ html: item.html, default: item.default, url: '#', $index: item.index })),
+                onSelect: function (item) { hls.currentLevel = item.$index; return item.html; }
+              });
+            });
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+          }
+        }
+      }
+    });
+
+    // Subtitles Menu
+    if (subtitles.length) {
+      art.setting.add({
+        html: 'Subtitles', width: 180,
+        selector: subtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
+        onSelect(item) {
+          art.subtitle.switch(item.url, { name: item.html });
+          return item.html;
+        }
+      });
+    }
+
+    // Layers
+    art.layers.add({
+      name: 'nextEpLayer',
+      html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
+      style: { display: 'none' }
+    });
+    art.layers.nextEpLayer?.querySelector('.next-ep-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.playNextEpisodeGlobal();
+    });
+
+    art.layers.add({
+      name: 'skipIntroLayer',
+      html: '<button type="button" class="skip-intro-btn">Skip Intro</button>',
+      style: { display: 'none' }
+    });
+    art.layers.skipIntroLayer?.querySelector('.skip-intro-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.skipIntroGlobal();
+    });
+
+    // Playback state syncing
+    art.on('play', () => document.querySelectorAll('.playlist-item.active').forEach(i => i.classList.remove('is-paused')));
+    art.on('pause', () => document.querySelectorAll('.playlist-item.active').forEach(i => i.classList.add('is-paused')));
+
+    art.on('video:timeupdate', () => {
+      if (!art || !window.currentEpData) return;
+      const now = Date.now();
+
+      // Show Next Ep layer near end of duration
+      if (art.duration > 0 && art.layers.nextEpLayer) {
+        const idx = playlistData.findIndex(item => item.id === window.currentEpData.id);
+        const hasNext = idx >= 0 && idx < playlistData.length - 1;
+        art.layers.nextEpLayer.style.display = (art.duration - art.currentTime <= 50 && hasNext) ? 'block' : 'none';
+      }
+
+      // Show Skip Intro
+      if (window.introEndTime > 0 && art.layers.skipIntroLayer) {
+        art.layers.skipIntroLayer.style.display = (!window.hasSkippedIntro && art.currentTime > 0 && art.currentTime < window.introEndTime) ? 'block' : 'none';
+      }
+
+      // Sync Watch History
+      if (auth.currentUser && !art.video.paused && (!lastSavedHistory || now - lastSavedHistory > 5000)) {
+        db.ref(`watchHistory/${auth.currentUser.uid}/${currentHistoryKey}`).update({
+          id: ep.id,
+          title: ep.title,
+          currentTime: Math.floor(art.currentTime),
+          duration: Math.floor(art.duration || 0),
+          timestamp: now
+        }).catch(() => {});
+        lastSavedHistory = now;
+      }
+    });
+
+    // Resume position
+    if (auth.currentUser) {
+      db.ref(`watchHistory/${auth.currentUser.uid}/${historyKey}`).once('value').then(snap => {
+        const hist = snap.val();
+        if (hist && hist.currentTime > 5 && hist.currentTime < (art.duration - 10)) {
+          art.currentTime = hist.currentTime;
+          art.notice.show = 'Playback Resumed';
+        }
+      }).catch(() => {});
+    }
+  }
+
+  // ========================================================
+  // 5. GESTURES & EVENTS
+  // ========================================================
+  const catcher = document.getElementById('click-catcher');
+  let clickTimer = null;
+  let lastTap = 0;
+
+  function showGesture(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 500);
+  }
+
+  if (catcher) {
+    catcher.addEventListener('click', (e) => {
+      if (!art) return;
+      const now = Date.now();
+      const diff = now - lastTap;
+      const rect = catcher.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+
+      if (diff < 300 && diff > 0) {
+        clearTimeout(clickTimer);
+        if (x < rect.width * 0.35) {
+          art.currentTime = Math.max(0, art.currentTime - 10);
+          showGesture('icon-rewind');
+        } else if (x > rect.width * 0.65) {
+          art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
+          showGesture('icon-forward');
+        } else {
+          art.toggle();
+        }
+      } else {
+        clickTimer = setTimeout(() => {
+          art.toggle();
+          showGesture(art.playing ? 'icon-play' : 'icon-pause');
+        }, 250);
+      }
+      lastTap = now;
+    });
+  }
+
+  posterContainer?.addEventListener('click', () => {
+    if (playlistData.length) loadAndPlayEpisode(playlistData[0].id, true);
+  });
+
+  // Render Playlists
+  playlistData.forEach(ep => {
+    const item = document.createElement('div');
+    item.className = 'playlist-item';
+    item.dataset.id = ep.id;
+
+    item.innerHTML = `
+      <div class="playlist-img-wrapper">
+        <img src="${ep.image}" alt="${ep.title}" loading="lazy">
+      </div>
+      <div class="playlist-text">
+        <span class="playlist-title">${ep.epNum}. ${ep.title}</span>
+      </div>
+      <div class="playing-indicator">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+    `;
+
+    item.addEventListener('click', () => loadAndPlayEpisode(ep.id, true));
+    playlistContainer.appendChild(item);
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('v');
+    if (v) setTimeout(() => loadAndPlayEpisode(v, false), 400);
+  });
+</script>
 </body>
 </html>

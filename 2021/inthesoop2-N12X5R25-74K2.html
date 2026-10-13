@@ -5,38 +5,24 @@
   <title>Videos | Zone Vault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-  <!-- Preconnect & Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <link rel="icon" href="favicon-new.png" type="image/png" />
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0a0c">
-
-  <meta name="apple-mobile-web-app-title" content="Zone Vault">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" sizes="192x192" href="favicon-new.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="favicon-new.png">
-  <link rel="apple-touch-startup-image" href="splash.png">
-
-  <!-- Core Libraries -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-  <!-- Google Tag Manager -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0a0c">
 
   <link rel="stylesheet" href="css/player.css">
 </head>
 
 <body>
-
 <div class="noise-overlay"></div>
 
 <div class="main-layout">
@@ -45,43 +31,45 @@
       <div id="poster-overlay">Play Episode</div>
     </div>
 
-    <div id="player-container" style="display: none;">
-      <div id="artplayer" class="art-video-player"></div>
-      
-      <div id="click-catcher"></div>
-      <div class="gesture-overlay">
-        <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
-          <div>
-            <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
-            <span>-10s</span>
-          </div>
-        </div>
-        <div id="icon-forward" class="gesture-icon" style="left: 80%;">
-          <div>
-            <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
-            <span>+10s</span>
-          </div>
-        </div>
-        <div id="icon-play" class="gesture-icon" style="left: 50%;">
-          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-        </div>
-        <div id="icon-pause" class="gesture-icon" style="left: 50%;">
-          <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-        </div>
-      </div>
+    <div id="player-container">
+       <div id="artplayer" class="art-video-player"></div>
+       
+       <!-- Covers the upper 80% only so Artplayer controls are 100% clickable -->
+       <div id="click-catcher" style="position:absolute; top:0; left:0; width:100%; height:calc(100% - 55px); z-index:12;"></div>
+       
+       <div class="gesture-overlay">
+           <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
+               <div>
+                   <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
+                   <span>-10s</span>
+               </div>
+           </div>
+           <div id="icon-forward" class="gesture-icon" style="left: 80%;">
+               <div>
+                   <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
+                   <span>+10s</span>
+               </div>
+           </div>
+           <div id="icon-play" class="gesture-icon" style="left: 50%;">
+               <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+           </div>
+           <div id="icon-pause" class="gesture-icon" style="left: 50%;">
+               <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+           </div>
+       </div>
     </div>
 
     <!-- TITLE BOX BELOW VIDEO -->
     <div class="title-box">
-      <div class="current-episode-label">Now Playing</div>
-      <h2 id="main-title"></h2>
+        <div class="current-episode-label">Now Playing</div>
+        <h2 id="main-title"></h2>
     </div>
   </div>
 
   <div id="playlist">
     <div class="playlist-card">
-      <div class="playlist-header">Episodes</div>
-      <div id="playlist-items"></div>
+        <div class="playlist-header">Episodes</div>
+        <div id="playlist-items"></div>
     </div>
   </div>
 </div> 
@@ -90,7 +78,6 @@
   <i class="fas fa-arrow-left"></i> Back to Video
 </a>
 
-<!-- Embed or link the script below -->
 <script src="js/inthesoop2-N12X5R25-74K2.js"></script>
 </body>
 </html>

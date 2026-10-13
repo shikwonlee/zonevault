@@ -2,21 +2,16 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { secretRouter } from './api/secret.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
-// Security headers & iFrame preview compatibility
+// Security & iFrame preview compatibility
 app.use((req, res, next) => {
   res.removeHeader('X-Frame-Options');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Anti-cache headers: ensures user side gets latest commit changes immediately
   const p = req.path.toLowerCase();
@@ -32,39 +27,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// High-speed in-memory rate limiter for API endpoints (prevents scraping & spam with 0 lag)
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const MAX_REQUESTS_PER_WINDOW = 60;
-
-const apiRateLimiter = (req, res, next) => {
-  const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-  const now = Date.now();
-  let clientRecord = rateLimitMap.get(ip);
-
-  if (!clientRecord || (now - clientRecord.startTime > RATE_LIMIT_WINDOW_MS)) {
-    clientRecord = { count: 1, startTime: now };
-    rateLimitMap.set(ip, clientRecord);
-  } else {
-    clientRecord.count++;
-  }
-
-  if (rateLimitMap.size > 1500) {
-    for (const [k, v] of rateLimitMap.entries()) {
-      if (now - v.startTime > RATE_LIMIT_WINDOW_MS) rateLimitMap.delete(k);
-    }
-  }
-
-  if (clientRecord.count > MAX_REQUESTS_PER_WINDOW) {
-    res.setHeader('Retry-After', '60');
-    return res.status(429).json({ error: 'Too many requests. Please wait a moment.' });
-  }
-
-  next();
-};
-
 // Centralized API Endpoint for Firebase configuration (keeps keys hidden from frontend code)
-app.get('/api/firebase-config', apiRateLimiter, (req, res) => {
+app.get('/api/firebase-config', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.json({
     apiKey: process.env.FIREBASE_API_KEY || "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
@@ -77,10 +41,6 @@ app.get('/api/firebase-config', apiRateLimiter, (req, res) => {
     measurementId: "G-VFNH70R4D9"
   });
 });
-
-// Centralized Protected Router for Video Streams & M3U8 metadata (/api/secret.js)
-// Hides direct Firebase Realtime Database queries and secures stream URLs for 2021-2026 collections
-app.use('/api/secret', apiRateLimiter, secretRouter);
 
 // Helper for caching headers
 const applyStaticHeaders = (res, filePath) => {

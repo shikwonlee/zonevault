@@ -4,24 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Videos | Zone Vault</title>
-  <meta name="description" content="Watch high-definition concert streams, world tours, and special gifts on Zone Vault.">
-  <link rel="icon" href="favicon-new.png" type="image/png">
-  <meta name="theme-color" content="#050505">
-
-  <!-- Open Graph / Social Sharing -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Zone Vault">
-  <meta property="og:title" content="Videos & Concerts | Zone Vault">
-  <meta property="og:description" content="Watch high-definition concert streams, world tours, and special gifts on Zone Vault.">
-  <meta property="og:image" content="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-
-  <!-- Twitter / X -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Videos & Concerts | Zone Vault">
-  <meta name="twitter:description" content="Watch high-definition concert streams, world tours, and special gifts on Zone Vault.">
-  <meta name="twitter:image" content="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png">
+   
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="prefetch" href="home">
@@ -29,8 +15,6 @@
   <link rel="prefetch" href="profile">
 
   <link rel="stylesheet" href="css/videos.css">
-  <link rel="stylesheet" href="css/skeleton.css">
-  <link rel="stylesheet" href="css/toast.css">
 </head>
 <body>
 <!-- toast removed -->
@@ -117,73 +101,10 @@
     <h1 class="page-title">Videos</h1>
 
     <div class="filter-bar">
-        <div class="category-chips" id="categoryChips">
-            <div class="skeleton skeleton-chip"></div>
-            <div class="skeleton skeleton-chip"></div>
-            <div class="skeleton skeleton-chip"></div>
-            <div class="skeleton skeleton-chip"></div>
-            <div class="skeleton skeleton-chip"></div>
-        </div>
+        <div class="category-chips" id="categoryChips"></div>
     </div>
 
-    <div class="grid-container" id="grid">
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-        <div class="skeleton-video-card">
-            <div class="skeleton skeleton-thumb"></div>
-            <div class="skeleton-info">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line medium"></div>
-            </div>
-        </div>
-    </div>
+    <div class="grid-container" id="grid"></div>
      
     <div id="pagination"></div>
 </div>

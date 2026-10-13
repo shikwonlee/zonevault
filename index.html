@@ -3,56 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Zone Vault — Private & Exclusive Media Vault</title>
+  <title>Zone Vault</title>
   <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon-new.png" type="image/png">
   <meta name="theme-color" content="#050505">
 
-  <!-- Primary Meta Tags -->
-  <meta name="title" content="Zone Vault — Private & Exclusive Media Vault">
+  <meta name="title" content="Zone Vault">
   <meta name="description" content="Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
-  <meta name="keywords" content="zone vault, private streaming, exclusive vod, private community, hls player">
-  <meta name="author" content="Zone Vault">
-  <meta name="robots" content="index, follow">
-
-  <!-- Open Graph / Facebook / Messenger / Discord / Telegram -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Zone Vault">
-  <meta property="og:title" content="Zone Vault — Private & Exclusive Media Vault">
-  <meta property="og:description" content="A private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
-  <meta property="og:image" content="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png">
-  <meta property="og:image:secure_url" content="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png">
-  <meta property="og:image:type" content="image/png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Zone Vault Brand Logo">
-
-  <!-- Twitter / X Cards -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="@zonevault">
-  <meta name="twitter:creator" content="@zonevault">
-  <meta name="twitter:title" content="Zone Vault — Private & Exclusive Media Vault">
-  <meta name="twitter:description" content="A private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
-  <meta name="twitter:image" content="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png">
-  <meta name="twitter:image:alt" content="Zone Vault Brand Logo">
-
-  <!-- Structured Data (JSON-LD) -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "Zone Vault",
-    "applicationCategory": "MultimediaApplication",
-    "operatingSystem": "All",
-    "description": "Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    }
-  }
-  </script>
+  <meta property="og:title" content="Zone Vault">
+  <meta property="og:description" content="Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,29 +20,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <link rel="stylesheet" href="css/index.css">
-  <link rel="stylesheet" href="css/skeleton.css">
 </head>
 <body>
 
-  <div id="auth-loader" class="skeleton-screen-overlay">
-      <div class="skeleton-header">
-        <div class="skeleton skeleton-logo"></div>
-        <div class="skeleton-header-actions">
-          <div class="skeleton skeleton-nav-btn"></div>
-          <div class="skeleton skeleton-cta-btn"></div>
-        </div>
-      </div>
-      <div class="skeleton-hero-body">
-        <div class="skeleton skeleton-badge"></div>
-        <div class="skeleton skeleton-hero-title-1"></div>
-        <div class="skeleton skeleton-hero-title-2"></div>
-        <div class="skeleton skeleton-hero-desc-1"></div>
-        <div class="skeleton skeleton-hero-desc-2"></div>
-        <div class="skeleton-cta-row">
-          <div class="skeleton skeleton-btn-primary"></div>
-          <div class="skeleton skeleton-btn-outline"></div>
-        </div>
-      </div>
+  <div id="auth-loader">
+      <div class="spinner"></div>
+      <div style="font-size: 12px; color: #888; letter-spacing: 1px;">ZONE VAULT</div>
   </div>
 
   <div id="main-app-content">
@@ -105,11 +48,11 @@
         <div class="hero-grid">
 
           <div class="welcome">
-            <div class="badge reveal-on-scroll reveal-delay-1"><span class="dot"></span> Zone Vault 2.0</div>
-            <h1 class="reveal-on-scroll reveal-delay-2">Watch. Enjoy.<br><em>Stay private.</em></h1>
-            <p class="reveal-on-scroll reveal-delay-3">Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.</p>
+            <div class="badge"><span class="dot"></span> Zone Vault 2.0</div>
+            <h1>Watch. Enjoy.<br><em>Stay private.</em></h1>
+            <p>Zone Vault is a private, invite-only space built for a select community — secure, permission-based, and kept off the public radar.</p>
 
-            <div class="cta-group reveal-on-scroll reveal-delay-4">
+            <div class="cta-group">
               <button onclick="openModal()" class="btn-primary">
                   <i class="fas fa-lock"></i> Get Access
               </button>
@@ -118,24 +61,6 @@
               </a>
             </div>
 
-          </div>
-
-          <div class="features-preview">
-            <div class="feature-card reveal-on-scroll reveal-delay-2">
-              <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
-              <h3>Permission Gated</h3>
-              <p>Granular access control verified against secure cloud records. No public registrations.</p>
-            </div>
-            <div class="feature-card reveal-on-scroll reveal-delay-3">
-              <div class="feature-icon"><i class="fas fa-video"></i></div>
-              <h3>HLS Streaming</h3>
-              <p>Buffer-free adaptive playback powered by Plyr with gesture controls and custom subtitles.</p>
-            </div>
-            <div class="feature-card reveal-on-scroll reveal-delay-4">
-              <div class="feature-icon"><i class="fas fa-lock"></i></div>
-              <h3>Private & Secure</h3>
-              <p>Protected source endpoints with encrypted sessions to keep the community shielded.</p>
-            </div>
           </div>
 
         </div>

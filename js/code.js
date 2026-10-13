@@ -5,8 +5,6 @@ import {
   ref, onValue, get, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
-import { setCachedUser } from "./user-cache.js";
-import { showToast } from "./toast.js";
 
 console.log("✅ Code.js (Quick Access) loaded!");
 
@@ -53,7 +51,7 @@ window.quickCodeLogin = async function() {
   let nickname = document.getElementById("guest-name").value.trim();
   const btn = document.getElementById("btn-quick-login");
   
-  if (!code) return showToast("Please enter your access code.", "warning");
+  if (!code) return alert("Please enter your access code.");
   if (!nickname) nickname = "Guest_" + Math.floor(Math.random() * 10000);
 
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
@@ -67,7 +65,7 @@ window.quickCodeLogin = async function() {
       const codeData = snapshot.val();
       
       if (codeData.used === true) {
-         showToast("This code has already been used.", "error");
+         alert("❌ This code has already been used.");
          btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
          return;
       }
@@ -95,17 +93,7 @@ window.quickCodeLogin = async function() {
 
         await Promise.all([userProfilePromise, markCodeUsedPromise]);
 
-        // Session Setup & Cache
-        setCachedUser({
-          uid: uid,
-          email: dummyEmail,
-          name: nickname,
-          profilePicture: "https://via.placeholder.com/150",
-          status: "approved",
-          role: "guest",
-          accessID: newAccessID,
-          isAdmin: false
-        });
+        // Session Setup
         sessionStorage.setItem("internalAccess", "true");
         sessionStorage.setItem("fromIndex", "true");
         sessionStorage.setItem("accessID", newAccessID);
@@ -114,16 +102,16 @@ window.quickCodeLogin = async function() {
         show("approved");
         setTimeout(() => { window.location.href = `home.html?access=${newAccessID}`; }, 1200);
       } else {
-        showToast("This access code has expired.", "error");
+        alert("❌ This access code has expired.");
         btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
       }
     } else {
-      showToast("Invalid access code. Please check your spelling.", "error");
+      alert("❌ Invalid access code. Please check your spelling.");
       btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
     }
   } catch (error) {
     console.error(error);
-    showToast("An error occurred. Please try again.", "error");
+    alert("An error occurred. Please try again.");
     btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
   }
 };

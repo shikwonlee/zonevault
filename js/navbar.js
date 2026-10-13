@@ -62,20 +62,9 @@ export function initHeaderScrollBehavior() {
   }, { passive: true });
 }
 
-// Clean up any stray scrollTopBtn if present
-export function removeScrollTopBtn() {
-  if (typeof document === 'undefined') return;
-  const existing = document.getElementById('scrollTopBtn');
-  if (existing) existing.remove();
-}
-
 // Auto-run on DOM ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initHeaderScrollBehavior();
-    removeScrollTopBtn();
-  });
+  document.addEventListener('DOMContentLoaded', initHeaderScrollBehavior);
 } else {
   initHeaderScrollBehavior();
-  removeScrollTopBtn();
 }

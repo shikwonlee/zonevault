@@ -111,13 +111,13 @@
     /* Fixed bottom-left back button, plain text, no box */
     .back-to-cat-btn {
         display: inline-flex; align-items: center; gap: 8px;
-        background: transparent; border: none;
-        color: var(--text-muted); font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 500;
-        cursor: pointer; text-decoration: none;
-        padding: 0 40px; margin-bottom: 14px;
-        transition: color 0.2s ease, transform 0.2s ease;
+        position: fixed; bottom: 25px; left: 25px; z-index: 1500;
+        background: transparent; color: var(--text-main); border: none;
+        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+        padding: 0; box-shadow: none;
+        transition: opacity 0.2s ease;
     }
-    .back-to-cat-btn:hover { color: var(--text-main); transform: translateX(-3px); }
+    .back-to-cat-btn:hover { opacity: 0.7; }
 
     /* CATEGORY GRID */
     .category-menu-grid {
@@ -228,13 +228,9 @@
         }
 
         .back-to-cat-btn {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: transparent; border: none;
-        color: var(--text-muted); font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 500;
-        cursor: pointer; text-decoration: none;
-        padding: 0 40px; margin-bottom: 14px;
-        transition: color 0.2s ease, transform 0.2s ease;
-    }
+            bottom: 16px; left: 16px;
+            font-size: 13px;
+        }
 
         .gallery-grid { gap: 10px; }
         .gallery-item { height: 160px; }

@@ -16,7 +16,7 @@ export function validateClientSession(reqOrToken) {
     token = reqOrToken;
   } else if (reqOrToken && reqOrToken.headers) {
     const authHeader = reqOrToken.headers.authorization;
-    token = reqOrToken.query?.auth || (authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null);
+    token = reqOrToken.query?.auth || reqOrToken.query?.token || (authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null);
   }
   return token;
 }
@@ -81,8 +81,24 @@ export async function retrieveSecureStream({ node, ep, authToken }) {
       return { error: data.error, status: 403 };
     }
 
-    // Resolve and decrypt URL if encrypted
-    let resolvedUrl = data.url || null;
+    // Resolve stream properties: data can be a plain string URL or an object with url/src
+    let resolvedUrl = null;
+    let title = null;
+    let subtitles = null;
+    let introEnd = 0;
+    let key = null;
+
+    if (typeof data === 'string') {
+      resolvedUrl = data;
+    } else if (data && typeof data === 'object') {
+      resolvedUrl = data.url || data.src || null;
+      title = data.title || null;
+      subtitles = data.subtitles || null;
+      introEnd = typeof data.introEnd === 'number' ? data.introEnd : 0;
+      key = data.key ? decryptStreamKey(data.key) : null;
+    }
+
+    // Resolve and decrypt URL if encrypted with enc: prefix
     if (resolvedUrl && typeof resolvedUrl === 'string' && resolvedUrl.startsWith('enc:')) {
       resolvedUrl = decryptStreamKey(resolvedUrl);
     }
@@ -90,10 +106,10 @@ export async function retrieveSecureStream({ node, ep, authToken }) {
     return {
       ok: true,
       url: resolvedUrl,
-      title: data.title || null,
-      subtitles: data.subtitles || null,
-      introEnd: typeof data.introEnd === 'number' ? data.introEnd : 0,
-      key: data.key ? decryptStreamKey(data.key) : null
+      title: title,
+      subtitles: subtitles,
+      introEnd: introEnd,
+      key: key
     };
   } catch (err) {
     console.error('Error fetching stream in api/secret.js:', err);

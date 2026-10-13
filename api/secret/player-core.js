@@ -98,6 +98,54 @@
     currentEpData: null,
     currentSubBlobUrls: [],
     redirectTimer: null,
+    hasPermission: null,
+
+    showAdminToast: function() {
+      let toast = document.getElementById('adminToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'adminToast';
+        toast.className = 'admin-toast';
+        toast.innerHTML = '<i class="fas fa-shield-alt"></i> You are using ADMIN ACCOUNT';
+        document.body.appendChild(toast);
+      }
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    },
+
+    resolveAuthToken: async function(timeoutMs = 3500) {
+      const { auth } = ensureFirebase();
+      if (!auth) return null;
+      if (auth.currentUser) {
+        try {
+          return await auth.currentUser.getIdToken(false);
+        } catch (_) {}
+      }
+      return new Promise((resolve) => {
+        let settled = false;
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+          if (!settled) {
+            settled = true;
+            unsubscribe();
+            if (user) {
+              try {
+                const token = await user.getIdToken(false);
+                resolve(token);
+                return;
+              } catch (_) {}
+            }
+            resolve(null);
+          }
+        });
+        setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            unsubscribe();
+            resolve(null);
+          }
+        }, timeoutMs);
+      });
+    },
 
     init: function(userConfig) {
       this.config = Object.assign({
@@ -138,12 +186,8 @@
 
       this.renderPlaylist();
 
-      // Check URL parameters for specific episode
-      const urlParams = new URLSearchParams(window.location.search);
-      const requestedId = urlParams.get('v') || urlParams.get('ep') || urlParams.get('id');
-      if (requestedId && this.config.playlist.some(p => p.id === requestedId)) {
-        this.loadAndPlayEpisode(requestedId, false);
-      }
+      const rawPageId = (this.config.pageId && typeof this.config.pageId === 'string') ? this.config.pageId.trim() : '';
+      const hasPageRestriction = Boolean(rawPageId !== '');
 
       // Authentication & Permission Verification
       if (auth && db) {
@@ -152,16 +196,12 @@
             try { return JSON.parse(localStorage.getItem("zone_vault_user_cache")); } catch(e){ return null; } 
           })();
 
-          const hasPageRestriction = Boolean(this.config.pageId && typeof this.config.pageId === 'string' && this.config.pageId.trim() !== "");
+          const isApprovedCached = cachedUserObj && (cachedUserObj.status === "approved" || cachedUserObj.isAdmin === true || cachedUserObj.role === "admin");
+          const isCachedAdmin = Boolean(cachedUserObj && (cachedUserObj.isAdmin === true || cachedUserObj.role === 'admin'));
 
-          // 1. FREE ACCESS: Pages without pageId have free access
-          if (!hasPageRestriction) {
-            this.removeAccessDeniedModal();
-            return;
-          }
-
-          // 2. RESTRICTED ACCESS: Required page_access/<pageId>/<uid> permission
-          if (!user && !(cachedUserObj && (cachedUserObj.status === "approved" || cachedUserObj.isAdmin))) {
+          // 1. If not logged in at all (no Firebase user and no approved cached user): DENY ACCESS
+          if (!user && !isApprovedCached) {
+            this.hasPermission = false;
             this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
             return;
           }
@@ -169,29 +209,66 @@
           if (user) {
             db.ref('users/' + user.uid).once('value').then(snapshot => {
               const userData = snapshot.val() || {};
-              const role = (userData.role || 'member').toLowerCase();
+              const role = (userData.role || (cachedUserObj ? cachedUserObj.role : 'member')).toLowerCase();
+              const status = userData.status || (cachedUserObj ? cachedUserObj.status : 'approved');
 
-              if (role === 'admin' || userData.isAdmin === true || (cachedUserObj && cachedUserObj.isAdmin)) {
+              // If user status is explicitly denied or banned
+              if (status === 'denied' || status === 'banned') {
+                this.hasPermission = false;
+                this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
+                return;
+              }
+
+              // Admin has full access to ALL videos
+              if (role === 'admin' || userData.isAdmin === true || isCachedAdmin) {
+                this.hasPermission = true;
                 this.removeAccessDeniedModal();
-                const toast = document.getElementById('adminToast');
-                if (toast) {
-                  toast.classList.add('show');
-                  setTimeout(() => toast.classList.remove('show'), 4000);
+                this.showAdminToast();
+                return;
+              }
+
+              // Normal approved member:
+              // CASE A: Page has NO pageId -> FREE ACCESS FOR USER ONLY!
+              if (!hasPageRestriction) {
+                this.hasPermission = true;
+                this.removeAccessDeniedModal();
+                return;
+              }
+
+              // CASE B: Page HAS pageId -> SPECIFIC USER ONLY! Check page_access/<pageId>/<uid>
+              db.ref(`page_access/${rawPageId}/${user.uid}`).on('value', (accessSnapshot) => {
+                const isAllowed = accessSnapshot.val();
+                if (isAllowed === true) {
+                  this.hasPermission = true;
+                  this.removeAccessDeniedModal();
+                } else {
+                  this.hasPermission = false;
+                  this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
                 }
-              } else {
-                const accessKey = this.config.pageId.trim();
-                db.ref(`page_access/${accessKey}/${user.uid}`).on('value', (accessSnapshot) => {
-                  const isAllowed = accessSnapshot.val();
-                  if (isAllowed === true) {
-                    this.removeAccessDeniedModal();
-                  } else {
-                    this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
-                  }
-                });
+              });
+            }).catch(() => {
+              // Network fallback using cached session
+              if (!hasPageRestriction && isApprovedCached) {
+                this.hasPermission = true;
+                this.removeAccessDeniedModal();
               }
             });
+          } else if (isApprovedCached) {
+            // Valid cached session while Firebase Auth connects
+            if (isCachedAdmin || !hasPageRestriction) {
+              this.hasPermission = true;
+              this.removeAccessDeniedModal();
+              if (isCachedAdmin) this.showAdminToast();
+            }
           }
         });
+      }
+
+      // Check URL parameters for specific episode
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedId = urlParams.get('v') || urlParams.get('ep') || urlParams.get('id');
+      if (requestedId && this.config.playlist.some(p => p.id === requestedId)) {
+        this.loadAndPlayEpisode(requestedId, false);
       }
     },
 
@@ -227,6 +304,12 @@
 
       const ep = this.config.playlist.find(item => item.id === String(epId));
       if (!ep) return;
+
+      // If user permission is already evaluated as denied, prevent playback immediately
+      if (this.hasPermission === false) {
+        this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
+        return;
+      }
 
       if (updateUrl) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -265,43 +348,57 @@
           introEnd: ep.introEnd || 0
         };
       } else {
-        try {
-          const { auth } = ensureFirebase();
-          const headers = {};
-          if (auth && auth.currentUser) {
-            try {
-              const token = await auth.currentUser.getIdToken(false);
-              if (token) headers['Authorization'] = `Bearer ${token}`;
-            } catch (_) {}
-          }
+        // Resolve authenticated user token first
+        const authToken = await this.resolveAuthToken();
 
-          const res = await fetch(`/api/secret/video-stream?node=${encodeURIComponent(this.config.dbNode)}&ep=${encodeURIComponent(ep.id)}`, { headers });
-          if (res.ok) {
-            const json = await res.json();
-            if (json && json.ok && json.url) {
-              streamData = json;
+        if (this.config.dbNode) {
+          try {
+            const headers = {};
+            let fetchUrl = `/api/secret/video-stream?node=${encodeURIComponent(this.config.dbNode)}&ep=${encodeURIComponent(ep.id)}`;
+            if (authToken) {
+              headers['Authorization'] = `Bearer ${authToken}`;
+              fetchUrl += `&auth=${encodeURIComponent(authToken)}`;
             }
-          }
-        } catch (e) {
-          console.warn('API secret stream fetch failed, trying direct database fallback...');
-        }
 
-        // 2. Graceful direct Firebase Realtime Database fallback if server proxy unavailable
-        if (!streamData && this.config.allowDirectFallback) {
-          const { db } = ensureFirebase();
-          if (db) {
-            try {
-              const snap = await db.ref(`${this.config.dbNode}/${ep.id}`).once('value');
-              if (snap.exists()) {
-                const val = snap.val();
-                if (typeof val === 'string') {
-                  streamData = { ok: true, url: val };
-                } else if (val && typeof val === 'object') {
-                  streamData = val;
-                }
+            const res = await fetch(fetchUrl, { headers });
+            if (res.ok) {
+              const json = await res.json();
+              if (json && json.ok && json.url) {
+                streamData = json;
               }
-            } catch (e) {
-              console.error('Database query fallback failed:', e);
+            }
+          } catch (e) {
+            console.warn('API secret stream fetch failed, trying direct database fallback...');
+          }
+
+          // 2. Direct Firebase Realtime Database fallback if server proxy was blocked
+          if ((!streamData || !streamData.url) && this.config.allowDirectFallback) {
+            const { db } = ensureFirebase();
+            if (db) {
+              try {
+                const snap = await db.ref(`${this.config.dbNode}/${ep.id}`).once('value');
+                if (snap.exists()) {
+                  const val = snap.val();
+                  if (typeof val === 'string') {
+                    streamData = { ok: true, url: val, title: ep.title };
+                  } else if (val && typeof val === 'object') {
+                    let resolvedUrl = val.url || val.src || null;
+                    if (resolvedUrl && typeof resolvedUrl === 'string' && resolvedUrl.startsWith('enc:')) {
+                      try { resolvedUrl = atob(resolvedUrl.slice(4)); } catch (_) {}
+                    }
+                    streamData = {
+                      ok: true,
+                      url: resolvedUrl,
+                      title: val.title || ep.title,
+                      subtitles: val.subtitles || null,
+                      introEnd: val.introEnd || 0,
+                      key: val.key || null
+                    };
+                  }
+                }
+              } catch (e) {
+                console.error('Database query fallback failed:', e);
+              }
             }
           }
         }
@@ -309,12 +406,7 @@
 
       if (!streamData || !streamData.url) {
         this.destroyPlayer();
-        const hasPageRestriction = Boolean(this.config.pageId && typeof this.config.pageId === 'string' && this.config.pageId.trim() !== "");
-        if (hasPageRestriction) {
-          this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
-        } else {
-          alert("Video is currently unavailable. Please try again later.");
-        }
+        this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
         return;
       }
 

@@ -380,7 +380,7 @@
       });
     },
 
-    loadAndPlayEpisode: function(epId, updateUrl) {
+    loadAndPlayEpisode: async function(epId, updateUrl) {
       if (!this.config) return;
 
       const ep = this.config.playlist.find(item => item.id === String(epId));
@@ -423,6 +423,9 @@
 
       const { auth, db } = ensureFirebase();
       const self = this;
+
+      // Ensure Firebase Auth state has restored from storage
+      await this.resolveAuthToken(2000);
 
       const proceedWithStreamData = (data) => {
         if (!data || (!data.url && typeof data !== 'string')) {
@@ -571,17 +574,48 @@
           introEnd: ep.introEnd || 0
         });
       } else if (this.config.dbNode && db) {
-        // Direct Firebase path structure: db.ref(`${node}/${ep.id}`).once('value')
-        db.ref(`${this.config.dbNode}/${ep.id}`).once('value').then(snapshot => {
-          const data = snapshot.val();
-          if (!data || (!data.url && typeof data !== 'string')) {
-            alert("Video unavailable");
+        // Direct Firebase query structure as requested for free access
+        const targetNode = (this.config.dbNode === 'caratland2025') ? 'caratland2024' : this.config.dbNode;
+
+        db.ref(`${targetNode}/${ep.id}`).once('value').then(snapshot => {
+          const data = snapshot ? snapshot.val() : null;
+          if (data && (data.url || typeof data === 'string')) {
+            proceedWithStreamData(data);
             return;
           }
-          proceedWithStreamData(data);
+
+          // Fallback check between caratland2024 / caratland2025
+          const altNode = (targetNode === 'caratland2024') ? 'caratland2025' : 'caratland2024';
+          if (this.config.dbNode.includes('caratland')) {
+            db.ref(`${altNode}/${ep.id}`).once('value').then(altSnap => {
+              const altData = altSnap ? altSnap.val() : null;
+              if (altData && (altData.url || typeof altData === 'string')) {
+                proceedWithStreamData(altData);
+              } else {
+                alert("Video unavailable");
+              }
+            }).catch(() => {
+              alert("Video unavailable");
+            });
+          } else {
+            alert("Video unavailable");
+          }
         }).catch(err => {
-          console.error("Firebase fetch error:", err);
-          alert("Video unavailable");
+          // If primary node encountered permission rule or path mismatch, fallback to caratland2024
+          if (targetNode !== 'caratland2024' && this.config.dbNode.includes('caratland')) {
+            db.ref(`caratland2024/${ep.id}`).once('value').then(fbSnap => {
+              const fbData = fbSnap ? fbSnap.val() : null;
+              if (fbData && (fbData.url || typeof fbData === 'string')) {
+                proceedWithStreamData(fbData);
+              } else {
+                alert("Video unavailable");
+              }
+            }).catch(() => {
+              alert("Video unavailable");
+            });
+          } else {
+            alert("Video unavailable");
+          }
         });
       } else {
         alert("Video unavailable");

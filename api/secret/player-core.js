@@ -152,8 +152,17 @@
             try { return JSON.parse(localStorage.getItem("zone_vault_user_cache")); } catch(e){ return null; } 
           })();
 
+          const hasPageRestriction = Boolean(this.config.pageId && typeof this.config.pageId === 'string' && this.config.pageId.trim() !== "");
+
+          // 1. FREE ACCESS: Pages without pageId have free access
+          if (!hasPageRestriction) {
+            this.removeAccessDeniedModal();
+            return;
+          }
+
+          // 2. RESTRICTED ACCESS: Required page_access/<pageId>/<uid> permission
           if (!user && !(cachedUserObj && (cachedUserObj.status === "approved" || cachedUserObj.isAdmin))) {
-            this.showAccessDeniedModal("You must be logged in to view this content.");
+            this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
             return;
           }
 
@@ -162,7 +171,7 @@
               const userData = snapshot.val() || {};
               const role = (userData.role || 'member').toLowerCase();
 
-              if (role === 'admin') {
+              if (role === 'admin' || userData.isAdmin === true || (cachedUserObj && cachedUserObj.isAdmin)) {
                 this.removeAccessDeniedModal();
                 const toast = document.getElementById('adminToast');
                 if (toast) {
@@ -170,19 +179,15 @@
                   setTimeout(() => toast.classList.remove('show'), 4000);
                 }
               } else {
-                const accessKey = this.config.pageId || this.config.dbNode;
-                if (accessKey) {
-                  db.ref(`page_access/${accessKey}/${user.uid}`).on('value', (accessSnapshot) => {
-                    const isAllowed = accessSnapshot.val();
-                    if (isAllowed === true) {
-                      this.removeAccessDeniedModal();
-                    } else {
-                      this.showAccessDeniedModal("This content is restricted. Your account does not have permission.");
-                    }
-                  });
-                } else {
-                  this.removeAccessDeniedModal();
-                }
+                const accessKey = this.config.pageId.trim();
+                db.ref(`page_access/${accessKey}/${user.uid}`).on('value', (accessSnapshot) => {
+                  const isAllowed = accessSnapshot.val();
+                  if (isAllowed === true) {
+                    this.removeAccessDeniedModal();
+                  } else {
+                    this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
+                  }
+                });
               }
             });
           }
@@ -287,7 +292,14 @@
           if (db) {
             try {
               const snap = await db.ref(`${this.config.dbNode}/${ep.id}`).once('value');
-              if (snap.exists()) streamData = snap.val();
+              if (snap.exists()) {
+                const val = snap.val();
+                if (typeof val === 'string') {
+                  streamData = { ok: true, url: val };
+                } else if (val && typeof val === 'object') {
+                  streamData = val;
+                }
+              }
             } catch (e) {
               console.error('Database query fallback failed:', e);
             }
@@ -296,7 +308,13 @@
       }
 
       if (!streamData || !streamData.url) {
-        alert("Video is currently unavailable. Please try again later.");
+        this.destroyPlayer();
+        const hasPageRestriction = Boolean(this.config.pageId && typeof this.config.pageId === 'string' && this.config.pageId.trim() !== "");
+        if (hasPageRestriction) {
+          this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
+        } else {
+          alert("Video is currently unavailable. Please try again later.");
+        }
         return;
       }
 
@@ -599,20 +617,165 @@
     showAccessDeniedModal: function(msg) {
       if (document.querySelector('.access-denied-modal')) return;
 
+      const displayMsg = msg || "Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.";
+
+      // Resolve current user information
+      let userUid = '';
+      let userEmail = '';
+      try {
+        const { auth } = ensureFirebase();
+        if (auth && auth.currentUser) {
+          userUid = auth.currentUser.uid || '';
+          userEmail = auth.currentUser.email || '';
+        }
+      } catch (_) {}
+
+      if (!userUid) {
+        try {
+          const cached = JSON.parse(localStorage.getItem("zone_vault_user_cache"));
+          if (cached) {
+            userUid = cached.uid || '';
+            userEmail = cached.email || '';
+          }
+        } catch (_) {}
+      }
+
       const modal = document.createElement('div');
       modal.className = 'access-denied-modal';
-      modal.innerHTML = `
-        <strong style="color:#ef4444; font-size:26px; margin-bottom:12px; display:block;">Access Restricted</strong>
-        <div style="font-size:15px; margin-bottom:20px; line-height:1.5;">${msg}</div>
-        <div style="font-size:13px; color:#a1a1aa; margin-bottom:20px;">
-          Redirecting in <span id="access-countdown" style="color:#fff; font-weight:bold;">3</span> seconds...
-        </div>
-        <button onclick="window.location.href='/videos'" style="padding:10px 24px; border-radius:50px; background:#fff; color:#000; font-weight:bold; cursor:pointer; border:none;">BACK TO VIDEOS</button>
+      modal.setAttribute('role', 'alertdialog');
+      modal.setAttribute('aria-modal', 'true');
+
+      // Built-in resilient styling for immediate render
+      modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 5, 8, 0.88);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        padding: 20px;
+        box-sizing: border-box;
       `;
+
+      const videoTitle = (this.currentEpData && this.currentEpData.title) 
+        || (this.config && this.config.title) 
+        || document.title.replace('— Zone Vault', '').trim() 
+        || 'Video';
+
+      const accountHtml = userUid ? `
+        <div class="access-denied-account" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; margin-bottom:22px; font-size:12px; color:#a1a1aa; text-align:left;">
+          <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Account ID: <strong style="color:#fff; font-family:monospace; font-size:11.5px;">${userUid}</strong></span>
+          </div>
+          <button type="button" id="zv-copy-uid-btn" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; cursor:pointer; font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; transition:all 0.2s; flex-shrink:0;">Copy ID</button>
+        </div>
+      ` : '';
+
+      modal.innerHTML = `
+        <div class="access-denied-card" style="position:relative; max-width:480px; width:100%; background:linear-gradient(180deg, rgba(24,24,30,0.96) 0%, rgba(12,12,16,0.98) 100%); border:1px solid rgba(239,68,68,0.32); border-radius:24px; padding:38px 28px 28px; text-align:center; box-shadow:0 30px 70px -15px rgba(0,0,0,0.85), 0 0 50px rgba(239,68,68,0.18), inset 0 1px 0 rgba(255,255,255,0.12); overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing:border-box;">
+          <div class="access-denied-glow" style="position:absolute; top:-70px; left:50%; transform:translateX(-50%); width:240px; height:140px; background:radial-gradient(ellipse, rgba(239,68,68,0.35) 0%, rgba(239,68,68,0) 70%); pointer-events:none;"></div>
+          
+          <div class="access-denied-icon-wrap" style="width:68px; height:68px; margin:0 auto 18px; border-radius:20px; background:linear-gradient(135deg, rgba(239,68,68,0.22), rgba(185,28,28,0.08)); border:1px solid rgba(239,68,68,0.45); display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(239,68,68,0.28); color:#ef4444;">
+            <svg class="access-denied-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+
+          <div class="access-denied-pill" style="display:inline-flex; align-items:center; gap:7px; padding:5px 14px; border-radius:9999px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.28); color:#fca5a5; font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; margin-bottom:14px;">
+            <span class="access-denied-pill-dot" style="width:6px; height:6px; border-radius:50%; background:#ef4444; box-shadow:0 0 8px #ef4444;"></span>
+            <span>Permission Required</span>
+          </div>
+
+          <h2 class="access-denied-title" style="font-size:26px; font-weight:800; color:#ffffff; margin:0 0 12px; letter-spacing:-0.5px; line-height:1.2;">Access Denied</h2>
+          
+          <p class="access-denied-message" style="font-size:14.5px; line-height:1.6; color:#d4d4d8; margin:0 0 22px;">
+            ${displayMsg}
+          </p>
+
+          ${accountHtml}
+
+          <div class="access-denied-actions" style="display:flex; gap:12px; width:100%; margin-bottom:8px;">
+            <button type="button" id="zv-back-btn" class="access-denied-primary-btn" style="flex:1; padding:13px 20px; border-radius:12px; background:#ffffff; color:#09090b; font-weight:700; font-size:13.5px; border:none; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 16px rgba(255,255,255,0.15); margin:0;">
+              Return to Videos
+            </button>
+            <button type="button" id="zv-contact-btn" class="access-denied-secondary-btn" style="flex:1; padding:13px 20px; border-radius:12px; background:rgba(255,255,255,0.06); color:#ffffff; font-weight:600; font-size:13.5px; border:1px solid rgba(255,255,255,0.16); cursor:pointer; transition:all 0.2s; margin:0;">
+              Contact Admin
+            </button>
+          </div>
+
+          <div class="access-denied-footer" style="font-size:12px; color:#71717a; margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span id="access-countdown-text">Redirecting automatically in <strong id="access-countdown" style="color:#f87171; font-weight:700;">6</strong>s</span>
+            <span style="color:#3f3f46;">·</span>
+            <button type="button" id="zv-pause-btn" style="background:none; border:none; color:#a1a1aa; text-decoration:underline; cursor:pointer; font-size:11.5px; padding:0; margin:0;">Stay on page</button>
+          </div>
+        </div>
+      `;
+
       document.body.appendChild(modal);
 
-      let timeLeft = 3;
-      const countSpan = document.getElementById('access-countdown');
+      // Event listeners
+      const backBtn = modal.querySelector('#zv-back-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          if (this.redirectTimer) clearInterval(this.redirectTimer);
+          if (window.history.length > 1 && document.referrer) {
+            window.history.back();
+          } else {
+            window.location.href = '/videos';
+          }
+        });
+      }
+
+      const copyBtn = modal.querySelector('#zv-copy-uid-btn');
+      if (copyBtn && userUid) {
+        copyBtn.addEventListener('click', () => {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(userUid).then(() => {
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => { copyBtn.textContent = 'Copy ID'; }, 2000);
+            }).catch(() => {});
+          }
+        });
+      }
+
+      const contactBtn = modal.querySelector('#zv-contact-btn');
+      if (contactBtn) {
+        contactBtn.addEventListener('click', () => {
+          const adminEmail = 'seventeenzoneph@gmail.com';
+          const subject = encodeURIComponent(`Access Request: ${videoTitle}`);
+          const body = encodeURIComponent(`Hello Admin,\n\nI would like to request access to: ${videoTitle}\n\nAccount Details:\nUID: ${userUid || 'Not logged in'}\nEmail: ${userEmail || 'N/A'}\n\nThank you!`);
+          
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(adminEmail).catch(() => {});
+          }
+          
+          window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
+          contactBtn.textContent = 'Email Opened';
+          setTimeout(() => { contactBtn.textContent = 'Contact Admin'; }, 2500);
+        });
+      }
+
+      const pauseBtn = modal.querySelector('#zv-pause-btn');
+      if (pauseBtn) {
+        pauseBtn.addEventListener('click', () => {
+          if (this.redirectTimer) {
+            clearInterval(this.redirectTimer);
+            this.redirectTimer = null;
+          }
+          const cdText = modal.querySelector('#access-countdown-text');
+          if (cdText) cdText.textContent = 'Auto-redirect paused';
+          pauseBtn.style.display = 'none';
+        });
+      }
+
+      let timeLeft = 6;
+      const countSpan = modal.querySelector('#access-countdown');
       if (this.redirectTimer) clearInterval(this.redirectTimer);
 
       this.redirectTimer = setInterval(() => {
@@ -620,6 +783,7 @@
         if (countSpan) countSpan.textContent = timeLeft;
         if (timeLeft <= 0) {
           clearInterval(this.redirectTimer);
+          this.redirectTimer = null;
           window.location.href = '/videos';
         }
       }, 1000);

@@ -192,12 +192,38 @@ if (!hasInternalAccessFlag && !isIndexPagePath && !isAdminFlag) {
 function showAccessDeniedModal() {
     const modal = document.createElement('div');
     modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.replace('/index')">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(5,5,8,0.88); backdrop-filter:blur(20px); z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;';
+    modal.innerHTML = `
+      <div class="access-denied-card" style="position:relative; max-width:480px; width:100%; background:linear-gradient(180deg, rgba(24,24,30,0.96) 0%, rgba(12,12,16,0.98) 100%); border:1px solid rgba(239,68,68,0.32); border-radius:24px; padding:38px 28px 28px; text-align:center; box-shadow:0 30px 70px -15px rgba(0,0,0,0.85), 0 0 50px rgba(239,68,68,0.18); overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing:border-box;">
+        <div style="width:68px; height:68px; margin:0 auto 18px; border-radius:20px; background:linear-gradient(135deg, rgba(239,68,68,0.22), rgba(185,28,28,0.08)); border:1px solid rgba(239,68,68,0.45); display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(239,68,68,0.28); color:#ef4444;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <div style="display:inline-flex; align-items:center; gap:7px; padding:5px 14px; border-radius:9999px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.28); color:#fca5a5; font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; margin-bottom:14px;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#ef4444; box-shadow:0 0 8px #ef4444;"></span>
+          <span>Permission Required</span>
+        </div>
+        <h2 style="font-size:26px; font-weight:800; color:#ffffff; margin:0 0 12px; letter-spacing:-0.5px;">Access Denied</h2>
+        <p style="font-size:14.5px; line-height:1.6; color:#d4d4d8; margin:0 0 24px;">
+          Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.
+        </p>
+        <div style="display:flex; gap:12px; width:100%; margin-bottom:8px;">
+          <button type="button" onclick="window.location.replace('/home')" style="flex:1; padding:13px 20px; border-radius:12px; background:#ffffff; color:#09090b; font-weight:700; font-size:13.5px; border:none; cursor:pointer; box-shadow:0 4px 16px rgba(255,255,255,0.15);">
+            Return to Home
+          </button>
+          <button type="button" onclick="window.location.href='mailto:seventeenzoneph@gmail.com?subject=Access%20Request'" style="flex:1; padding:13px 20px; border-radius:12px; background:rgba(255,255,255,0.06); color:#ffffff; font-weight:600; font-size:13.5px; border:1px solid rgba(255,255,255,0.16); cursor:pointer;">
+            Contact Admin
+          </button>
+        </div>
+        <div style="font-size:12px; color:#71717a; margin-top:16px;">
+          Redirecting automatically in 5s...
+        </div>
+      </div>
+    `;
     document.body.appendChild(modal);
-    setTimeout(() => { window.location.replace("/index"); }, 3000);
+    setTimeout(() => { window.location.replace("/home"); }, 5000);
 }
 
 // ==========================================

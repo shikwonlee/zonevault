@@ -62,40 +62,60 @@ export async function retrieveSecureStream({ node, ep, authToken }) {
   }
 
   try {
-    const response = await fetch(fetchUrl);
-    if (!response.ok) {
-      return { 
-        error: response.status === 401 || response.status === 403 
-          ? 'Access denied by security rules' 
-          : 'Failed to retrieve stream metadata', 
-        status: response.status 
-      };
+    let response = await fetch(fetchUrl);
+    let data = null;
+
+    if (response.ok) {
+      data = await response.json();
     }
 
-    const data = await response.json();
+    // If node/ep was null or not found, try node root directly (e.g. for single-video nodes like magichour)
     if (!data) {
-      return { error: 'Stream not found', status: 404 };
+      let rootFetchUrl = `${databaseUrl.replace(/\/$/, '')}/${sanitizedNode}.json`;
+      if (authToken) rootFetchUrl += `?auth=${encodeURIComponent(authToken)}`;
+      const rootResponse = await fetch(rootFetchUrl);
+      if (rootResponse.ok) {
+        data = await rootResponse.json();
+      }
+    }
+
+    if (!data) {
+      return { 
+        error: (response && (response.status === 401 || response.status === 403))
+          ? 'Access denied by security rules' 
+          : 'Stream not found', 
+        status: (response && response.status) || 404 
+      };
     }
 
     if (data.error) {
       return { error: data.error, status: 403 };
     }
 
-    // Resolve stream properties: data can be a plain string URL or an object with url/src
+    // Resolve stream properties: data can be a plain string URL, an object, or contain nested episode key
+    let targetObj = data;
+    if (typeof data === 'object' && data !== null) {
+      if (data[sanitizedEp]) {
+        targetObj = data[sanitizedEp];
+      } else if (data['1'] && sanitizedEp === '1') {
+        targetObj = data['1'];
+      }
+    }
+
     let resolvedUrl = null;
     let title = null;
     let subtitles = null;
     let introEnd = 0;
     let key = null;
 
-    if (typeof data === 'string') {
-      resolvedUrl = data;
-    } else if (data && typeof data === 'object') {
-      resolvedUrl = data.url || data.src || null;
-      title = data.title || null;
-      subtitles = data.subtitles || null;
-      introEnd = typeof data.introEnd === 'number' ? data.introEnd : 0;
-      key = data.key ? decryptStreamKey(data.key) : null;
+    if (typeof targetObj === 'string') {
+      resolvedUrl = targetObj;
+    } else if (targetObj && typeof targetObj === 'object') {
+      resolvedUrl = targetObj.url || targetObj.src || targetObj.link || targetObj.videoUrl || targetObj.stream || targetObj.m3u8 || targetObj.url1 || null;
+      title = targetObj.title || data.title || null;
+      subtitles = targetObj.subtitles || data.subtitles || null;
+      introEnd = typeof targetObj.introEnd === 'number' ? targetObj.introEnd : (typeof data.introEnd === 'number' ? data.introEnd : 0);
+      key = targetObj.key ? decryptStreamKey(targetObj.key) : (data.key ? decryptStreamKey(data.key) : null);
     }
 
     // Resolve and decrypt URL if encrypted with enc: prefix

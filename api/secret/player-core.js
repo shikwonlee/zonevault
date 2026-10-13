@@ -428,14 +428,25 @@
       await this.resolveAuthToken(2000);
 
       const proceedWithStreamData = (data) => {
-        if (!data || (!data.url && typeof data !== 'string')) {
+        if (!data) {
           alert("Video unavailable");
           return;
         }
 
-        let videoUrl = typeof data === 'string' ? data : (data.url || data.src || '');
+        let videoUrl = '';
+        if (typeof data === 'string') {
+          videoUrl = data;
+        } else if (typeof data === 'object') {
+          videoUrl = data.url || data.src || data.link || data.videoUrl || data.stream || data.m3u8 || data.url1 || '';
+        }
+
         if (videoUrl.startsWith('enc:')) {
           try { videoUrl = atob(videoUrl.slice(4)); } catch (_) {}
+        }
+
+        if (!videoUrl) {
+          alert("Video unavailable");
+          return;
         }
 
         let artSubtitles = [];
@@ -574,48 +585,85 @@
           introEnd: ep.introEnd || 0
         });
       } else if (this.config.dbNode && db) {
-        // Direct Firebase query structure as requested for free access
-        const targetNode = (this.config.dbNode === 'caratland2025') ? 'caratland2024' : this.config.dbNode;
+        const rawNode = (this.config.dbNode === 'caratland2025') ? 'caratland2024' : this.config.dbNode;
+        const candidateNodes = [rawNode];
+        if (rawNode.includes('caratland')) {
+          if (!candidateNodes.includes('caratland2024')) candidateNodes.push('caratland2024');
+          if (!candidateNodes.includes('caratland2025')) candidateNodes.push('caratland2025');
+        } else {
+          if (!rawNode.startsWith('url')) candidateNodes.push(`url${rawNode}`);
+          if (rawNode.includes('_')) candidateNodes.push(rawNode.replace(/_/g, ''));
+          else candidateNodes.push(rawNode.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase());
+        }
 
-        db.ref(`${targetNode}/${ep.id}`).once('value').then(snapshot => {
-          const data = snapshot ? snapshot.val() : null;
-          if (data && (data.url || typeof data === 'string')) {
-            proceedWithStreamData(data);
-            return;
+        const extractStreamData = (raw) => {
+          if (!raw) return null;
+          if (typeof raw === 'string' && (raw.startsWith('http') || raw.startsWith('enc:') || raw.includes('.m3u8') || raw.includes('.mp4'))) {
+            return { url: raw };
+          }
+          if (typeof raw === 'object') {
+            const u = raw.url || raw.src || raw.link || raw.videoUrl || raw.stream || raw.m3u8 || raw.url1 || '';
+            if (u) {
+              return {
+                url: u,
+                title: raw.title || null,
+                subtitles: raw.subtitles || null,
+                introEnd: raw.introEnd || 0
+              };
+            }
+            const nested = raw[ep.id] || raw['1'] || (Array.isArray(raw) ? raw[0] : null);
+            if (nested && nested !== raw) {
+              return extractStreamData(nested);
+            }
+          }
+          return null;
+        };
+
+        const resolveStream = async () => {
+          // 1. Direct Firebase Realtime Database queries
+          for (const node of candidateNodes) {
+            try {
+              const epSnap = await db.ref(`${node}/${ep.id}`).once('value');
+              const found = extractStreamData(epSnap ? epSnap.val() : null);
+              if (found) return found;
+            } catch (_) {}
+
+            try {
+              const rootSnap = await db.ref(node).once('value');
+              const foundRoot = extractStreamData(rootSnap ? rootSnap.val() : null);
+              if (foundRoot) return foundRoot;
+            } catch (_) {}
           }
 
-          // Fallback check between caratland2024 / caratland2025
-          const altNode = (targetNode === 'caratland2024') ? 'caratland2025' : 'caratland2024';
-          if (this.config.dbNode.includes('caratland')) {
-            db.ref(`${altNode}/${ep.id}`).once('value').then(altSnap => {
-              const altData = altSnap ? altSnap.val() : null;
-              if (altData && (altData.url || typeof altData === 'string')) {
-                proceedWithStreamData(altData);
-              } else {
-                alert("Video unavailable");
+          // 2. Server proxy fallback (/api/secret/video-stream)
+          try {
+            let authToken = null;
+            if (auth && auth.currentUser) {
+              try { authToken = await auth.currentUser.getIdToken(false); } catch (_) {}
+            }
+            for (const node of candidateNodes) {
+              let fetchUrl = `/api/secret/video-stream?node=${encodeURIComponent(node)}&ep=${encodeURIComponent(ep.id)}`;
+              if (authToken) fetchUrl += `&auth=${encodeURIComponent(authToken)}`;
+              const sRes = await fetch(fetchUrl);
+              if (sRes.ok) {
+                const sJson = await sRes.json();
+                const found = extractStreamData(sJson);
+                if (found) return found;
               }
-            }).catch(() => {
-              alert("Video unavailable");
-            });
+            }
+          } catch (_) {}
+
+          return null;
+        };
+
+        resolveStream().then(streamObj => {
+          if (streamObj) {
+            proceedWithStreamData(streamObj);
           } else {
             alert("Video unavailable");
           }
-        }).catch(err => {
-          // If primary node encountered permission rule or path mismatch, fallback to caratland2024
-          if (targetNode !== 'caratland2024' && this.config.dbNode.includes('caratland')) {
-            db.ref(`caratland2024/${ep.id}`).once('value').then(fbSnap => {
-              const fbData = fbSnap ? fbSnap.val() : null;
-              if (fbData && (fbData.url || typeof fbData === 'string')) {
-                proceedWithStreamData(fbData);
-              } else {
-                alert("Video unavailable");
-              }
-            }).catch(() => {
-              alert("Video unavailable");
-            });
-          } else {
-            alert("Video unavailable");
-          }
+        }).catch(() => {
+          alert("Video unavailable");
         });
       } else {
         alert("Video unavailable");

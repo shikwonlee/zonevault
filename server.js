@@ -2,11 +2,13 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { secretRouter } from './api/secret.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // Security headers & iFrame preview compatibility
@@ -75,6 +77,10 @@ app.get('/api/firebase-config', apiRateLimiter, (req, res) => {
     measurementId: "G-VFNH70R4D9"
   });
 });
+
+// Centralized Protected Router for Video Streams & M3U8 metadata (/api/secret.js)
+// Hides direct Firebase Realtime Database queries and secures stream URLs for 2021-2026 collections
+app.use('/api/secret', apiRateLimiter, secretRouter);
 
 // Helper for caching headers
 const applyStaticHeaders = (res, filePath) => {

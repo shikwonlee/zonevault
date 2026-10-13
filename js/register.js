@@ -43,16 +43,114 @@ window.show = function(id) {
   document.getElementById(id).classList.remove("hidden");
 }
 
+// Password Strength & Toggle Logic
+function setupPasswordStrength() {
+  const passwordInput = document.getElementById("password");
+  const toggleBtn = document.getElementById("togglePassword");
+  const criteriaList = document.getElementById("passwordCriteria");
+  const meter = document.getElementById("strengthMeter");
+  const reqLength = document.getElementById("req-length");
+  const reqNumber = document.getElementById("req-number");
+  const reqSpecial = document.getElementById("req-special");
+  const reqCase = document.getElementById("req-case");
+  const strengthText = document.getElementById("strengthText");
+  const bar1 = document.getElementById("bar1");
+  const bar2 = document.getElementById("bar2");
+  const bar3 = document.getElementById("bar3");
+  const bar4 = document.getElementById("bar4");
+
+  if (toggleBtn && passwordInput) {
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleBtn.classList.toggle("fa-eye", !isPassword);
+      toggleBtn.classList.toggle("fa-eye-slash", isPassword);
+    });
+  }
+
+  if (passwordInput && criteriaList && meter) {
+    passwordInput.addEventListener("input", () => {
+      const val = passwordInput.value;
+      if (!val) {
+        criteriaList.classList.remove("active");
+        meter.classList.remove("active");
+        return;
+      }
+      criteriaList.classList.add("active");
+      meter.classList.add("active");
+
+      const hasLength = val.length >= 8;
+      const hasNumber = /\d/.test(val);
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>\-_=+[\]\\/~`]/.test(val);
+      const hasCase = /[A-Z]/.test(val) && /[a-z]/.test(val);
+
+      if (reqLength) reqLength.className = hasLength ? "valid" : "invalid";
+      if (reqNumber) reqNumber.className = hasNumber ? "valid" : "invalid";
+      if (reqSpecial) reqSpecial.className = hasSpecial ? "valid" : "invalid";
+      if (reqCase) reqCase.className = hasCase ? "valid" : "invalid";
+
+      let score = 0;
+      if (hasLength) score++;
+      if (hasNumber) score++;
+      if (hasSpecial) score++;
+      if (hasCase) score++;
+      if (val.length >= 12) score = Math.min(score + 1, 4);
+
+      // Reset bars
+      [bar1, bar2, bar3, bar4].forEach(b => {
+        if (b) {
+          b.style.backgroundColor = "rgba(255, 255, 255, 0.12)";
+          b.style.boxShadow = "none";
+        }
+      });
+
+      if (score === 0 || score === 1) {
+        strengthText.innerText = "Weak";
+        strengthText.style.color = "var(--color-weak)";
+        if (bar1) bar1.style.backgroundColor = "var(--color-weak)";
+      } else if (score === 2) {
+        strengthText.innerText = "Fair";
+        strengthText.style.color = "var(--color-medium)";
+        if (bar1) bar1.style.backgroundColor = "var(--color-medium)";
+        if (bar2) bar2.style.backgroundColor = "var(--color-medium)";
+      } else if (score === 3) {
+        strengthText.innerText = "Good";
+        strengthText.style.color = "#84cc16";
+        if (bar1) bar1.style.backgroundColor = "#84cc16";
+        if (bar2) bar2.style.backgroundColor = "#84cc16";
+        if (bar3) bar3.style.backgroundColor = "#84cc16";
+      } else {
+        strengthText.innerText = "Strong";
+        strengthText.style.color = "var(--color-strong)";
+        [bar1, bar2, bar3, bar4].forEach(b => {
+          if (b) {
+            b.style.backgroundColor = "var(--color-strong)";
+            b.style.boxShadow = "0 0 6px rgba(34, 197, 94, 0.5)";
+          }
+        });
+      }
+    });
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupPasswordStrength);
+} else {
+  setupPasswordStrength();
+}
+
 // Register Flow (Email/Password)
 window.register = function() {
-  const email = document.getElementById("email").value;
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   const privacyChecked = document.getElementById("privacy-check").checked;
   const btn = document.getElementById("btn-register");
   
   if (!privacyChecked) return showToast("You must agree to the Privacy Policy.", "warning");
-  if (password.length < 8 || !/\d/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) return showToast("Password criteria not met.", "warning");
   if (!email || !password) return showToast("Please enter email and password.", "warning");
+  if (password.length < 8 || !/\d/.test(password) || !/[!@#$%^&*(),.?":{}|<>\-_=+[\]\\/~`]/.test(password)) {
+    return showToast("Password does not meet the minimum security requirements.", "warning");
+  }
 
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
   btn.disabled = true;

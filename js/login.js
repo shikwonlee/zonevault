@@ -63,25 +63,176 @@ window.show = function(id) {
 }
 
 // ==========================================
-// 4. LOGIN ACTIONS
+// 4. LOGIN ACTIONS & SECURITY COOLDOWN
 // ==========================================
+let isLoggingIn = false;
+let lastLoginAttemptTime = 0;
+let cooldownIntervalId = null;
+
+function getCooldownRemaining() {
+  const expiry = parseInt(sessionStorage.getItem('zv_login_cooldown_expiry') || '0', 10);
+  const remaining = Math.ceil((expiry - Date.now()) / 1000);
+  return remaining > 0 ? remaining : 0;
+}
+
+function startCooldownTimer(seconds) {
+  if (cooldownIntervalId) clearInterval(cooldownIntervalId);
+
+  const banner = document.getElementById("login-cooldown-banner");
+  const timerText = document.getElementById("cooldown-timer");
+  const btn = document.getElementById("btn-login");
+  const googleBtn = document.getElementById("btn-google-login");
+
+  if (banner) banner.classList.remove("hidden");
+  if (btn) btn.disabled = true;
+  if (googleBtn) googleBtn.disabled = true;
+
+  const updateDisplay = (remaining) => {
+    if (timerText) timerText.innerText = `${remaining}s`;
+    if (btn) btn.innerText = `Please wait ${remaining}s`;
+  };
+
+  updateDisplay(seconds);
+
+  cooldownIntervalId = setInterval(() => {
+    const remaining = getCooldownRemaining();
+    if (remaining <= 0) {
+      clearInterval(cooldownIntervalId);
+      cooldownIntervalId = null;
+      sessionStorage.removeItem('zv_login_cooldown_expiry');
+      if (banner) banner.classList.add("hidden");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = "Sign In";
+      }
+      if (googleBtn) googleBtn.disabled = false;
+      showToast("Cooldown expired. You may try logging in again.", "info");
+    } else {
+      updateDisplay(remaining);
+    }
+  }, 1000);
+}
+
+function triggerFailedAttemptCooldown() {
+  let failed = parseInt(sessionStorage.getItem('zv_login_failed_count') || '0', 10) + 1;
+  sessionStorage.setItem('zv_login_failed_count', failed.toString());
+
+  // Progressive cooldown: 3 failures = 15s, 4 failures = 30s, >=5 failures = 60s
+  if (failed >= 3) {
+    const cooldownSeconds = failed === 3 ? 15 : (failed === 4 ? 30 : 60);
+    const expiry = Date.now() + (cooldownSeconds * 1000);
+    sessionStorage.setItem('zv_login_cooldown_expiry', expiry.toString());
+    startCooldownTimer(cooldownSeconds);
+    showToast(`Too many failed attempts. Security cooldown active for ${cooldownSeconds} seconds.`, "warning");
+  }
+}
+
+function clearLoginCooldown() {
+  sessionStorage.removeItem('zv_login_failed_count');
+  sessionStorage.removeItem('zv_login_cooldown_expiry');
+  if (cooldownIntervalId) clearInterval(cooldownIntervalId);
+}
+
+// Check cooldown on load & init handlers
+function initLoginSecurity() {
+  if (sessionStorage.getItem("revocationNotice")) {
+    sessionStorage.removeItem("revocationNotice");
+    setTimeout(() => {
+      showToast("Access Revoked: Your session was closed by administration.", "error");
+    }, 400);
+  }
+
+  const remaining = getCooldownRemaining();
+  if (remaining > 0) {
+    startCooldownTimer(remaining);
+  }
+
+  // Password visibility toggle
+  const toggleBtn = document.getElementById("toggleLoginPassword");
+  const passwordInput = document.getElementById("password");
+  const emailInput = document.getElementById("email");
+
+  if (toggleBtn && passwordInput) {
+    toggleBtn.addEventListener("click", () => {
+      const isPass = passwordInput.type === "password";
+      passwordInput.type = isPass ? "text" : "password";
+      toggleBtn.classList.toggle("fa-eye", !isPass);
+      toggleBtn.classList.toggle("fa-eye-slash", isPass);
+    });
+  }
+
+  // Enter key submission
+  [emailInput, passwordInput].forEach(inp => {
+    if (inp) {
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          window.login();
+        }
+      });
+    }
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initLoginSecurity);
+} else {
+  initLoginSecurity();
+}
+
 window.login = function() {
-  const email = document.getElementById("email").value;
+  const remainingCooldown = getCooldownRemaining();
+  if (remainingCooldown > 0) {
+    return showToast(`Security cooldown active. Please wait ${remainingCooldown}s.`, "warning");
+  }
+
+  // Debounce check: block rapid clicks
+  const now = Date.now();
+  if (isLoggingIn || (now - lastLoginAttemptTime < 1200)) {
+    return;
+  }
+  lastLoginAttemptTime = now;
+
+  const email = (document.getElementById("email").value || "").trim();
   const password = document.getElementById("password").value;
+  const btn = document.getElementById("btn-login");
+
   if (!email || !password) return showToast("Please enter email and password.", "warning");
-  
+
+  isLoggingIn = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+  }
   show("loader-section");
+
   signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      isLoggingIn = false;
+      clearLoginCooldown();
+    })
     .catch(e => {
+      isLoggingIn = false;
       show("auth-section");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = "Sign In";
+      }
+      triggerFailedAttemptCooldown();
       showToast("Login error: " + e.message, "error");
     });
 };
 
 window.googleLogin = async function() {
+  const remainingCooldown = getCooldownRemaining();
+  if (remainingCooldown > 0) {
+    return showToast(`Security cooldown active. Please wait ${remainingCooldown}s.`, "warning");
+  }
+
   try {
     show("loader-section");
     await signInWithPopup(auth, provider);
+    clearLoginCooldown();
   } catch (e) {
     show("auth-section");
     showToast("Google login error: " + e.message, "error");

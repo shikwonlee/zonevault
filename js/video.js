@@ -1,7 +1,7 @@
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, get, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
-import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI, initStatusSecurityWatchdog } from "./user-cache.js";
 import { showToast, showConfirm, escapeHTML } from "./toast.js";
 
 console.log("✅ Videos.js successfully loaded!");
@@ -447,6 +447,8 @@ onAuthStateChanged(auth, user => {
                 sessionStorage.setItem('isAdmin', 'true'); 
                 sessionStorage.setItem('internalAccess', 'true'); 
             }
+
+            initStatusSecurityWatchdog(auth, db);
 
             // Update Dynamic URL
             get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {

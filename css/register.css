@@ -92,18 +92,38 @@
     .checkbox-group label { font-size: 13px; color: var(--text-muted); }
     .checkbox-group a { color: var(--text-main); font-weight: 600; }
 
-    .password-criteria { list-style: none; padding: 0; margin: -10px 0 15px 5px; font-size: 12px; display: none; }
+    .password-criteria { 
+      list-style: none; padding: 0; margin: 4px 0 16px 4px; font-size: 12px; display: none; 
+      transition: all 0.3s ease;
+    }
     .password-criteria.active { display: block; }
-    .password-criteria li { color: var(--text-muted); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+    .password-criteria li { 
+      color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; 
+      transition: color 0.25s ease;
+    }
+    .password-criteria li i { width: 14px; text-align: center; }
     .password-criteria li.valid { color: var(--color-strong); }
-    .password-criteria li.invalid i::before { content: "\f00d"; }
-    .password-criteria li.valid i::before { content: "\f00c"; }
+    .password-criteria li.invalid { color: var(--text-muted); }
+    .password-criteria li.invalid i::before { content: "\f00d"; color: var(--color-weak); }
+    .password-criteria li.valid i::before { content: "\f00c"; color: var(--color-strong); }
 
-    .strength-meter-container { margin-top: 5px; margin-bottom: 20px; padding: 0 4px; display: none; }
+    .strength-meter-container { 
+      margin-top: 4px; margin-bottom: 18px; padding: 0 4px; display: none; 
+      transition: all 0.3s ease;
+    }
     .strength-meter-container.active { display: block; }
-    .strength-bars { display: flex; gap: 4px; margin-bottom: 6px; }
-    .bar-segment { height: 3px; flex: 1; border-radius: 2px; background: rgba(255, 255, 255, 0.1); transition: 0.3s; }
-    .strength-text { text-align: right; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+    .strength-meter-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    }
+    .strength-meter-label {
+      font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .strength-text { font-size: 11px; font-weight: 700; color: var(--text-muted); transition: color 0.3s ease; }
+    .strength-bars { display: flex; gap: 5px; height: 5px; border-radius: 4px; overflow: hidden; }
+    .bar-segment { 
+      height: 100%; flex: 1; border-radius: 3px; background: rgba(255, 255, 255, 0.12); 
+      transition: background-color 0.3s ease, box-shadow 0.3s ease; 
+    }
 
     .button-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
     button { width: 100%; padding: 14px; border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: flex; justify-content: center; align-items: center; gap: 8px; }

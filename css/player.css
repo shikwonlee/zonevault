@@ -54,6 +54,12 @@ body {
     transition: background 0.4s ease, color 0.4s ease;
 }
 
+@media (max-width: 768px) {
+    body {
+        padding: 20px 16px;
+    }
+}
+
 /* Cinematic Noise Overlay */
 .noise-overlay {
     position: fixed; 
@@ -522,32 +528,58 @@ body {
     .playlist-title { font-size: 13px; }
 }
 
-/* Back Button */
+/* Back Button (Above Player in .video-wrapper-left — Clean Text + Icon, Not Floating, No Rounded Box) */
 .back-to-video-btn {
     display: inline-flex; 
     align-items: center; 
     gap: 8px;
-    position: fixed; 
-    bottom: 25px; 
-    left: 25px; 
-    z-index: 1500;
-    background: transparent; 
-    color: var(--text-main); 
+    background: transparent;
     border: none;
+    color: var(--text-muted); 
     font-family: 'Inter', sans-serif; 
     font-size: 14px; 
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer; 
     text-decoration: none; 
-    padding: 0; 
-    box-shadow: none;
-    transition: opacity 0.2s ease;
+    padding: 0;
+    margin-bottom: 8px;
+    align-self: flex-start;
+    transition: color 0.2s ease, transform 0.2s ease;
 }
-.back-to-video-btn:hover { opacity: 0.7; }
-.back-to-video-btn i { font-size: 14px; }
+.back-to-video-btn:hover { 
+    color: var(--text-main); 
+    transform: translateX(-3px);
+}
+.back-to-video-btn i { font-size: 13px; }
 
 @media (max-width: 768px) {
-    .back-to-video-btn { bottom: 16px; left: 16px; font-size: 13px; }
+    .back-to-video-btn { font-size: 13px; margin-bottom: 6px; }
+}
+
+/* Skip Intro & Next Episode Layer Buttons */
+.skip-intro-btn,
+.next-ep-prompt-btn {
+    background: rgba(18, 18, 22, 0.85);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 8px 18px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.skip-intro-btn:hover,
+.next-ep-prompt-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
 }
 
 /* Admin Notification Toast (Clean White / Dark Glass Style) */

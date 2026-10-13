@@ -4,7 +4,7 @@
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
-import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI, initStatusSecurityWatchdog } from "./user-cache.js";
 import { showToast, showConfirm, escapeHTML } from "./toast.js";
 
 // Instantly hydrate sidebar user profile from cache (0ms delay)
@@ -94,6 +94,7 @@ localStorage.setItem("internalAccess", "true");
 // Now that we're a confirmed, approved, authenticated user, it's safe
 // to start listening for notifications.
 initNotifications();
+initStatusSecurityWatchdog(auth, db);
 
 const userEmail = user.email || "";
 

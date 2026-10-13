@@ -73,13 +73,13 @@
     /* Fixed bottom-left back button, plain text, no box */
     .back-to-cat-btn {
         display: inline-flex; align-items: center; gap: 8px;
-        position: fixed; bottom: 25px; left: 25px; z-index: 1500;
-        background: transparent; color: var(--text-main); border: none;
-        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
-        padding: 0; box-shadow: none;
-        transition: opacity 0.2s ease;
+        background: transparent; border: none;
+        color: var(--text-muted); font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 500;
+        cursor: pointer; text-decoration: none;
+        padding: 0 40px; margin-bottom: 14px;
+        transition: color 0.2s ease, transform 0.2s ease;
     }
-    .back-to-cat-btn:hover { opacity: 0.7; }
+    .back-to-cat-btn:hover { color: var(--text-main); transform: translateX(-3px); }
 
     /* VIDEO GALLERY */
     .collection-section { animation: fadeIn 0.4s ease; padding: 0 40px; }
@@ -189,9 +189,13 @@
         }
 
         .back-to-cat-btn {
-            bottom: 16px; left: 16px;
-            font-size: 13px;
-        }
+        display: inline-flex; align-items: center; gap: 8px;
+        background: transparent; border: none;
+        color: var(--text-muted); font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 500;
+        cursor: pointer; text-decoration: none;
+        padding: 0 40px; margin-bottom: 14px;
+        transition: color 0.2s ease, transform 0.2s ease;
+    }
 
         .gallery-grid { gap: 12px; }
         .video-card { width: 100%; }

@@ -48,6 +48,34 @@ export function clearCachedUser() {
   } catch (e) {}
 }
 
+// Live Security Watchdog: Automatically terminates session if status is revoked in DB
+export function initStatusSecurityWatchdog(auth, db) {
+  if (!auth || !db) return;
+  try {
+    const cached = getCachedUser();
+    if (!cached || !cached.uid) return;
+    
+    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js").then(({ ref, onValue }) => {
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js").then(({ signOut }) => {
+        const userStatusRef = ref(db, `users/${cached.uid}/status`);
+        onValue(userStatusRef, (snap) => {
+          if (snap.exists()) {
+            const status = snap.val();
+            if (status === "denied" || status === "revoked" || status === "suspended") {
+              console.warn("⚠️ Account access has been revoked by administration. Terminating session...");
+              clearCachedUser();
+              signOut(auth).then(() => {
+                sessionStorage.setItem("revocationNotice", "true");
+                window.location.replace("login");
+              });
+            }
+          }
+        });
+      });
+    }).catch(() => {});
+  } catch (e) {}
+}
+
 // Immediately restores UI elements across all pages (Home, Videos, Profile, Collection)
 export function applyCachedUserToUI() {
   const user = getCachedUser();

@@ -3,7 +3,7 @@
    Used across all concert and video streaming pages (2021 - 2026)
    ======================================================== */
 
-/* === 1. VARIABLES & THEME ENGINE (SOLID GRAY THEME) === */
+/* === 1. VARIABLES & THEME ENGINE === */
 :root {
     --bg-color: #0a0a0c;
     --bg-gradient: radial-gradient(circle at top right, #1a1a24, #0a0a0c);
@@ -13,10 +13,13 @@
     --glass-border: 1px solid rgba(255, 255, 255, 0.05);
     --accent: #a1a1aa;
     --playlist-hover: rgba(255, 255, 255, 0.04);
-    --active-episode: rgba(161, 161, 170, 0.1); 
+    --active-episode: rgba(161, 161, 170, 0.12); 
     --active-border: rgba(161, 161, 170, 0.5); 
+    --active-text: #ffffff;
+    --active-bar: #ffffff;
 }
 
+html.light-mode,
 body.light-mode {
     --bg-color: #f8f9fa;
     --bg-gradient: radial-gradient(circle at top right, #ffffff, #f0f2f5);
@@ -28,10 +31,14 @@ body.light-mode {
     --playlist-hover: rgba(0, 0, 0, 0.03);
     --active-episode: rgba(85, 85, 85, 0.06); 
     --active-border: rgba(85, 85, 85, 0.4); 
+    --active-text: #111111; /* Fix: High contrast text in Light Mode */
+    --active-bar: #111111;
 }
 
-* { 
+*, *::before, *::after { 
     box-sizing: border-box; 
+    margin: 0;
+    padding: 0;
 }
 
 body {
@@ -39,7 +46,6 @@ body {
     background-image: var(--bg-gradient);
     color: var(--text-main);
     font-family: 'Inter', sans-serif;
-    margin: 0;
     padding: 30px 20px;
     min-height: 100vh;
     transition: background 0.4s ease, color 0.4s ease;
@@ -139,6 +145,7 @@ body {
     aspect-ratio: 16/9; 
     background-size: cover; 
     background-position: center;
+    background-color: #000;
     display: flex; 
     align-items: center; 
     justify-content: center; 
@@ -188,20 +195,21 @@ body {
     border-radius: 20px; 
     overflow: hidden; 
     position: relative; 
-    box-shadow: none;
-    touch-action: none; 
+    box-shadow: none; 
     background: #000; 
     border: var(--glass-border);
 }
+
 .art-video-player { 
-    width: 100%; 
-    height: 100%; 
+    width: 100% !important; 
+    height: 100% !important; 
 }
+
 .art-layer-mobile { 
     pointer-events: auto !important; 
 }
 
-/* Title box - separate card below the video */
+/* Title box */
 .title-box {
     width: 100%; 
     background: var(--card-bg); 
@@ -314,7 +322,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2); 
     color: white; 
     padding: 12px 24px; 
-    border-radius: 8px;
+    border-radius: 8px; 
     font-family: 'Inter', sans-serif; 
     font-weight: 600; 
     cursor: pointer;
@@ -436,21 +444,24 @@ body {
     flex-shrink: 0;
     border-radius: 8px; 
     overflow: hidden; 
+    background-color: #000;
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 .playlist-item img { 
     width: 100%; 
     height: 100%; 
     object-fit: cover; 
+    object-position: center;
+    display: block;
     transition: transform 0.5s ease; 
 }
-.playlist-item:hover img { transform: scale(1.1); }
+.playlist-item:hover img { transform: scale(1.08); }
 .playlist-img-wrapper::after {
     content: '▶'; 
     position: absolute; 
     inset: 0; 
     background: rgba(0,0,0,0.5); 
-    color: white;
+    color: white; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
@@ -472,15 +483,20 @@ body {
     font-size: 14px; 
     font-weight: 600; 
     color: var(--text-main); 
-    line-height: 1.4;
+    line-height: 1.4; 
     display: -webkit-box; 
     -webkit-line-clamp: 2; 
     -webkit-box-orient: vertical; 
     overflow: hidden; 
+    transition: color 0.2s ease;
 }
-.playlist-item.active .playlist-title { color: var(--accent); }
 
-/* Playing Indicator */
+/* FIX: Ensure active title color adapts to Light/Dark Mode */
+.playlist-item.active .playlist-title { 
+    color: var(--active-text) !important; 
+    font-weight: 700;
+}
+
 .playing-indicator { 
     display: none; 
     align-items: center; 
@@ -493,7 +509,7 @@ body {
 .bar {
     width: 3px; 
     height: 12px; 
-    background: var(--accent); 
+    background: var(--active-bar); 
     border-radius: 2px;
     animation: sound 1s ease-in-out infinite;
 }
@@ -501,136 +517,65 @@ body {
 .bar:nth-child(3) { animation-delay: 0.2s; height: 10px; }
 .playlist-item.is-paused .bar { animation-play-state: paused; }
 
-/* === 5. RESPONSIVE DESIGN & UTILITIES === */
-@media (max-width: 1099px) {
-    body { padding: 20px 16px; }
-    #poster-container, #player-container { border-radius: 16px; }
-    .playlist-card { max-height: none; } 
-    #playlist-items { max-height: 400px; } 
-    .title-box { padding: 16px 18px; }
-    #main-title { font-size: 17px; }
-    .playlist-img-wrapper { width: 90px; }
-    .playlist-title { font-size: 13px; }
+@keyframes sound {
+    0%, 100% { height: 6px; }
+    50% { height: 18px; }
 }
 
-/* Back Button */
-.back-to-video-btn {
-    display: inline-flex; 
-    align-items: center; 
-    gap: 8px;
-    position: fixed; 
-    bottom: 25px; 
-    left: 25px; 
-    z-index: 1500;
-    background: transparent; 
-    color: var(--text-main); 
-    border: none;
-    font-family: 'Inter', sans-serif; 
-    font-size: 14px; 
-    font-weight: 600;
-    cursor: pointer; 
-    text-decoration: none; 
-    padding: 0; 
-    box-shadow: none;
-    transition: opacity 0.2s ease;
+/* === 5. ADAPTIVE SUBTITLES (LARGE ON DESKTOP, COMPACT ON MOBILE) === */
+.art-subtitle,
+.art-video-player .art-subtitle,
+.art-subtitle p {
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: clamp(24px, 2.4vw, 36px) !important;
+    line-height: 1.4 !important;
+    bottom: 52px !important;
+    text-align: center !important;
+    background: transparent !important;
+    /* High contrast multi-directional text shadow */
+    text-shadow: 
+        -2px -2px 0 #000,
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000,
+        -3px  0px 0 #000,
+         3px  0px 0 #000,
+         0px -3px 0 #000,
+         0px  3px 0 #000,
+         0 4px 12px rgba(0, 0, 0, 0.95),
+         0 8px 24px rgba(0, 0, 0, 0.85) !important;
+    transition: font-size 0.2s ease, bottom 0.2s ease;
 }
-.back-to-video-btn:hover { opacity: 0.7; }
-.back-to-video-btn i { font-size: 14px; }
 
 @media (max-width: 768px) {
-    .back-to-video-btn { bottom: 16px; left: 16px; font-size: 13px; }
+    .art-subtitle,
+    .art-video-player .art-subtitle,
+    .art-subtitle p {
+        font-size: clamp(14px, 3.8vw, 18px) !important;
+        font-weight: 700 !important;
+        bottom: 38px !important;
+        line-height: 1.3 !important;
+        text-shadow: 
+            -1.5px -1.5px 0 #000,
+             1.5px -1.5px 0 #000,
+            -1.5px  1.5px 0 #000,
+             1.5px  1.5px 0 #000,
+             0 3px 8px rgba(0, 0, 0, 0.9) !important;
+    }
 }
 
-/* Admin Notification Toast (Clean White / Dark Glass Style) */
-.admin-toast {
-    position: fixed; 
-    top: -100px; 
-    left: 50%; 
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.96);
-    color: #09090b; 
-    padding: 11px 26px; 
-    border-radius: 50px;
-    font-weight: 700; 
-    font-size: 13.5px; 
-    z-index: 20000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    display: flex; 
-    align-items: center; 
-    gap: 10px;
-    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    pointer-events: none; 
-    letter-spacing: 0.5px; 
-    text-transform: uppercase;
-}
-.admin-toast.show { top: 24px; }
-.admin-toast i { font-size: 15px; color: #09090b; }
-
-/* Access Denied Modal */
-.access-denied-modal {
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    bottom: 0; 
-    background: rgba(5, 5, 6, 0.98); 
-    color: #fff;
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    z-index: 11000; 
-    flex-direction: column; 
-    text-align: center;
-    padding: 20px; 
-    opacity: 0; 
-    animation: fadeIn 0.5s forwards;
-}
-@keyframes fadeIn { to { opacity: 1; } }
- 
-.access-denied-modal button { 
-    margin-top: 24px; 
-    padding: 14px 36px; 
-    border-radius: 50px; 
-    background: transparent; 
-    border: 2px solid white; 
-    color: white; 
-    cursor: pointer;
-    font-weight: 700; 
-    transition: all 0.3s; 
-    font-size: 14px; 
-    letter-spacing: 1.5px; 
-    text-transform: uppercase;
-}
-.access-denied-modal button:hover { 
-    background: white; 
-    color: black; 
-    transform: translateY(-3px); 
+@media (max-width: 480px) {
+    .art-subtitle,
+    .art-video-player .art-subtitle,
+    .art-subtitle p {
+        font-size: 13.5px !important;
+        bottom: 26px !important;
+    }
 }
 
-/* Subtitle Styling */
-.art-subtitle {
-    color: #ffffff !important;
-    background: transparent !important;
-    text-shadow: 
-        2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 
-        1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000, 
-        0 5px 10px rgba(0,0,0,1) !important;
-    font-weight: 700 !important;
-    line-height: 1.5 !important;
-    transition: font-size 0.2s ease;
-    font-size: 20px !important;
-}
-@media (max-width: 768px) { 
-    .art-subtitle { font-size: 14px !important; } 
-}
-
-/* ========================================================
-   ADAPTIVE ARTPLAYER CONTROLS & SCREEN RESIZING
-   - Adaptive scaling for controls, font sizes, and buttons
-   - Clean responsive sizing for small screens and mobile devices
-   - White theme & clean contrast (no harsh eye-strain red)
-   ======================================================== */
+/* === 6. ARTPLAYER CONTROLS & DOCKING === */
 .art-video-player,
 #artplayer-app,
 .artplayer-app {
@@ -639,11 +584,17 @@ body {
     position: relative !important;
 }
 
-/* Ensure controls container scales responsively */
 .art-video-player .art-bottom {
+    position: absolute !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
     padding: 0 10px !important;
     height: 48px !important;
-    transition: all 0.2s ease !important;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.85) 100%) !important;
+    z-index: 25 !important;
 }
 
 .art-video-player .art-control {
@@ -661,162 +612,99 @@ body {
     fill: #ffffff !important;
 }
 
-/* Tablet & Mobile Screens (max-width: 768px) */
 @media (max-width: 768px) {
     .art-video-player .art-bottom {
         padding: 0 6px !important;
         height: 40px !important;
     }
-    
     .art-video-player .art-control {
         font-size: 11.5px !important;
     }
-
     .art-video-player .art-control-icon {
         width: 28px !important;
         height: 28px !important;
     }
-
     .art-video-player .art-control-icon svg {
         width: 17px !important;
         height: 17px !important;
     }
-
     .art-video-player .art-control-time {
         font-size: 11px !important;
         padding: 0 4px !important;
     }
-
     .art-video-player .art-control-volume {
-        display: none !important; /* Hide redundant volume slider on mobile touch devices */
+        display: none !important;
     }
-
     .art-video-player .art-progress {
         height: 3px !important;
     }
-    .art-video-player .art-progress:hover {
-        height: 5px !important;
-    }
-
-    .art-video-player .custom-live-badge {
-        font-size: 10px !important;
-        padding: 2px 6px !important;
-        margin-left: 2px !important;
-        margin-right: 10px !important;
-    }
-
-    .next-ep-btn, .skip-intro-btn {
-        padding: 6px 12px !important;
-        font-size: 11px !important;
-        border-radius: 6px !important;
-    }
 }
 
-/* Very Small Mobile Screens (max-width: 480px) */
-@media (max-width: 480px) {
-    .art-video-player .art-bottom {
-        padding: 0 4px !important;
-        height: 36px !important;
-    }
+/* Back Button */
+.back-to-video-btn {
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px;
+    position: fixed; 
+    bottom: 25px; 
+    left: 25px; 
+    z-index: 1500;
+    background: transparent; 
+    color: var(--text-muted); 
+    border: none;
+    font-family: 'Inter', sans-serif; 
+    font-size: 14px; 
+    font-weight: 600;
+    cursor: pointer; 
+    text-decoration: none; 
+    padding: 0; 
+    box-shadow: none; 
+    transition: color 0.2s ease;
+}
+.back-to-video-btn:hover { color: var(--text-main); }
+.back-to-video-btn i { font-size: 14px; }
 
-    .art-video-player .art-control {
-        font-size: 10.5px !important;
-    }
-
-    .art-video-player .art-control-icon {
-        width: 24px !important;
-        height: 24px !important;
-    }
-
-    .art-video-player .art-control-icon svg {
-        width: 15px !important;
-        height: 15px !important;
-    }
-
-    .art-video-player .art-control-time {
-        font-size: 10px !important;
-        padding: 0 2px !important;
-    }
-
-    .art-video-player .art-progress-indicator {
-        width: 10px !important;
-        height: 10px !important;
-    }
-
-    .art-video-player .art-subtitle {
-        font-size: 12.5px !important;
-        bottom: 8% !important;
-    }
+@media (max-width: 768px) {
+    .back-to-video-btn { bottom: 16px; left: 16px; font-size: 13px; }
 }
 
-
-/* ========================================================
-   CLEAN WHITE ADAPTIVE ADMIN TOAST NOTIFICATION
-   - Pure white matte capsule background
-   - Deep rich black text (#09090b)
-   - Size-adaptive (compact & sleek, never bulky or oversized)
-   ======================================================== */
-.admin-toast {
-    position: fixed !important;
-    top: -120px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background: #ffffff !important;
-    color: #09090b !important;
-    padding: 8px 18px !important;
-    border-radius: 9999px !important;
-    font-weight: 700 !important;
-    font-size: 12.5px !important;
-    line-height: 1.2 !important;
-    z-index: 2147483647 !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
-    border: 1px solid rgba(255, 255, 255, 0.8) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    transition: top 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease !important;
-    pointer-events: none !important;
-    letter-spacing: 0.3px !important;
-    text-transform: uppercase !important;
-    white-space: nowrap !important;
-    width: auto !important;
-    max-width: 90vw !important;
-    box-sizing: border-box !important;
+/* Access Denied Modal */
+.access-denied-modal {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0; 
+    background: rgba(5, 5, 6, 0.98); 
+    color: #fff;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 11000; 
+    flex-direction: column; 
+    text-align: center; 
+    padding: 20px; 
+    opacity: 0; 
+    animation: fadeIn 0.5s forwards;
 }
+@keyframes fadeIn { to { opacity: 1; } }
 
-.admin-toast.show {
-    top: 20px !important;
-    opacity: 1 !important;
+.access-denied-modal button { 
+    margin-top: 24px; 
+    padding: 14px 36px; 
+    border-radius: 50px; 
+    background: transparent; 
+    border: 2px solid white; 
+    color: white; 
+    cursor: pointer; 
+    font-weight: 700; 
+    transition: all 0.3s; 
+    font-size: 14px; 
+    letter-spacing: 1.5px; 
+    text-transform: uppercase;
 }
-
-.admin-toast i,
-.admin-toast svg {
-    font-size: 13px !important;
-    width: 14px !important;
-    height: 14px !important;
-    color: #09090b !important;
-    stroke: #09090b !important;
-    fill: none !important;
-    flex-shrink: 0 !important;
+.access-denied-modal button:hover { 
+    background: white; 
+    color: black; 
+    transform: translateY(-3px); 
 }
-
-/* Adaptive scaling for mobile screens */
-@media (max-width: 600px) {
-    .admin-toast {
-        padding: 6px 14px !important;
-        font-size: 11px !important;
-        gap: 6px !important;
-        top: -100px !important;
-    }
-    .admin-toast.show {
-        top: 14px !important;
-    }
-    .admin-toast i,
-    .admin-toast svg {
-        font-size: 11.5px !important;
-        width: 12px !important;
-        height: 12px !important;
-    }
-}
-

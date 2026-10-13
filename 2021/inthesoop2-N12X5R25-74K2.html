@@ -23,7 +23,7 @@
   <meta name="theme-color" content="#0a0a0c">
 
   <style>
-    /* === 1. VARIABLES & THEME ENGINE === */
+    /* === 1. THEME VARIABLES === */
     :root {
       --bg-color: #0a0a0c;
       --bg-gradient: radial-gradient(circle at top right, #1a1a24, #0a0a0c);
@@ -32,9 +32,11 @@
       --card-bg: #141418;
       --glass-border: 1px solid rgba(255, 255, 255, 0.08);
       --accent: #a1a1aa;
-      --playlist-hover: rgba(255, 255, 255, 0.04);
-      --active-episode: rgba(161, 161, 170, 0.12); 
-      --active-border: rgba(161, 161, 170, 0.4); 
+      --playlist-hover: rgba(255, 255, 255, 0.05);
+      --active-episode: rgba(161, 161, 170, 0.14); 
+      --active-border: rgba(161, 161, 170, 0.45); 
+      --active-text: #ffffff; /* Active text color sa Dark Mode */
+      --active-bar: #ffffff;
     }
 
     html.light-mode {
@@ -43,11 +45,13 @@
       --text-main: #111111;
       --text-muted: #666666;
       --card-bg: #ffffff;
-      --glass-border: 1px solid rgba(0, 0, 0, 0.08);
-      --accent: #52525b;
-      --playlist-hover: rgba(0, 0, 0, 0.03);
-      --active-episode: rgba(82, 82, 91, 0.08); 
-      --active-border: rgba(82, 82, 91, 0.4); 
+      --glass-border: 1px solid rgba(0, 0, 0, 0.09);
+      --accent: #4b5563;
+      --playlist-hover: rgba(0, 0, 0, 0.04);
+      --active-episode: rgba(0, 0, 0, 0.06); 
+      --active-border: rgba(0, 0, 0, 0.25); 
+      --active-text: #000000; /* FIXED: Malinaw na black text sa Light Mode */
+      --active-bar: #111111;
     }
 
     *, *::before, *::after { 
@@ -151,7 +155,7 @@
       backdrop-filter: blur(8px);
     }
 
-    /* === 3. PLAYER CONTAINER === */
+    /* === 3. PLAYER & ADAPTIVE SUBTITLE ENGINE === */
     #player-container { 
       display: none; 
       width: 100%; 
@@ -166,6 +170,61 @@
     .art-video-player { 
       width: 100% !important; 
       height: 100% !important; 
+    }
+
+    /* DESKTOP SUBTITLES: Malalaki na may malakas na black outline + soft shadow */
+    .art-subtitle,
+    .art-video-player .art-subtitle,
+    .art-subtitle p {
+      color: #ffffff !important;
+      font-family: 'Inter', sans-serif !important;
+      font-weight: 800 !important;
+      font-size: clamp(24px, 2.3vw, 36px) !important; /* Adaptive malaki sa desktop */
+      line-height: 1.4 !important;
+      bottom: 50px !important;
+      text-align: center !important;
+      background: transparent !important;
+      /* Super Deep Outline + 3D Shadow para kitang-kita kahit puti ang background ng video */
+      text-shadow: 
+        -2px -2px 0 #000,
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000,
+        -3px  0px 0 #000,
+         3px  0px 0 #000,
+         0px -3px 0 #000,
+         0px  3px 0 #000,
+         0 4px 12px rgba(0, 0, 0, 0.95),
+         0 8px 24px rgba(0, 0, 0, 0.85) !important;
+      transition: font-size 0.2s ease, bottom 0.2s ease;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.9));
+    }
+
+    /* CELLPHONE / TABLET SCREENS: Mas maliit, tama sa screen at hindi natatakpan ang buong video */
+    @media (max-width: 768px) {
+      .art-subtitle,
+      .art-video-player .art-subtitle,
+      .art-subtitle p {
+        font-size: clamp(14px, 3.8vw, 18px) !important;
+        font-weight: 700 !important;
+        bottom: 35px !important;
+        line-height: 1.3 !important;
+        text-shadow: 
+          -1.5px -1.5px 0 #000,
+           1.5px -1.5px 0 #000,
+          -1.5px  1.5px 0 #000,
+           1.5px  1.5px 0 #000,
+           0 3px 8px rgba(0, 0, 0, 0.9) !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .art-subtitle,
+      .art-video-player .art-subtitle,
+      .art-subtitle p {
+        font-size: 14px !important;
+        bottom: 25px !important;
+      }
     }
 
     /* Gestures overlay */
@@ -240,14 +299,6 @@
       transform: scale(1.04);
     }
 
-    /* Subtitles */
-    .art-subtitle {
-      color: #ffffff !important;
-      font-weight: 700 !important;
-      font-size: 19px !important;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
-    }
-
     /* === 4. TITLE CARD === */
     .title-box {
       width: 100%; 
@@ -255,6 +306,7 @@
       border: var(--glass-border);
       border-radius: 14px; 
       padding: 18px 22px; 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
     }
 
     .title-box .current-episode-label {
@@ -306,6 +358,7 @@
       display: flex; 
       flex-direction: column; 
       max-height: calc(100vh - 120px); 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
     }
 
     .playlist-header {
@@ -338,7 +391,7 @@
     }
 
     #playlist-items::-webkit-scrollbar { width: 5px; }
-    #playlist-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 8px; }
+    #playlist-items::-webkit-scrollbar-thumb { background: rgba(142, 142, 153, 0.3); border-radius: 8px; }
 
     .playlist-item {
       display: flex; 
@@ -362,7 +415,6 @@
       border: 1px solid var(--active-border); 
     }
 
-    /* Fixed Thumbnail Framing */
     .playlist-img-wrapper {
       position: relative; 
       width: 110px; 
@@ -398,10 +450,13 @@
       -webkit-line-clamp: 2; 
       -webkit-box-orient: vertical; 
       overflow: hidden; 
+      transition: color 0.2s ease;
     }
 
+    /* FIXED: Dynamic color para sa active episode title sa dark & light mode */
     .playlist-item.active .playlist-title { 
-      color: #fff; 
+      color: var(--active-text) !important; 
+      font-weight: 700;
     }
 
     .playing-indicator { 
@@ -419,7 +474,7 @@
     .bar {
       width: 3px; 
       height: 12px; 
-      background: var(--accent); 
+      background: var(--active-bar); 
       border-radius: 2px; 
       animation: sound 1s ease-in-out infinite; 
     }
@@ -446,7 +501,7 @@
       font-weight: 600;
       transition: color 0.2s;
     }
-    .back-to-video-btn:hover { color: #fff; }
+    .back-to-video-btn:hover { color: var(--text-main); }
   </style>
 </head>
 
@@ -462,7 +517,7 @@
     <div id="player-container">
        <div id="artplayer" class="art-video-player"></div>
        
-       <!-- Binigyan ng space ang ibaba para malayang ma-click ang controls nang walang obstruction -->
+       <!-- 80% upper clickable gestures, bottom 56px untouched para sa controls -->
        <div id="click-catcher" style="position:absolute; top:0; left:0; width:100%; height:calc(100% - 56px); z-index:10;"></div>
        
        <div class="gesture-overlay">
@@ -508,7 +563,7 @@
 
 <script>
   // ========================================================
-  // 1. THEME ENGINE & ACCESS CONTROL
+  // 1. DYNAMIC THEME ENGINE
   // ========================================================
   (function initTheme() {
     function applyTheme(t) {
@@ -548,7 +603,7 @@
   const db = firebase.database();
 
   // ========================================================
-  // 3. PLAYLIST DATA & ELEMENTS
+  // 3. PLAYLIST DATA
   // ========================================================
   const playlistData = [
     { id: "1", epNum: "EP1", title: "READY TO TIME OFF", image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", introEnd: 0 },
@@ -602,7 +657,7 @@
   };
 
   // ========================================================
-  // 4. LOAD & INITIALIZE ARTPLAYER
+  // 4. LOAD EPISODE & PLAY
   // ========================================================
   async function loadAndPlayEpisode(epId, updateUrl = true) {
     const ep = playlistData.find(item => item.id === epId);
@@ -706,7 +761,6 @@
       }
     });
 
-    // Subtitles Menu
     if (subtitles.length) {
       art.setting.add({
         html: 'Subtitles', width: 180,
@@ -718,7 +772,6 @@
       });
     }
 
-    // Layers
     art.layers.add({
       name: 'nextEpLayer',
       html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
@@ -739,7 +792,6 @@
       window.skipIntroGlobal();
     });
 
-    // Playback state syncing
     art.on('play', () => document.querySelectorAll('.playlist-item.active').forEach(i => i.classList.remove('is-paused')));
     art.on('pause', () => document.querySelectorAll('.playlist-item.active').forEach(i => i.classList.add('is-paused')));
 
@@ -747,19 +799,16 @@
       if (!art || !window.currentEpData) return;
       const now = Date.now();
 
-      // Show Next Ep layer near end of duration
       if (art.duration > 0 && art.layers.nextEpLayer) {
         const idx = playlistData.findIndex(item => item.id === window.currentEpData.id);
         const hasNext = idx >= 0 && idx < playlistData.length - 1;
         art.layers.nextEpLayer.style.display = (art.duration - art.currentTime <= 50 && hasNext) ? 'block' : 'none';
       }
 
-      // Show Skip Intro
       if (window.introEndTime > 0 && art.layers.skipIntroLayer) {
         art.layers.skipIntroLayer.style.display = (!window.hasSkippedIntro && art.currentTime > 0 && art.currentTime < window.introEndTime) ? 'block' : 'none';
       }
 
-      // Sync Watch History
       if (auth.currentUser && !art.video.paused && (!lastSavedHistory || now - lastSavedHistory > 5000)) {
         db.ref(`watchHistory/${auth.currentUser.uid}/${currentHistoryKey}`).update({
           id: ep.id,
@@ -772,7 +821,6 @@
       }
     });
 
-    // Resume position
     if (auth.currentUser) {
       db.ref(`watchHistory/${auth.currentUser.uid}/${historyKey}`).once('value').then(snap => {
         const hist = snap.val();

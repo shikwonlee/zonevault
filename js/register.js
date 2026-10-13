@@ -7,6 +7,7 @@ import {
   ref, onValue, set, get, update, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
+import { setCachedUser } from "./user-cache.js";
 import { showToast } from "./toast.js";
 
 console.log("✅ Register.js loaded: FIXED (Token Nuke Active)");
@@ -207,10 +208,20 @@ async function checkUserStatus(user) {
           const userData = userSnap.val();
           console.log("Profile Found:", userData.status);
           updateDynamicURL(currentUid, userData.role || "user", "approved");
+          setCachedUser({
+              uid: currentUid,
+              email: user.email || userData.email || "",
+              name: userData.name || userData.telegramUsername || "Vault Member",
+              profilePicture: userData.profilePicture || "https://via.placeholder.com/150",
+              status: "approved",
+              role: userData.role || "user",
+              accessID: userData.accessID || currentUid,
+              isAdmin: (userData.role || "").toLowerCase() === 'admin'
+          });
           sessionStorage.setItem("internalAccess", "true");
           sessionStorage.setItem("fromIndex", "true");
-          sessionStorage.setItem("accessID", userData.accessID);
-          window.location.href = `home.html?access=${userData.accessID}`; // DERECHO SA HOME
+          sessionStorage.setItem("accessID", userData.accessID || currentUid);
+          window.location.href = `home.html?access=${userData.accessID || currentUid}`; // DERECHO SA HOME
           return;
       }
 
@@ -235,11 +246,21 @@ async function checkUserStatus(user) {
               if (realtimeUserSnap.exists()) {
                   const userData = realtimeUserSnap.val();
                   if (userData.status === "approved") {
+                      setCachedUser({
+                          uid: currentUid,
+                          email: user.email || userData.email || "",
+                          name: userData.name || userData.telegramUsername || "Vault Member",
+                          profilePicture: userData.profilePicture || "https://via.placeholder.com/150",
+                          status: "approved",
+                          role: userData.role || "user",
+                          accessID: userData.accessID || currentUid,
+                          isAdmin: (userData.role || "").toLowerCase() === 'admin'
+                      });
                       sessionStorage.setItem("internalAccess", "true");
                       sessionStorage.setItem("fromIndex", "true");
-                      sessionStorage.setItem("accessID", userData.accessID);
+                      sessionStorage.setItem("accessID", userData.accessID || currentUid);
                       show("approved");
-                      setTimeout(() => { window.location.href = `home.html?access=${userData.accessID}`; }, 1200);
+                      setTimeout(() => { window.location.href = `home.html?access=${userData.accessID || currentUid}`; }, 1200);
                   }
               }
           });

@@ -5,6 +5,7 @@ import {
   ref, onValue, get, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
+import { setCachedUser } from "./user-cache.js";
 import { showToast } from "./toast.js";
 
 console.log("✅ Code.js (Quick Access) loaded!");
@@ -94,7 +95,17 @@ window.quickCodeLogin = async function() {
 
         await Promise.all([userProfilePromise, markCodeUsedPromise]);
 
-        // Session Setup
+        // Session Setup & Cache
+        setCachedUser({
+          uid: uid,
+          email: dummyEmail,
+          name: nickname,
+          profilePicture: "https://via.placeholder.com/150",
+          status: "approved",
+          role: "guest",
+          accessID: newAccessID,
+          isAdmin: false
+        });
         sessionStorage.setItem("internalAccess", "true");
         sessionStorage.setItem("fromIndex", "true");
         sessionStorage.setItem("accessID", newAccessID);

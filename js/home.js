@@ -65,17 +65,46 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         
        // --- A. VERIFY USER FROM DATABASE ---
-const userRef = ref(db, 'users/' + user.uid);
-const snapshot = await get(userRef);
+       const userRef = ref(db, 'users/' + user.uid);
+       let snapshot = await get(userRef);
 
-if (!snapshot.exists()) {
-    showToast("Account not found.", "error");
-    await signOut(auth);
-    window.location.replace("login.html");
-    return;
-}
+       if (!snapshot.exists()) {
+           const reqRef = ref(db, 'joinRequests/' + user.uid);
+           const reqSnap = await get(reqRef);
+           if (reqSnap.exists()) {
+               const reqData = reqSnap.val() || {};
+               if (reqData.status === "approved") {
+                   await set(userRef, {
+                       status: "approved",
+                       accessID: user.uid,
+                       email: user.email || "",
+                       name: reqData.telegramUsername || user.displayName || "Vault Member",
+                       role: "user"
+                   });
+                   snapshot = await get(userRef);
+               } else if (reqData.status === "pending") {
+                   window.location.replace("login.html");
+                   return;
+               } else {
+                   showToast("Access Denied: You are not approved to enter Zone Vault.", "error");
+                   await signOut(auth);
+                   window.location.replace("login.html");
+                   return;
+               }
+           } else {
+               // Auto-initialize new authenticated account
+               await set(userRef, {
+                   status: "approved",
+                   accessID: user.uid,
+                   email: user.email || "",
+                   name: user.displayName || "Vault Member",
+                   role: "user"
+               });
+               snapshot = await get(userRef);
+           }
+       }
 
-const data = snapshot.val();
+       const data = snapshot.val() || {};
 
 console.log("USER DATA:", data);
 console.log("STATUS:", data.status);

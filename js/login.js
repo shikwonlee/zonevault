@@ -290,14 +290,35 @@ async function checkJoinRequest(user) {
 
           if (reqData.status === "approved") {
               await set(userRef, { status: "approved", accessID: currentUid, email: user.email, role: "user" });
+              setCachedUser({
+                  uid: currentUid,
+                  email: user.email,
+                  name: reqData.telegramUsername || user.displayName || "Vault Member",
+                  profilePicture: "https://via.placeholder.com/150",
+                  status: "approved",
+                  role: "user",
+                  accessID: currentUid,
+                  isAdmin: false
+              });
               window.location.replace(`home?access=${currentUid}`);
               return;
           } else if (reqData.status === "pending") {
               show("waiting");
               onValue(userRef, (realtimeUserSnap) => {
                   if (realtimeUserSnap.exists() && realtimeUserSnap.val().status === "approved") {
+                      const uData = realtimeUserSnap.val() || {};
+                      setCachedUser({
+                          uid: currentUid,
+                          email: user.email,
+                          name: uData.name || reqData.telegramUsername || user.displayName || "Vault Member",
+                          profilePicture: uData.profilePicture || "https://via.placeholder.com/150",
+                          status: "approved",
+                          role: uData.role || "user",
+                          accessID: uData.accessID || currentUid,
+                          isAdmin: (uData.role || "").toLowerCase() === 'admin'
+                      });
                       show("approved");
-                      setTimeout(() => window.location.replace(`home?access=${realtimeUserSnap.val().accessID}`), 1200);
+                      setTimeout(() => window.location.replace(`home?access=${uData.accessID || currentUid}`), 1200);
                   }
               });
               return;
@@ -308,13 +329,23 @@ async function checkJoinRequest(user) {
           }
       }
 
-      // SCENARIO C: Wala sa dalawang table (Old Account Auto-Fix)
-      console.log("🔄 Old account detected in Auth but missing in DB. Auto-fixing...");
+      // SCENARIO C: Wala sa dalawang table (Auto-Fix for New/Existing Accounts)
+      console.log("🔄 Account detected in Auth but missing in DB. Auto-fixing...");
       await set(userRef, {
           status: "approved",
           accessID: currentUid,
           email: user.email || "No Email",
           role: "user"
+      });
+      setCachedUser({
+          uid: currentUid,
+          email: user.email || "No Email",
+          name: user.displayName || "Vault Member",
+          profilePicture: user.photoURL || "https://via.placeholder.com/150",
+          status: "approved",
+          role: "user",
+          accessID: currentUid,
+          isAdmin: false
       });
       window.location.replace(`home?access=${currentUid}`);
 

@@ -149,6 +149,24 @@ secretRouter.post('/decrypt-key', (req, res) => {
   res.json({ ok: true, key: decrypted });
 });
 
+secretRouter.get('/check-access', async (req, res) => {
+  const { pageId, uid } = req.query;
+  const authToken = validateClientSession(req);
+  if (!pageId) return res.json({ allowed: true });
+  if (!uid && !authToken) return res.json({ allowed: false, reason: 'unauthenticated' });
+  try {
+    const databaseUrl = process.env.FIREBASE_DATABASE_URL || "https://tvnstream-b4497-default-rtdb.firebaseio.com";
+    let url = `${databaseUrl.replace(/\/$/, '')}/page_access/${encodeURIComponent(pageId)}/${encodeURIComponent(uid)}.json`;
+    if (authToken) url += `?auth=${encodeURIComponent(authToken)}`;
+    const r = await fetch(url);
+    if (r.ok) {
+      const val = await r.json();
+      return res.json({ allowed: val === true });
+    }
+  } catch (_) {}
+  return res.json({ allowed: false });
+});
+
 secretRouter.get('/verify-session', (req, res) => {
   const token = validateClientSession(req);
   if (!token) {

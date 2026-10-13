@@ -186,89 +186,162 @@
 
       this.renderPlaylist();
 
-      const rawPageId = (this.config.pageId && typeof this.config.pageId === 'string') ? this.config.pageId.trim() : '';
-      const hasPageRestriction = Boolean(rawPageId !== '');
-
-      // Authentication & Permission Verification
-      if (auth && db) {
-        auth.onAuthStateChanged(user => {
-          const cachedUserObj = (function(){ 
-            try { return JSON.parse(localStorage.getItem("zone_vault_user_cache")); } catch(e){ return null; } 
-          })();
-
-          const isApprovedCached = cachedUserObj && (cachedUserObj.status === "approved" || cachedUserObj.isAdmin === true || cachedUserObj.role === "admin");
-          const isCachedAdmin = Boolean(cachedUserObj && (cachedUserObj.isAdmin === true || cachedUserObj.role === 'admin'));
-
-          // 1. If not logged in at all (no Firebase user and no approved cached user): DENY ACCESS
-          if (!user && !isApprovedCached) {
-            this.hasPermission = false;
-            this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
-            return;
-          }
-
-          if (user) {
-            db.ref('users/' + user.uid).once('value').then(snapshot => {
-              const userData = snapshot.val() || {};
-              const role = (userData.role || (cachedUserObj ? cachedUserObj.role : 'member')).toLowerCase();
-              const status = userData.status || (cachedUserObj ? cachedUserObj.status : 'approved');
-
-              // If user status is explicitly denied or banned
-              if (status === 'denied' || status === 'banned') {
-                this.hasPermission = false;
-                this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
-                return;
-              }
-
-              // Admin has full access to ALL videos
-              if (role === 'admin' || userData.isAdmin === true || isCachedAdmin) {
-                this.hasPermission = true;
-                this.removeAccessDeniedModal();
-                this.showAdminToast();
-                return;
-              }
-
-              // Normal approved member:
-              // CASE A: Page has NO pageId -> FREE ACCESS FOR USER ONLY!
-              if (!hasPageRestriction) {
-                this.hasPermission = true;
-                this.removeAccessDeniedModal();
-                return;
-              }
-
-              // CASE B: Page HAS pageId -> SPECIFIC USER ONLY! Check page_access/<pageId>/<uid>
-              db.ref(`page_access/${rawPageId}/${user.uid}`).on('value', (accessSnapshot) => {
-                const isAllowed = accessSnapshot.val();
-                if (isAllowed === true) {
-                  this.hasPermission = true;
-                  this.removeAccessDeniedModal();
-                } else {
-                  this.hasPermission = false;
-                  this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
-                }
-              });
-            }).catch(() => {
-              // Network fallback using cached session
-              if (!hasPageRestriction && isApprovedCached) {
-                this.hasPermission = true;
-                this.removeAccessDeniedModal();
-              }
-            });
-          } else if (isApprovedCached) {
-            // Valid cached session while Firebase Auth connects
-            if (isCachedAdmin || !hasPageRestriction) {
-              this.hasPermission = true;
-              this.removeAccessDeniedModal();
-              if (isCachedAdmin) this.showAdminToast();
-            }
-          }
-        });
-      }
-
-      // Check URL parameters for specific episode
       const urlParams = new URLSearchParams(window.location.search);
       const requestedId = urlParams.get('v') || urlParams.get('ep') || urlParams.get('id');
-      if (requestedId && this.config.playlist.some(p => p.id === requestedId)) {
-        this.loadAndPlayEpisode(requestedId, false);
+
+      // Evaluate permissions immediately
+      this.evaluatePermissions((isAllowed) => {
+        if (isAllowed && requestedId && this.config.playlist && this.config.playlist.some(p => p.id === requestedId)) {
+          this.loadAndPlayEpisode(requestedId, false);
+        }
+      });
+    },
+
+    evaluatePermissions: function(callback) {
+      const rawPageId = (this.config.pageId && typeof this.config.pageId === 'string') ? this.config.pageId.trim() : '';
+      const hasPageRestriction = Boolean(rawPageId !== '');
+      const { auth, db } = ensureFirebase();
+
+      const getSession = () => {
+        let cached = null;
+        try { cached = JSON.parse(localStorage.getItem("zone_vault_user_cache")); } catch(_) {}
+        const isInternal = sessionStorage.getItem("internalAccess") === "true" || localStorage.getItem("internalAccess") === "true";
+        const hasAccessId = Boolean(sessionStorage.getItem("accessID") || localStorage.getItem("accessID"));
+        const isAdminStorage = sessionStorage.getItem("isAdmin") === "true" || localStorage.getItem("isAdmin") === "true";
+        const isCachedAdmin = Boolean(cached && (cached.isAdmin === true || cached.role === 'admin' || (cached.role && String(cached.role).toLowerCase() === 'admin')));
+        const isAdmin = isAdminStorage || isCachedAdmin;
+        const uid = (auth && auth.currentUser && auth.currentUser.uid) || (cached && cached.uid) || '';
+        const email = (auth && auth.currentUser && auth.currentUser.email) || (cached && cached.email) || '';
+        const isBanned = Boolean(cached && (cached.status === 'banned' || cached.status === 'denied'));
+        const isUserLoggedIn = Boolean(uid || isInternal || hasAccessId || cached);
+
+        return { cached, isInternal, hasAccessId, isAdmin, uid, email, isBanned, isUserLoggedIn };
+      };
+
+      const deny = (msg) => {
+        this.hasPermission = false;
+        this.destroyPlayer();
+        const finalMsg = msg || "Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.";
+        this.showAccessDeniedModal(finalMsg);
+        if (typeof callback === 'function') callback(false);
+      };
+
+      const grant = (isAdminUser) => {
+        this.hasPermission = true;
+        this.removeAccessDeniedModal();
+        if (isAdminUser) this.showAdminToast();
+        if (typeof callback === 'function') callback(true);
+      };
+
+      let checkSettled = false;
+
+      const runCheck = (user) => {
+        if (checkSettled) return;
+        const session = getSession();
+
+        // 1. Explicitly banned or denied accounts
+        if (session.isBanned) {
+          checkSettled = true;
+          deny();
+          return;
+        }
+
+        // 2. Unauthenticated visitors (Not logged in)
+        // All videos (including pages without pageId) are "free access for user only"
+        if (!session.isUserLoggedIn && !user) {
+          checkSettled = true;
+          deny();
+          return;
+        }
+
+        // 3. Admin user has full access to ALL videos
+        if (session.isAdmin || (user && user.uid && session.cached && session.cached.role === 'admin')) {
+          checkSettled = true;
+          grant(true);
+          return;
+        }
+
+        // 4. CASE A: Page has NO pageId -> FREE ACCESS FOR ALL LOGGED-IN USERS!
+        if (!hasPageRestriction) {
+          checkSettled = true;
+          grant(false);
+          return;
+        }
+
+        // 5. CASE B: Page HAS pageId -> RESTRICTED TO SPECIFIC AUTHORIZED USERS!
+        const currentUid = user ? user.uid : session.uid;
+        if (!currentUid) {
+          checkSettled = true;
+          deny();
+          return;
+        }
+
+        // Check if user was already verified for this page in session cache
+        if (sessionStorage.getItem(`zv_allowed_${rawPageId}`) === 'true' ||
+            (session.cached && session.cached.allowedPages && session.cached.allowedPages[rawPageId] === true) ||
+            (session.cached && session.cached.page_access && session.cached.page_access[rawPageId] === true)) {
+          checkSettled = true;
+          grant(false);
+          return;
+        }
+
+        // Safety timeout: if database check hangs or rules block read, trigger modal
+        const safetyTimer = setTimeout(() => {
+          if (!checkSettled) {
+            checkSettled = true;
+            deny();
+          }
+        }, 2500);
+
+        // Query Realtime Database for access: page_access/${pageId}/${uid}
+        if (db) {
+          db.ref(`page_access/${rawPageId}/${currentUid}`).once('value', (snap) => {
+            if (checkSettled) return;
+            const val = snap.val();
+            if (val === true) {
+              checkSettled = true;
+              clearTimeout(safetyTimer);
+              sessionStorage.setItem(`zv_allowed_${rawPageId}`, 'true');
+              grant(false);
+            } else {
+              // Check secondary user node: users/${uid}/page_access/${pageId}
+              db.ref(`users/${currentUid}/page_access/${rawPageId}`).once('value', (uSnap) => {
+                if (checkSettled) return;
+                checkSettled = true;
+                clearTimeout(safetyTimer);
+                if (uSnap.val() === true) {
+                  sessionStorage.setItem(`zv_allowed_${rawPageId}`, 'true');
+                  grant(false);
+                } else {
+                  deny();
+                }
+              }, () => {
+                if (!checkSettled) { checkSettled = true; clearTimeout(safetyTimer); deny(); }
+              });
+            }
+          }, (err) => {
+            if (checkSettled) return;
+            clearTimeout(safetyTimer);
+            checkSettled = true;
+            deny();
+          });
+        } else {
+          clearTimeout(safetyTimer);
+          checkSettled = true;
+          deny();
+        }
+      };
+
+      // 0ms startup pre-check using cached session
+      runCheck(auth ? auth.currentUser : null);
+
+      // Also listen to onAuthStateChanged for live authentication restoration
+      if (auth) {
+        auth.onAuthStateChanged((user) => {
+          if (!checkSettled) {
+            runCheck(user);
+          }
+        });
       }
     },
 
@@ -305,8 +378,11 @@
       const ep = this.config.playlist.find(item => item.id === String(epId));
       if (!ep) return;
 
-      // If user permission is already evaluated as denied, prevent playback immediately
-      if (this.hasPermission === false) {
+      const rawPageId = (this.config.pageId && typeof this.config.pageId === 'string') ? this.config.pageId.trim() : '';
+      const hasPageRestriction = Boolean(rawPageId !== '');
+
+      // If user permission is evaluated as denied, prevent playback immediately
+      if (this.hasPermission === false || (hasPageRestriction && this.hasPermission !== true)) {
         this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
         return;
       }
@@ -349,7 +425,7 @@
         };
       } else {
         // Resolve authenticated user token first
-        const authToken = await this.resolveAuthToken();
+        const authToken = await this.resolveAuthToken(2500);
 
         if (this.config.dbNode) {
           try {
@@ -406,9 +482,28 @@
 
       if (!streamData || !streamData.url) {
         this.destroyPlayer();
-        this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
+        if (hasPageRestriction && this.hasPermission !== true) {
+          this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
+        } else {
+          // Free access video or authorized user: do not lock out with permission error
+          if (mainTitle) mainTitle.innerText = `${ep.title} (Stream Currently Offline)`;
+          let notice = document.getElementById('zv-stream-notice');
+          if (!notice) {
+            notice = document.createElement('div');
+            notice.id = 'zv-stream-notice';
+            notice.style.cssText = 'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.28); color:#fca5a5; padding:12px 18px; border-radius:12px; margin:16px 0; font-size:13px; text-align:center;';
+            const leftWrap = document.querySelector('.video-wrapper-left');
+            if (leftWrap) leftWrap.appendChild(notice);
+          }
+          notice.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i> Video stream is currently updating. Please select another episode or try again shortly.';
+          if (posterContainer) posterContainer.style.display = "block";
+          if (playerContainer) playerContainer.style.display = "none";
+        }
         return;
       }
+
+      const prevNotice = document.getElementById('zv-stream-notice');
+      if (prevNotice) prevNotice.remove();
 
       // If player is already running with the same stream URL (e.g. multi-part concert with timestamp markers)
       if (this.art && this.art.video && this.art.option && this.art.option.url === streamData.url) {
@@ -711,6 +806,18 @@
 
       const displayMsg = msg || "Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.";
 
+      // Stop and disable player & poster
+      this.destroyPlayer();
+      const posterContainer = document.getElementById('poster-container');
+      const playerContainer = document.getElementById('player-container');
+      if (posterContainer) {
+        posterContainer.style.pointerEvents = 'none';
+      }
+      if (playerContainer) {
+        playerContainer.style.display = 'none';
+        playerContainer.style.pointerEvents = 'none';
+      }
+
       // Resolve current user information
       let userUid = '';
       let userEmail = '';
@@ -816,11 +923,7 @@
       if (backBtn) {
         backBtn.addEventListener('click', () => {
           if (this.redirectTimer) clearInterval(this.redirectTimer);
-          if (window.history.length > 1 && document.referrer) {
-            window.history.back();
-          } else {
-            window.location.href = '/videos';
-          }
+          window.location.href = '/videos';
         });
       }
 
@@ -888,6 +991,14 @@
       }
       const modal = document.querySelector('.access-denied-modal');
       if (modal) modal.remove();
+      const posterContainer = document.getElementById('poster-container');
+      if (posterContainer) {
+        posterContainer.style.pointerEvents = 'auto';
+      }
+      const playerContainer = document.getElementById('player-container');
+      if (playerContainer) {
+        playerContainer.style.pointerEvents = 'auto';
+      }
     }
   };
 

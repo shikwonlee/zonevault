@@ -468,7 +468,14 @@ onAuthStateChanged(auth, user => {
 const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', 'hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection'];
 const isAdminFlag = sessionStorage.getItem('isAdmin') === 'true';
 const currentPagePath = window.location.pathname;
-let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true';
+let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true' || localStorage.getItem('internalAccess') === 'true';
+try {
+  const cachedUser = JSON.parse(localStorage.getItem('zone_vault_user_cache'));
+  if (cachedUser && (cachedUser.uid || cachedUser.status === 'approved')) {
+    hasInternalAccessFlag = true;
+    sessionStorage.setItem('internalAccess', 'true');
+  }
+} catch(_) {}
 const referer = document.referrer;
 const refererPath = referer ? new URL(referer, location.origin).pathname : null;
 

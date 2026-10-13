@@ -4,8 +4,7 @@
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
-import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI, initStatusSecurityWatchdog } from "./user-cache.js";
-import { showToast, showConfirm, escapeHTML } from "./toast.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
 
 // Instantly hydrate sidebar user profile from cache (0ms delay)
 applyCachedUserToUI();
@@ -36,7 +35,7 @@ function initNotifications() {
             notifs.forEach(n => {
                 const item = document.createElement('div');
                 item.className = 'notif-item';
-                item.innerHTML = `<div class="notif-icon"><i class="fas ${escapeHTML(n.icon || 'fa-bell')}"></i></div><div class="notif-content"><h5>${escapeHTML(n.title)}</h5><p>${escapeHTML(n.message)}</p></div>`;
+                item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
                 notifList.appendChild(item);
                 if (n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
             });
@@ -65,53 +64,24 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         
        // --- A. VERIFY USER FROM DATABASE ---
-       const userRef = ref(db, 'users/' + user.uid);
-       let snapshot = await get(userRef);
+const userRef = ref(db, 'users/' + user.uid);
+const snapshot = await get(userRef);
 
-       if (!snapshot.exists()) {
-           const reqRef = ref(db, 'joinRequests/' + user.uid);
-           const reqSnap = await get(reqRef);
-           if (reqSnap.exists()) {
-               const reqData = reqSnap.val() || {};
-               if (reqData.status === "approved") {
-                   await set(userRef, {
-                       status: "approved",
-                       accessID: user.uid,
-                       email: user.email || "",
-                       name: reqData.telegramUsername || user.displayName || "Vault Member",
-                       role: "user"
-                   });
-                   snapshot = await get(userRef);
-               } else if (reqData.status === "pending") {
-                   window.location.replace("login.html");
-                   return;
-               } else {
-                   showToast("Access Denied: You are not approved to enter Zone Vault.", "error");
-                   await signOut(auth);
-                   window.location.replace("login.html");
-                   return;
-               }
-           } else {
-               // Auto-initialize new authenticated account
-               await set(userRef, {
-                   status: "approved",
-                   accessID: user.uid,
-                   email: user.email || "",
-                   name: user.displayName || "Vault Member",
-                   role: "user"
-               });
-               snapshot = await get(userRef);
-           }
-       }
+if (!snapshot.exists()) {
+    alert("Account not found.");
+    await signOut(auth);
+    window.location.replace("login.html");
+    return;
+}
 
-       const data = snapshot.val() || {};
+const data = snapshot.val();
 
 console.log("USER DATA:", data);
 console.log("STATUS:", data.status);
 
 // Check approval status directly from Firebase
 if (data.status !== "approved") {
-    showToast("Access Denied: You are not approved to enter Zone Vault.", "error");
+    alert("Access Denied: You are not approved to enter Zone Vault.");
     await signOut(auth);
     window.location.replace("login.html");
     return;
@@ -123,7 +93,6 @@ localStorage.setItem("internalAccess", "true");
 // Now that we're a confirmed, approved, authenticated user, it's safe
 // to start listening for notifications.
 initNotifications();
-initStatusSecurityWatchdog(auth, db);
 
 const userEmail = user.email || "";
 
@@ -174,23 +143,15 @@ window.isKickedOut = false;
 let expirationTimer = null; 
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme') || 'dark';
-    if (savedTheme === 'light' || savedTheme === '#ffffff' || savedTheme === 'white') {
-        document.body.classList.add('light-mode');
-        document.documentElement.classList.add('light-mode');
-    } else {
-        document.body.classList.remove('light-mode');
-        document.documentElement.classList.remove('light-mode');
-    }
+    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
+    if (savedTheme === 'light') document.body.classList.add('light-mode');
 }
 initTheme();
 
 window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
-    document.documentElement.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode') || document.documentElement.classList.contains('light-mode');
+    const isLight = document.body.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
-    localStorage.setItem('zoneVaultTheme', isLight ? 'light' : 'dark');
 }
 
 window.toggleNotifModal = function() {
@@ -222,19 +183,14 @@ window.closeInfoModal = function(event) {
     }
 };
 
-window.logout = async function() {
-    const confirmed = await showConfirm({
-        title: "Log Out",
-        text: "Are you sure you want to sign out of Zone Vault?",
-        confirmText: "Sign Out",
-        danger: true
-    });
-    if (confirmed) {
+window.logout = function() {
+    if(confirm("Are you sure you want to log out?")) {
         clearCachedUser();
+        
         signOut(auth).then(() => {
             window.location.replace("login.html"); 
         }).catch((error) => {
-            showToast("Logout failed: " + error.message, "error");
+            alert("Logout failed: " + error.message);
         });
     }
 }

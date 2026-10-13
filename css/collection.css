@@ -163,16 +163,13 @@
     }
     .page-subtitle span { color: var(--text-main); font-weight: 700; }
 
-    /* Back Button: Clean Text + Arrow Icon (Not Floating, No Circular/Pill Box, Directly Above Title) */
     .back-to-cat-btn {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: transparent; border: none;
-        color: var(--text-muted); font-family: "Outfit", sans-serif; font-size: 14px; font-weight: 500;
-        cursor: pointer; text-decoration: none;
-        padding: 0; margin-bottom: 16px;
-        transition: color 0.2s ease, transform 0.2s ease;
+        display: none; align-items: center; gap: 8px;
+        background: transparent; color: var(--text-muted); border: none;
+        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+        transition: color 0.2s ease;
     }
-    .back-to-cat-btn:hover { color: var(--text-main); transform: translateX(-3px); }
+    .back-to-cat-btn:hover { color: var(--text-main); }
 
     /* CATEGORY GRID */
     .category-menu-grid {

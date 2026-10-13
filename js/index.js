@@ -73,45 +73,6 @@ function initHeaderScroll() {
 }
 
 // ==========================================
-// SCROLL-TRIGGERED REVEAL (Intersection Observer API)
-// ==========================================
-function initScrollReveal() {
-  const elements = document.querySelectorAll('.reveal-on-scroll, .reveal-scale');
-  if (!elements.length) return;
-
-  if (!('IntersectionObserver' in window)) {
-    elements.forEach(el => el.classList.add('is-revealed'));
-    return;
-  }
-
-  const observer = new IntersectionObserver((entries, obs) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-revealed');
-        obs.unobserve(entry.target);
-      }
-    });
-  }, {
-    root: null,
-    rootMargin: '0px 0px -40px 0px',
-    threshold: 0.1
-  });
-
-  elements.forEach(el => observer.observe(el));
-}
-
-// Sync dynamic OpenGraph and Twitter URLs
-try {
-  if (typeof window !== 'undefined' && window.location) {
-    const currentHref = window.location.href;
-    const ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl) ogUrl.setAttribute('content', currentHref);
-    const twUrl = document.querySelector('meta[name="twitter:url"]');
-    if (twUrl) twUrl.setAttribute('content', currentHref);
-  }
-} catch (e) {}
-
-// ==========================================
 // 3. MODALS & POPUPS
 // ==========================================
 export function closeModal() {
@@ -169,16 +130,10 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     initParticles();
     initHeaderScroll();
-    initScrollReveal();
-    const existing = document.getElementById('scrollTopBtn');
-    if (existing) existing.remove();
   });
 } else {
   initParticles();
   initHeaderScroll();
-  initScrollReveal();
-  const existing = document.getElementById('scrollTopBtn');
-  if (existing) existing.remove();
 }
 
 // ==========================================
@@ -209,9 +164,6 @@ function revealContent() {
   if (mainContent) {
     mainContent.style.visibility = "visible";
     mainContent.style.opacity = "1";
-    requestAnimationFrame(() => {
-      initScrollReveal();
-    });
   }
 }
 

@@ -10,7 +10,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 import { app, auth, db } from "./firebase-init.js";
 import { setCachedUser } from "./user-cache.js";
-import { showToast } from "./toast.js";
 
 console.log("✅ Login.js loaded: DUAL-SEARCH + PURE FIREBASE AUTO-LOGIN");
 
@@ -63,179 +62,28 @@ window.show = function(id) {
 }
 
 // ==========================================
-// 4. LOGIN ACTIONS & SECURITY COOLDOWN
+// 4. LOGIN ACTIONS
 // ==========================================
-let isLoggingIn = false;
-let lastLoginAttemptTime = 0;
-let cooldownIntervalId = null;
-
-function getCooldownRemaining() {
-  const expiry = parseInt(sessionStorage.getItem('zv_login_cooldown_expiry') || '0', 10);
-  const remaining = Math.ceil((expiry - Date.now()) / 1000);
-  return remaining > 0 ? remaining : 0;
-}
-
-function startCooldownTimer(seconds) {
-  if (cooldownIntervalId) clearInterval(cooldownIntervalId);
-
-  const banner = document.getElementById("login-cooldown-banner");
-  const timerText = document.getElementById("cooldown-timer");
-  const btn = document.getElementById("btn-login");
-  const googleBtn = document.getElementById("btn-google-login");
-
-  if (banner) banner.classList.remove("hidden");
-  if (btn) btn.disabled = true;
-  if (googleBtn) googleBtn.disabled = true;
-
-  const updateDisplay = (remaining) => {
-    if (timerText) timerText.innerText = `${remaining}s`;
-    if (btn) btn.innerText = `Please wait ${remaining}s`;
-  };
-
-  updateDisplay(seconds);
-
-  cooldownIntervalId = setInterval(() => {
-    const remaining = getCooldownRemaining();
-    if (remaining <= 0) {
-      clearInterval(cooldownIntervalId);
-      cooldownIntervalId = null;
-      sessionStorage.removeItem('zv_login_cooldown_expiry');
-      if (banner) banner.classList.add("hidden");
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = "Sign In";
-      }
-      if (googleBtn) googleBtn.disabled = false;
-      showToast("Cooldown expired. You may try logging in again.", "info");
-    } else {
-      updateDisplay(remaining);
-    }
-  }, 1000);
-}
-
-function triggerFailedAttemptCooldown() {
-  let failed = parseInt(sessionStorage.getItem('zv_login_failed_count') || '0', 10) + 1;
-  sessionStorage.setItem('zv_login_failed_count', failed.toString());
-
-  // Progressive cooldown: 3 failures = 15s, 4 failures = 30s, >=5 failures = 60s
-  if (failed >= 3) {
-    const cooldownSeconds = failed === 3 ? 15 : (failed === 4 ? 30 : 60);
-    const expiry = Date.now() + (cooldownSeconds * 1000);
-    sessionStorage.setItem('zv_login_cooldown_expiry', expiry.toString());
-    startCooldownTimer(cooldownSeconds);
-    showToast(`Too many failed attempts. Security cooldown active for ${cooldownSeconds} seconds.`, "warning");
-  }
-}
-
-function clearLoginCooldown() {
-  sessionStorage.removeItem('zv_login_failed_count');
-  sessionStorage.removeItem('zv_login_cooldown_expiry');
-  if (cooldownIntervalId) clearInterval(cooldownIntervalId);
-}
-
-// Check cooldown on load & init handlers
-function initLoginSecurity() {
-  if (sessionStorage.getItem("revocationNotice")) {
-    sessionStorage.removeItem("revocationNotice");
-    setTimeout(() => {
-      showToast("Access Revoked: Your session was closed by administration.", "error");
-    }, 400);
-  }
-
-  const remaining = getCooldownRemaining();
-  if (remaining > 0) {
-    startCooldownTimer(remaining);
-  }
-
-  // Password visibility toggle
-  const toggleBtn = document.getElementById("toggleLoginPassword");
-  const passwordInput = document.getElementById("password");
-  const emailInput = document.getElementById("email");
-
-  if (toggleBtn && passwordInput) {
-    toggleBtn.addEventListener("click", () => {
-      const isPass = passwordInput.type === "password";
-      passwordInput.type = isPass ? "text" : "password";
-      toggleBtn.classList.toggle("fa-eye", !isPass);
-      toggleBtn.classList.toggle("fa-eye-slash", isPass);
-    });
-  }
-
-  // Enter key submission
-  [emailInput, passwordInput].forEach(inp => {
-    if (inp) {
-      inp.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          window.login();
-        }
-      });
-    }
-  });
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initLoginSecurity);
-} else {
-  initLoginSecurity();
-}
-
 window.login = function() {
-  const remainingCooldown = getCooldownRemaining();
-  if (remainingCooldown > 0) {
-    return showToast(`Security cooldown active. Please wait ${remainingCooldown}s.`, "warning");
-  }
-
-  // Debounce check: block rapid clicks
-  const now = Date.now();
-  if (isLoggingIn || (now - lastLoginAttemptTime < 1200)) {
-    return;
-  }
-  lastLoginAttemptTime = now;
-
-  const email = (document.getElementById("email").value || "").trim();
+  const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-  const btn = document.getElementById("btn-login");
-
-  if (!email || !password) return showToast("Please enter email and password.", "warning");
-
-  isLoggingIn = true;
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
-  }
+  if (!email || !password) return alert("Please enter email and password.");
+  
   show("loader-section");
-
   signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      isLoggingIn = false;
-      clearLoginCooldown();
-    })
     .catch(e => {
-      isLoggingIn = false;
       show("auth-section");
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = "Sign In";
-      }
-      triggerFailedAttemptCooldown();
-      showToast("Login error: " + e.message, "error");
+      alert("Login error: " + e.message);
     });
 };
 
 window.googleLogin = async function() {
-  const remainingCooldown = getCooldownRemaining();
-  if (remainingCooldown > 0) {
-    return showToast(`Security cooldown active. Please wait ${remainingCooldown}s.`, "warning");
-  }
-
   try {
     show("loader-section");
     await signInWithPopup(auth, provider);
-    clearLoginCooldown();
   } catch (e) {
     show("auth-section");
-    showToast("Google login error: " + e.message, "error");
+    alert("Google login error: " + e.message);
   }
 };
 
@@ -277,7 +125,7 @@ async function checkJoinRequest(user) {
               window.location.replace(`home?access=${userAccessID}`); 
               return;
           } else if (userStatus === "denied") {
-              showToast("Your account is denied or banned.", "error");
+              alert("❌ Your account is denied or banned.");
               signOut(auth).then(() => show("auth-section"));
               return;
           }
@@ -290,62 +138,31 @@ async function checkJoinRequest(user) {
 
           if (reqData.status === "approved") {
               await set(userRef, { status: "approved", accessID: currentUid, email: user.email, role: "user" });
-              setCachedUser({
-                  uid: currentUid,
-                  email: user.email,
-                  name: reqData.telegramUsername || user.displayName || "Vault Member",
-                  profilePicture: "https://via.placeholder.com/150",
-                  status: "approved",
-                  role: "user",
-                  accessID: currentUid,
-                  isAdmin: false
-              });
               window.location.replace(`home?access=${currentUid}`);
               return;
           } else if (reqData.status === "pending") {
               show("waiting");
               onValue(userRef, (realtimeUserSnap) => {
                   if (realtimeUserSnap.exists() && realtimeUserSnap.val().status === "approved") {
-                      const uData = realtimeUserSnap.val() || {};
-                      setCachedUser({
-                          uid: currentUid,
-                          email: user.email,
-                          name: uData.name || reqData.telegramUsername || user.displayName || "Vault Member",
-                          profilePicture: uData.profilePicture || "https://via.placeholder.com/150",
-                          status: "approved",
-                          role: uData.role || "user",
-                          accessID: uData.accessID || currentUid,
-                          isAdmin: (uData.role || "").toLowerCase() === 'admin'
-                      });
                       show("approved");
-                      setTimeout(() => window.location.replace(`home?access=${uData.accessID || currentUid}`), 1200);
+                      setTimeout(() => window.location.replace(`home?access=${realtimeUserSnap.val().accessID}`), 1200);
                   }
               });
               return;
           } else if (reqData.status === "denied") {
-              showToast("Your request was denied.", "error");
+              alert("❌ Your request was denied.");
               signOut(auth).then(() => show("auth-section"));
               return;
           }
       }
 
-      // SCENARIO C: Wala sa dalawang table (Auto-Fix for New/Existing Accounts)
-      console.log("🔄 Account detected in Auth but missing in DB. Auto-fixing...");
+      // SCENARIO C: Wala sa dalawang table (Old Account Auto-Fix)
+      console.log("🔄 Old account detected in Auth but missing in DB. Auto-fixing...");
       await set(userRef, {
           status: "approved",
           accessID: currentUid,
           email: user.email || "No Email",
           role: "user"
-      });
-      setCachedUser({
-          uid: currentUid,
-          email: user.email || "No Email",
-          name: user.displayName || "Vault Member",
-          profilePicture: user.photoURL || "https://via.placeholder.com/150",
-          status: "approved",
-          role: "user",
-          accessID: currentUid,
-          isAdmin: false
       });
       window.location.replace(`home?access=${currentUid}`);
 
@@ -401,7 +218,7 @@ onAuthStateChanged(auth, async user => {
       sessionStorage.clear();
       await signOut(auth);
       show("auth-section");
-      showToast("Session refreshed. Please login.", "info");
+      alert("Old session detected and cleared. Please login one more time.");
     }
   } else {
     // KUNG NAG LOGOUT, DITO SIYA BABAGSAK. Papakita na niya ang login form nang hindi nagre-redirect.

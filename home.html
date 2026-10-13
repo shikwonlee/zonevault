@@ -4,25 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Home | Zone Vault</title>
-  <meta name="description" content="Explore exclusive concerts, world tours, and private VOD streams on Zone Vault.">
-  <link rel="icon" href="favicon-new.png" type="image/png">
-  <meta name="theme-color" content="#050505">
-
-  <!-- Open Graph / Social Sharing -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Zone Vault">
-  <meta property="og:title" content="Zone Vault — Exclusive VOD & Concert Media">
-  <meta property="og:description" content="Explore exclusive concerts, world tours, and private VOD streams on Zone Vault.">
-  <meta property="og:image" content="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-
-  <!-- Twitter / X -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Zone Vault — Exclusive VOD & Concert Media">
-  <meta name="twitter:description" content="Explore exclusive concerts, world tours, and private VOD streams on Zone Vault.">
-  <meta name="twitter:image" content="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png">
-
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,8 +14,6 @@
   <link rel="prefetch" href="profile">
   
   <link rel="stylesheet" href="css/home.css">
-  <link rel="stylesheet" href="css/skeleton.css">
-  <link rel="stylesheet" href="css/toast.css">
 </head>
 <body>
 <!-- toast removed -->
@@ -117,8 +96,8 @@
             <div class="sidebar-user" onclick="window.location.href='profile'">
                 <img id="sidebar-pic" src="https://via.placeholder.com/150" alt="Profile">
                 <div class="sidebar-user-info">
-                    <div id="sidebar-name" class="sidebar-username"><span class="skeleton" style="display:inline-block; width:90px; height:14px; border-radius:4px;"></span></div>
-                    <div id="sidebar-email" class="sidebar-useremail"><span class="skeleton" style="display:inline-block; width:120px; height:11px; border-radius:4px;"></span></div>
+                    <div id="sidebar-name" class="sidebar-username">Loading...</div>
+                    <div id="sidebar-email" class="sidebar-useremail">...</div>
                 </div>
             </div>
         </div>
@@ -151,18 +130,18 @@
 
     <div class="swipe-scroller drag-scrollable" id="recentlyAddedScroller">
         
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2026/dxs_on_stage'">
+        <div class="swipe-card" onclick="window.location.href='2025/dxs_icheon'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
                 <span class="duration-badge">CONCERT</span>
             </div>
             <div class="swipe-info">
-                <h4>DXS [SERENADE ON STAGE] INCHEON</h4>
+                <h4>DXS [SERENADE ON STAGE] ICHEON</h4>
             </div>
         </div>
 
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2026/new_encore'">
+        <div class="swipe-card" onclick="window.location.href='2025/svt_new_encore'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -173,7 +152,7 @@
             </div>
         </div>
 
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2024/magichour'">
+        <div class="swipe-card" onclick="window.location.href='2025/magic_hour'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -183,7 +162,7 @@
                 <h4>MAGIC HOUR THE SEVENTEEN</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2026/cxminjapan'">
+        <div class="swipe-card" onclick="window.location.href='2025/cxminjapan'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -193,7 +172,7 @@
                 <h4>CxM [DOUBLE UP] LIVE PARTY in JAPAN</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2025/9th_caratland'">
+        <div class="swipe-card" onclick="window.location.href='2025/9th_caratland'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -203,7 +182,7 @@
                 <h4>SEVENTEEN IN CARAT LAND 2025 SVT 9TH FAN MEETING</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2024/8th_caratland'">
+        <div class="swipe-card" onclick="window.location.href='2024/8th_caratland'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -213,7 +192,7 @@
                 <h4>SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2026/cxm_in_incheon'">
+        <div class="swipe-card" onclick="window.location.href='2025/cxm_in_incheon'">
             <div class="swipe-thumbnail">
                 <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -223,7 +202,7 @@
                 <h4>CxM [DOUBLE UP] LIVE PARTY in INCHEON</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2025/fukuokanewtour'">
+        <div class="swipe-card" onclick="window.location.href='2025/fukuokanewtour'">
             <div class="swipe-thumbnail">
                 <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -233,7 +212,7 @@
                 <h4>SEVENTEEN WORLD TOUR [NEW_] Fukuoka Show</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2025/japannewtour'">
+        <div class="swipe-card" onclick="window.location.href='2025/japannewtour'">
             <div class="swipe-thumbnail">
                 <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -243,7 +222,7 @@
                 <h4>SEVENTEEN WORLD TOUR [NEW_] Osaka Show</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2025/the-shadows-edge'">
+        <div class="swipe-card" onclick="window.location.href='2025/the-shadows-edge'">
             <div class="swipe-thumbnail">
                 <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/the-shadow's-edge.jpg" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -253,7 +232,7 @@
                 <h4>The Shadow's Edge</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2025/ourchapterS17N-111025-6B4'">
+        <div class="swipe-card" onclick="window.location.href='2025/ourchapterS17N-111025-6B4'">
             <div class="swipe-thumbnail">
                 <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/svt_ourchapter.jpg" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -263,7 +242,7 @@
                 <h4>SEVENTEEN: OUR CHAPTER</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='/2021/inthesoop2-N12X5R25-74K2'">
+        <div class="swipe-card" onclick="window.location.href='2021/inthesoop2-N12X5R25-74K2'">
             <div class="swipe-thumbnail">
                 <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>

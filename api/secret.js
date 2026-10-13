@@ -56,35 +56,61 @@ export async function retrieveSecureStream({ node, ep, authToken }) {
   }
 
   const databaseUrl = process.env.FIREBASE_DATABASE_URL || "https://tvnstream-b4497-default-rtdb.firebaseio.com";
-  let fetchUrl = `${databaseUrl.replace(/\/$/, '')}/${sanitizedNode}/${sanitizedEp}.json`;
-  if (authToken) {
-    fetchUrl += `?auth=${encodeURIComponent(authToken)}`;
+  
+  // Build candidate nodes list for flexible database layout matching
+  const candidateNodes = [sanitizedNode];
+  if (sanitizedNode.includes('caratland') || sanitizedNode.includes('cl')) {
+    if (!candidateNodes.includes('caratland2025')) candidateNodes.push('caratland2025');
+    if (!candidateNodes.includes('caratland_2025')) candidateNodes.push('caratland_2025');
+    if (!candidateNodes.includes('caratland2024')) candidateNodes.push('caratland2024');
+    if (!candidateNodes.includes('caratland')) candidateNodes.push('caratland');
+  } else if (sanitizedNode.includes('shadow')) {
+    if (!candidateNodes.includes('theshadowsedge')) candidateNodes.push('theshadowsedge');
+    if (!candidateNodes.includes("theshadow'sedge")) candidateNodes.push("theshadow'sedge");
+    if (!candidateNodes.includes('the-shadows-edge')) candidateNodes.push('the-shadows-edge');
+    if (!candidateNodes.includes('caratland2024')) candidateNodes.push('caratland2024');
+  } else {
+    if (!sanitizedNode.startsWith('url')) candidateNodes.push(`url${sanitizedNode}`);
+    if (sanitizedNode.startsWith('url')) candidateNodes.push(sanitizedNode.slice(3));
+    if (sanitizedNode.includes('_')) candidateNodes.push(sanitizedNode.replace(/_/g, ''));
   }
 
   try {
-    let response = await fetch(fetchUrl);
     let data = null;
+    let lastResponse = null;
 
-    if (response.ok) {
-      data = await response.json();
-    }
+    for (const candNode of candidateNodes) {
+      let fetchUrl = `${databaseUrl.replace(/\/$/, '')}/${candNode}/${sanitizedEp}.json`;
+      if (authToken) fetchUrl += `?auth=${encodeURIComponent(authToken)}`;
 
-    // If node/ep was null or not found, try node root directly (e.g. for single-video nodes like magichour)
-    if (!data) {
-      let rootFetchUrl = `${databaseUrl.replace(/\/$/, '')}/${sanitizedNode}.json`;
+      try {
+        const response = await fetch(fetchUrl);
+        lastResponse = response;
+        if (response.ok) {
+          const resJson = await response.json();
+          if (resJson) { data = resJson; break; }
+        }
+      } catch (_) {}
+
+      // Try node root directly
+      let rootFetchUrl = `${databaseUrl.replace(/\/$/, '')}/${candNode}.json`;
       if (authToken) rootFetchUrl += `?auth=${encodeURIComponent(authToken)}`;
-      const rootResponse = await fetch(rootFetchUrl);
-      if (rootResponse.ok) {
-        data = await rootResponse.json();
-      }
+      try {
+        const rootResponse = await fetch(rootFetchUrl);
+        if (!lastResponse) lastResponse = rootResponse;
+        if (rootResponse.ok) {
+          const rootJson = await rootResponse.json();
+          if (rootJson) { data = rootJson; break; }
+        }
+      } catch (_) {}
     }
 
     if (!data) {
       return { 
-        error: (response && (response.status === 401 || response.status === 403))
+        error: (lastResponse && (lastResponse.status === 401 || lastResponse.status === 403))
           ? 'Access denied by security rules' 
           : 'Stream not found', 
-        status: (response && response.status) || 404 
+        status: (lastResponse && lastResponse.status) || 404 
       };
     }
 

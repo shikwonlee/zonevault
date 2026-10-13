@@ -1,10 +1,9 @@
-// Zone Vault — Unified Secure Video Player Configuration
-// Engine: /api/secret/player-core.js
-// Protected Stream Endpoint: /api/secret/video-stream
+// Zone Vault — Unified Video Player Configuration
+// Engine: /api/secret/player-free.js (Free Access)
 
 ZonePlayer.init({
   pageId: "",
-  dbNode: "caratland2024",
+  dbNode: "caratland2025",
   playlist: [
   { 
     id: "1", 

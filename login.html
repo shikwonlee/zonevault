@@ -15,6 +15,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <link rel="stylesheet" href="css/login.css">
+  <link rel="stylesheet" href="css/skeleton.css">
+  <link rel="stylesheet" href="css/toast.css">
 </head>
 <body>
 
@@ -27,9 +29,14 @@
 
 <div class="glass-card">
   
-  <div id="loader-section">
-    <div class="spinner"></div>
-    <p class="subtitle">Securely authenticating...</p>
+  <div id="loader-section" class="skeleton-form-container">
+    <div class="skeleton" style="width: 140px; height: 26px; border-radius: 6px; margin: 0 auto 10px; display: block;"></div>
+    <div class="skeleton" style="width: 200px; height: 14px; border-radius: 4px; margin: 0 auto 24px; display: block;"></div>
+    <div class="skeleton" style="width: 100%; height: 50px; border-radius: 10px; margin-bottom: 14px; display: block;"></div>
+    <div class="skeleton" style="width: 100%; height: 50px; border-radius: 10px; margin-bottom: 20px; display: block;"></div>
+    <div class="skeleton" style="width: 100%; height: 48px; border-radius: 10px; margin-bottom: 10px; display: block;"></div>
+    <div class="skeleton" style="width: 100%; height: 48px; border-radius: 10px; margin-bottom: 16px; display: block;"></div>
+    <div class="skeleton" style="width: 160px; height: 12px; border-radius: 4px; margin: 0 auto; display: block;"></div>
   </div>
 
   <div id="auth-section" class="hidden">

@@ -34,7 +34,7 @@ body {
   height: 100%;
 }
 
-/* === LOADING SCREEN === */
+/* === SKELETON LOADING SCREEN (Replaces spinner modal) === */
 #auth-loader {
     position: fixed; 
     top: 0; 
@@ -44,24 +44,113 @@ body {
     background-color: #050505; 
     z-index: 9999;
     display: flex; 
-    justify-content: center; 
-    align-items: center; 
     flex-direction: column;
-    transition: opacity 0.5s ease;
+    padding: 24px 48px;
+    box-sizing: border-box;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    overflow: hidden;
 }
 
-.spinner {
-    width: 40px; 
-    height: 40px;
-    border: 3px solid rgba(255,255,255,0.1); 
-    border-radius: 50%;
-    border-top-color: var(--accent); 
-    animation: spin 1s ease-in-out infinite;
-    margin-bottom: 15px;
+@media (max-width: 768px) {
+    #auth-loader {
+        padding: 20px 24px;
+    }
 }
 
-@keyframes spin { 
-    to { transform: rotate(360deg); } 
+.skeleton-screen-overlay .skeleton-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: auto;
+}
+
+.skeleton-logo {
+    width: 135px;
+    height: 30px;
+    border-radius: 6px;
+}
+
+.skeleton-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.skeleton-nav-btn {
+    width: 50px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.skeleton-cta-btn {
+    width: 95px;
+    height: 34px;
+    border-radius: 8px;
+}
+
+.skeleton-hero-body {
+    max-width: 580px;
+    margin: auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 40px 0;
+}
+
+.skeleton-badge {
+    width: 130px;
+    height: 28px;
+    border-radius: 30px;
+}
+
+.skeleton-hero-title-1 {
+    width: 360px;
+    max-width: 90%;
+    height: 48px;
+    border-radius: 8px;
+}
+
+.skeleton-hero-title-2 {
+    width: 260px;
+    max-width: 70%;
+    height: 48px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+
+.skeleton-hero-desc-1 {
+    width: 480px;
+    max-width: 95%;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.skeleton-hero-desc-2 {
+    width: 350px;
+    max-width: 80%;
+    height: 16px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.skeleton-cta-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.skeleton-btn-primary {
+    width: 140px;
+    height: 46px;
+    border-radius: 10px;
+}
+
+.skeleton-btn-outline {
+    width: 160px;
+    height: 46px;
+    border-radius: 10px;
 }
 
 #main-app-content {

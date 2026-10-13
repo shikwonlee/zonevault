@@ -876,3 +876,91 @@ body {
     }
 }
 
+/* === SKELETON LOADING RULES === */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 25%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0.06) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: zv-skeleton-shimmer 1.5s ease-in-out infinite !important;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  pointer-events: none;
+  user-select: none;
+}
+html.light-mode .skeleton, body.light-mode .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.13) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+@keyframes zv-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  display: block;
+}
+.skeleton-line.short { width: 45%; }
+.skeleton-line.medium { width: 70%; }
+.skeleton-line:last-child { margin-bottom: 0; }
+.skeleton-episode-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--card-bg, #17171b);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.05));
+  border-radius: 10px;
+  margin-bottom: 8px;
+  pointer-events: none;
+}
+.skeleton-episode-thumb {
+  width: 90px;
+  height: 52px;
+  min-width: 90px;
+  border-radius: 6px;
+  display: block;
+}
+.skeleton-episode-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* === REFINED BRAND-UNIFIED VIDEO PLAYER THEME === */
+:root {
+  --plyr-color-main: #ffffff !important;
+  --plyr-video-control-color: #f4f4f5 !important;
+  --plyr-video-control-color-hover: #ffffff !important;
+  --plyr-video-control-background-hover: rgba(255, 255, 255, 0.15) !important;
+  --plyr-video-controls-background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.85)) !important;
+  --plyr-tooltip-background: rgba(18, 18, 20, 0.95) !important;
+  --plyr-tooltip-color: #ffffff !important;
+  --plyr-font-family: 'Outfit', sans-serif !important;
+}
+
+/* Gesture indicators (double tap feedback) */
+.gesture-icon {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 50% !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+

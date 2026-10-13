@@ -5,6 +5,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
 import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
+import { showToast, showConfirm, escapeHTML } from "./toast.js";
 
 // Instantly hydrate sidebar user profile from cache (0ms delay)
 applyCachedUserToUI();
@@ -35,7 +36,7 @@ function initNotifications() {
             notifs.forEach(n => {
                 const item = document.createElement('div');
                 item.className = 'notif-item';
-                item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
+                item.innerHTML = `<div class="notif-icon"><i class="fas ${escapeHTML(n.icon || 'fa-bell')}"></i></div><div class="notif-content"><h5>${escapeHTML(n.title)}</h5><p>${escapeHTML(n.message)}</p></div>`;
                 notifList.appendChild(item);
                 if (n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
             });
@@ -68,7 +69,7 @@ const userRef = ref(db, 'users/' + user.uid);
 const snapshot = await get(userRef);
 
 if (!snapshot.exists()) {
-    alert("Account not found.");
+    showToast("Account not found.", "error");
     await signOut(auth);
     window.location.replace("login.html");
     return;
@@ -81,7 +82,7 @@ console.log("STATUS:", data.status);
 
 // Check approval status directly from Firebase
 if (data.status !== "approved") {
-    alert("Access Denied: You are not approved to enter Zone Vault.");
+    showToast("Access Denied: You are not approved to enter Zone Vault.", "error");
     await signOut(auth);
     window.location.replace("login.html");
     return;
@@ -191,14 +192,19 @@ window.closeInfoModal = function(event) {
     }
 };
 
-window.logout = function() {
-    if(confirm("Are you sure you want to log out?")) {
+window.logout = async function() {
+    const confirmed = await showConfirm({
+        title: "Log Out",
+        text: "Are you sure you want to sign out of Zone Vault?",
+        confirmText: "Sign Out",
+        danger: true
+    });
+    if (confirmed) {
         clearCachedUser();
-        
         signOut(auth).then(() => {
             window.location.replace("login.html"); 
         }).catch((error) => {
-            alert("Logout failed: " + error.message);
+            showToast("Logout failed: " + error.message, "error");
         });
     }
 }

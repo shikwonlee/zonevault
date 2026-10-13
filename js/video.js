@@ -2,6 +2,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { ref, onValue, get, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
 import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
+import { showToast, showConfirm, escapeHTML } from "./toast.js";
 
 console.log("✅ Videos.js successfully loaded!");
 
@@ -185,7 +186,14 @@ function renderGrid(page) {
     const pageData = filtered.slice(start,end);
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="no-results"><i class="fas fa-video-slash"></i>No videos in this category yet.</div>`;
+        grid.innerHTML = `
+            <div class="no-results" style="grid-column: 1 / -1; padding: 60px 20px; text-align: center; color: var(--text-muted, #a1a1aa);">
+                <i class="fas fa-video-slash" style="font-size: 36px; margin-bottom: 14px; opacity: 0.5; display: block;"></i>
+                <h3 style="font-size: 16px; color: #fff; margin-bottom: 6px;">No Videos Found</h3>
+                <p style="font-size: 13px; margin-bottom: 16px;">There are no videos available in this category.</p>
+                <button onclick="handleCategoryChange('ALL')" class="btn-watch" style="padding: 8px 18px; font-size: 12px; margin: 0 auto; display: inline-block;">Show All Videos</button>
+            </div>
+        `;
         renderPagination(filtered.length);
         return;
     }
@@ -277,12 +285,14 @@ function saveFavoritesToFirebase() {
 }
 
 window.toggleFavorite = function(id) {
+    const isAdding = !favorites.includes(id);
     if (favorites.includes(id)) {
         favorites = favorites.filter(f => f !== id);
     } else {
         favorites.unshift(id);
     }
     saveFavoritesToFirebase();
+    showToast(isAdding ? "Added to your collection" : "Removed from collection", isAdding ? "success" : "info");
 }
 
 window.openFavoriteModal = function() {
@@ -344,7 +354,7 @@ onValue(notifQuery, snapshot => {
         notifs.forEach(n => {
             const item = document.createElement('div');
             item.className = 'notif-item';
-            item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
+            item.innerHTML = `<div class="notif-icon"><i class="fas ${escapeHTML(n.icon || 'fa-bell')}"></i></div><div class="notif-content"><h5>${escapeHTML(n.title)}</h5><p>${escapeHTML(n.message)}</p></div>`;
             notifList.appendChild(item);
             if(n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
         });
@@ -382,8 +392,14 @@ window.toggleNotifModal = function() {
 // ==========================================
 // 9. AUTH, SESSIONS & SECURITY LOGIC
 // ==========================================
-window.logout = function() {
-    if(confirm("Are you sure you want to log out?")) {
+window.logout = async function() {
+    const confirmed = await showConfirm({
+        title: "Log Out",
+        text: "Are you sure you want to sign out of Zone Vault?",
+        confirmText: "Sign Out",
+        danger: true
+    });
+    if (confirmed) {
         clearCachedUser();
         signOut(auth).then(() => window.location.replace("index"));
     }

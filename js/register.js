@@ -7,6 +7,7 @@ import {
   ref, onValue, set, get, update, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
+import { showToast } from "./toast.js";
 
 console.log("✅ Register.js loaded: FIXED (Token Nuke Active)");
 const provider = new GoogleAuthProvider();
@@ -49,9 +50,9 @@ window.register = function() {
   const privacyChecked = document.getElementById("privacy-check").checked;
   const btn = document.getElementById("btn-register");
   
-  if (!privacyChecked) return alert("You must agree to the Privacy Policy.");
-  if (password.length < 8 || !/\d/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) return alert("Password criteria not met.");
-  if (!email || !password) return alert("Please enter email and password.");
+  if (!privacyChecked) return showToast("You must agree to the Privacy Policy.", "warning");
+  if (password.length < 8 || !/\d/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) return showToast("Password criteria not met.", "warning");
+  if (!email || !password) return showToast("Please enter email and password.", "warning");
 
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
   btn.disabled = true;
@@ -61,7 +62,7 @@ window.register = function() {
         sendEmailVerification(userCred.user).then(() => { show("verify-section"); }); 
     })
     .catch(e => {
-        alert("Registration error: " + e.message);
+        showToast("Registration error: " + e.message, "error");
         btn.innerHTML = 'Create Account'; btn.disabled = false;
     });
 };
@@ -71,7 +72,7 @@ window.googleLogin = async function() {
   const privacyChecked = document.getElementById("privacy-check").checked;
   if (!privacyChecked) {
       if(!document.getElementById('auth-section').classList.contains('hidden')) {
-          return alert("You must agree to the Privacy Policy before continuing with Google.");
+          return showToast("You must agree to the Privacy Policy before continuing with Google.", "warning");
       }
   }
 
@@ -79,7 +80,7 @@ window.googleLogin = async function() {
     const result = await signInWithPopup(auth, provider);
     checkUserStatus(result.user);
   } catch (e) {
-    alert("Google login error: " + e.message);
+    showToast("Google login error: " + e.message, "error");
   }
 };
 
@@ -88,7 +89,7 @@ window.reloadAndCheck = function() {
   if (user) {
     reload(user).then(() => {
       if (user.emailVerified) checkUserStatus(user);
-      else alert("❌ Your email is still not verified.");
+      else showToast("Your email is still not verified.", "info");
     });
   }
 };
@@ -147,20 +148,20 @@ async function checkUserStatus(user) {
 
           onValue(reqRef, (realtimeReqSnap) => {
               if (realtimeReqSnap.exists() && realtimeReqSnap.val().status === "denied") {
-                  alert("❌ Your request was denied by the Admin.");
+                  showToast("Your request was denied by the Admin.", "error");
                   signOut(auth).then(() => show("auth-section"));
               }
           });
           
       } 
       else if (data.status === "denied") { 
-          alert("❌ Your request was denied."); 
+          showToast("Your request was denied.", "error"); 
           signOut(auth).then(() => show("auth-section")); 
       }
       
   } catch (error) {
       console.error("Database Error:", error);
-      alert("Error checking account. Please refresh.");
+      showToast("Error checking account. Please refresh.", "error");
   }
 }
 
@@ -171,7 +172,7 @@ window.submitRequest = async function() {
   const user = auth.currentUser;
   const btn = document.getElementById("btn-submit-code");
   
-  if (!telegramUsername) return alert("Please enter your Telegram username.");
+  if (!telegramUsername) return showToast("Please enter your Telegram username.", "warning");
   if (!telegramUsername.startsWith('@')) telegramUsername = '@' + telegramUsername;
 
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
@@ -193,7 +194,7 @@ window.submitRequest = async function() {
     
   } catch (error) {
     console.error(error);
-    alert("An error occurred. Please try again.");
+    showToast("An error occurred. Please try again.", "error");
     btn.innerHTML = 'Submit Request'; btn.disabled = false;
   }
 };

@@ -5,6 +5,7 @@ import {
   ref, onValue, get, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db } from "./firebase-init.js";
+import { showToast } from "./toast.js";
 
 console.log("✅ Code.js (Quick Access) loaded!");
 
@@ -51,7 +52,7 @@ window.quickCodeLogin = async function() {
   let nickname = document.getElementById("guest-name").value.trim();
   const btn = document.getElementById("btn-quick-login");
   
-  if (!code) return alert("Please enter your access code.");
+  if (!code) return showToast("Please enter your access code.", "warning");
   if (!nickname) nickname = "Guest_" + Math.floor(Math.random() * 10000);
 
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
@@ -65,7 +66,7 @@ window.quickCodeLogin = async function() {
       const codeData = snapshot.val();
       
       if (codeData.used === true) {
-         alert("❌ This code has already been used.");
+         showToast("This code has already been used.", "error");
          btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
          return;
       }
@@ -102,16 +103,16 @@ window.quickCodeLogin = async function() {
         show("approved");
         setTimeout(() => { window.location.href = `home.html?access=${newAccessID}`; }, 1200);
       } else {
-        alert("❌ This access code has expired.");
+        showToast("This access code has expired.", "error");
         btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
       }
     } else {
-      alert("❌ Invalid access code. Please check your spelling.");
+      showToast("Invalid access code. Please check your spelling.", "error");
       btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
     }
   } catch (error) {
     console.error(error);
-    alert("An error occurred. Please try again.");
+    showToast("An error occurred. Please try again.", "error");
     btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
   }
 };

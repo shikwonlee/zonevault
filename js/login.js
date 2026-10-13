@@ -10,6 +10,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 import { app, auth, db } from "./firebase-init.js";
 import { setCachedUser } from "./user-cache.js";
+import { showToast } from "./toast.js";
 
 console.log("✅ Login.js loaded: DUAL-SEARCH + PURE FIREBASE AUTO-LOGIN");
 
@@ -67,13 +68,13 @@ window.show = function(id) {
 window.login = function() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-  if (!email || !password) return alert("Please enter email and password.");
+  if (!email || !password) return showToast("Please enter email and password.", "warning");
   
   show("loader-section");
   signInWithEmailAndPassword(auth, email, password)
     .catch(e => {
       show("auth-section");
-      alert("Login error: " + e.message);
+      showToast("Login error: " + e.message, "error");
     });
 };
 
@@ -83,7 +84,7 @@ window.googleLogin = async function() {
     await signInWithPopup(auth, provider);
   } catch (e) {
     show("auth-section");
-    alert("Google login error: " + e.message);
+    showToast("Google login error: " + e.message, "error");
   }
 };
 
@@ -125,7 +126,7 @@ async function checkJoinRequest(user) {
               window.location.replace(`home?access=${userAccessID}`); 
               return;
           } else if (userStatus === "denied") {
-              alert("❌ Your account is denied or banned.");
+              showToast("Your account is denied or banned.", "error");
               signOut(auth).then(() => show("auth-section"));
               return;
           }
@@ -150,7 +151,7 @@ async function checkJoinRequest(user) {
               });
               return;
           } else if (reqData.status === "denied") {
-              alert("❌ Your request was denied.");
+              showToast("Your request was denied.", "error");
               signOut(auth).then(() => show("auth-section"));
               return;
           }
@@ -218,7 +219,7 @@ onAuthStateChanged(auth, async user => {
       sessionStorage.clear();
       await signOut(auth);
       show("auth-section");
-      alert("Old session detected and cleared. Please login one more time.");
+      showToast("Session refreshed. Please login.", "info");
     }
   } else {
     // KUNG NAG LOGOUT, DITO SIYA BABAGSAK. Papakita na niya ang login form nang hindi nagre-redirect.

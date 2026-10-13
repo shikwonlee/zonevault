@@ -112,6 +112,9 @@ app.use(express.static(__dirname, {
 
 // Fallback: root or unknown route handling
 app.use((req, res) => {
+  if (path.extname(req.path)) {
+    return res.status(404).send('Not Found');
+  }
   const indexHtml = path.resolve(__dirname, 'index.html');
   if (fs.existsSync(indexHtml)) {
     applyStaticHeaders(res, indexHtml);

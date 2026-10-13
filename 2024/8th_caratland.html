@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Video | Zone Vault</title>
+  <title>Videos | Zone Vault</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -16,112 +16,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="icon" href="/favicon-new.png" type="image/png" />
-  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="favicon-new.png" type="image/png" />
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0a0a0c">
 
   <meta name="apple-mobile-web-app-title" content="Zone Vault">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" sizes="192x192" href="/favicon-new.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="/favicon-new.png">
-  <link rel="apple-touch-startup-image" href="/splash.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="favicon-new.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="favicon-new.png">
+  <link rel="apple-touch-startup-image" href="splash.png">
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-1B2RJ659GL');
-  </script>
-
-  <script>
-    (function() {
-      function applyTheme(theme) {
-        if (theme === 'light' || theme === '#ffffff' || theme === 'white') {
-          document.documentElement.classList.add('light-mode');
-          document.body.classList.add('light-mode');
-          const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', '#f8f9fa');
-        } else {
-          document.documentElement.classList.remove('light-mode');
-          document.body.classList.remove('light-mode');
-          const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', '#0a0a0c');
-        }
-      }
-      const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme');
-      if (savedTheme) { applyTheme(savedTheme); } 
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) { applyTheme('light'); }
-
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'zoneTheme' || e.key === 'zoneVaultTheme') { applyTheme(e.newValue); }
-      });
-    })();
-  </script>
 
   <link rel="stylesheet" href="css/player.css">
-
-  <style>
-    /* Subtitle adaptive sizing & deep contrast shadow */
-    .art-subtitle,
-    .art-video-player .art-subtitle,
-    .art-subtitle p {
-      color: #ffffff !important;
-      font-family: 'Inter', sans-serif !important;
-      font-weight: 800 !important;
-      font-size: clamp(24px, 2.4vw, 36px) !important;
-      line-height: 1.4 !important;
-      bottom: 50px !important;
-      text-align: center !important;
-      background: transparent !important;
-      text-shadow: 
-        -2px -2px 0 #000,
-         2px -2px 0 #000,
-        -2px  2px 0 #000,
-         2px  2px 0 #000,
-        -3px  0px 0 #000,
-         3px  0px 0 #000,
-         0px -3px 0 #000,
-         0px  3px 0 #000,
-         0 4px 12px rgba(0, 0, 0, 0.95),
-         0 8px 24px rgba(0, 0, 0, 0.85) !important;
-      transition: font-size 0.2s ease, bottom 0.2s ease;
-    }
-
-    @media (max-width: 768px) {
-      .art-subtitle,
-      .art-video-player .art-subtitle,
-      .art-subtitle p {
-        font-size: clamp(14px, 3.8vw, 18px) !important;
-        font-weight: 700 !important;
-        bottom: 35px !important;
-        line-height: 1.3 !important;
-        text-shadow: 
-          -1.5px -1.5px 0 #000,
-           1.5px -1.5px 0 #000,
-          -1.5px  1.5px 0 #000,
-           1.5px  1.5px 0 #000,
-           0 3px 8px rgba(0, 0, 0, 0.9) !important;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .art-subtitle,
-      .art-video-player .art-subtitle,
-      .art-subtitle p {
-        font-size: 13.5px !important;
-        bottom: 25px !important;
-      }
-    }
-
-    /* Tiyaking kita ang text ng active episode kapag naka-Light Mode */
-    html.light-mode .playlist-item.active .playlist-title,
-    body.light-mode .playlist-item.active .playlist-title {
-      color: #111111 !important;
-      font-weight: 700;
-    }
-  </style>
 </head>
 
 <body>
@@ -138,9 +46,7 @@
     <div id="player-container">
        <div id="artplayer" class="art-video-player"></div>
        
-       <!-- 80% touch surface para hindi harangan ang controls sa ilalim -->
-       <div id="click-catcher" style="position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 56px); z-index: 10;"></div>
-       
+       <div id="click-catcher"></div>
        <div class="gesture-overlay">
            <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
                <div>
@@ -204,7 +110,31 @@
   } catch(e) {}
 })();
 
-// Global Controls
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-1B2RJ659GL');
+
+// Theme Synchronization
+(function() {
+  function applyTheme(theme) {
+    if (theme === 'light' || theme === '#ffffff' || theme === 'white') {
+      document.documentElement.classList.add('light-mode');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f8f9fa');
+    } else {
+      document.documentElement.classList.remove('light-mode');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0a0a0c');
+    }
+  }
+  const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme');
+  if (savedTheme) { applyTheme(savedTheme); } 
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) { applyTheme('light'); }
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'zoneTheme' || e.key === 'zoneVaultTheme') { applyTheme(e.newValue); }
+  });
+})();
+
 window.playNextEpisodeGlobal = function() {
   if (!window.currentEpData) return;
   const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
@@ -226,8 +156,8 @@ const playlistData = [
   { 
     id: "1", 
     title: "SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING", 
-    image: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png",
-    introEnd: 0
+    image: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png", 
+    introEnd: 0 
   }
 ];
 
@@ -241,10 +171,6 @@ let currentSubtitleUrls = [];
 let episodeLoadToken = 0;
 let currentHistoryKey = null;
 let lastSavedHistory = null;
-
-if (posterContainer && playlistData.length > 0 && playlistData[0].image) {
-  posterContainer.style.backgroundImage = `url('${playlistData[0].image}')`;
-}
 
 posterContainer.addEventListener('click', () => {
   if (playlistData.length > 0) {
@@ -285,7 +211,7 @@ function formatTime(seconds) {
   return `${minutes}:${String(secs).padStart(2, '0')}`;
 }
 
-// Dynamic Firebase Configuration Loader
+// Firebase Dynamic Config Loader
 (function() {
   let cfg = null;
   try {
@@ -314,7 +240,6 @@ function formatTime(seconds) {
     firebase.initializeApp(cfg);
   }
 })();
-
 const auth = firebase.auth();
 const db = firebase.database();
 
@@ -323,16 +248,13 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
   if (!ep) return;
 
   const today = new Date();
-  if (ep.date) {
-    const releaseDate = new Date(ep.date);
-    if (releaseDate > today) {
-      alert(`This episode is not yet available.\nRelease Date: ${ep.date}`);
-      return; 
-    }
+  if (ep.date && new Date(ep.date) > today) {
+    alert(`This episode is not yet available.\nRelease Date: ${ep.date}`);
+    return;
   }
 
   const loadToken = ++episodeLoadToken;
-  let pageIdentifier = window.location.pathname.split("/").pop().replace(".html", "") || "videos";
+  const pageIdentifier = window.location.pathname.split('/').pop().replace('.html', '') || 'videos';
   const historyKey = `${ep.id}_${pageIdentifier}`;
 
   if (updateUrl) {
@@ -345,9 +267,8 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
   currentHistoryKey = historyKey;
   lastSavedHistory = null;
 
-  posterContainer.style.display = "none";
-  playerContainer.style.display = "block";
-
+  posterContainer.style.display = 'none';
+  playerContainer.style.display = 'block';
   document.querySelectorAll('.playlist-item').forEach(item => {
     item.classList.toggle('active', item.dataset.id === epId);
     item.classList.remove('is-paused');
@@ -365,7 +286,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
 
   const data = snapshot.val();
   if (!data || !isAllowedMediaUrl(data.url)) {
-    alert("Video unavailable or invalid media URL");
+    alert('Video unavailable or invalid media URL');
     return;
   }
 
@@ -547,7 +468,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
   else art.once('video:loadedmetadata', resume);
 }
 
-// Custom Gestures Control
 const catcher = document.getElementById('click-catcher');
 let clickTimer = null;
 let lastTapTime = 0;
@@ -602,7 +522,7 @@ window.addEventListener('popstate', (event) => {
   }
 });
 
-// Render Playlist Items
+// Build Playlist Elements
 playlistData.forEach(ep => {
   const epDiv = document.createElement('div');
   epDiv.className = 'playlist-item';
@@ -720,5 +640,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+
 </body>
 </html>

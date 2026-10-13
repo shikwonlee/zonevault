@@ -1,33 +1,27 @@
 // ==========================================
 // 1. FIREBASE AUTHENTICATION & DATABASE SYNC
 // ==========================================
-import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-init.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI, initStatusSecurityWatchdog } from "./user-cache.js";
+import { showToast, showConfirm, escapeHTML } from "./toast.js";
 
-cleanStaleCaches();
-
-// --- INSTANT SKELETON-FREE HYDRATION FROM CACHE (0ms) ---
-const initialCached = getCachedUser();
-if (initialCached) {
-  if (document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = initialCached.name || "Vault Member";
-  if (document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = initialCached.email || "";
-  if (document.getElementById("sidebar-pic") && initialCached.profilePicture) {
-    const pic = document.getElementById("sidebar-pic");
-    pic.src = initialCached.profilePicture;
-    pic.onerror = () => { pic.src = "https://via.placeholder.com/150"; };
-  }
-  if (document.getElementById("status-text-pc")) {
-    document.getElementById("status-text-pc").innerText = initialCached.role === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
-  }
-}
+// Instantly hydrate sidebar user profile from cache (0ms delay)
+applyCachedUserToUI();
 
 // --- NOTIFICATIONS (bell dropdown) ---
+// IMPORTANT: This is only started AFTER we confirm the user is authenticated
+// (see onAuthStateChanged below). Starting it earlier can race against
+// Firebase Auth restoring the session, causing a silent permission-denied
+// on the Database Rules check — the listener then never fires again, which
+// is why the notif list stayed empty on Home but worked fine on Profile
+// (Profile is usually opened after the session is already warm).
 let latestNotifTimestamp = 0;
 let notifListenerStarted = false;
 
 function initNotifications() {
-    if (notifListenerStarted) return;
+    if (notifListenerStarted) return; // avoid double-subscribing
     notifListenerStarted = true;
 
     const notifList = document.getElementById('notif-list');
@@ -42,7 +36,7 @@ function initNotifications() {
             notifs.forEach(n => {
                 const item = document.createElement('div');
                 item.className = 'notif-item';
-                item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
+                item.innerHTML = `<div class="notif-icon"><i class="fas ${escapeHTML(n.icon || 'fa-bell')}"></i></div><div class="notif-content"><h5>${escapeHTML(n.title)}</h5><p>${escapeHTML(n.message)}</p></div>`;
                 notifList.appendChild(item);
                 if (n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
             });
@@ -60,6 +54,8 @@ function initNotifications() {
             notifList.innerHTML = '<div class="notif-empty">No new notifications</div>';
         }
     }, (error) => {
+        // Surfaces Database Rules / permission issues in the console instead
+        // of failing silently, so future issues like this are easy to spot.
         console.error("Notifications listener error:", error);
     });
 }
@@ -67,71 +63,109 @@ function initNotifications() {
 // Check user state on load
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        
+       // --- A. VERIFY USER FROM DATABASE ---
+       const userRef = ref(db, 'users/' + user.uid);
+       let snapshot = await get(userRef);
+
+       if (!snapshot.exists()) {
+           const reqRef = ref(db, 'joinRequests/' + user.uid);
+           const reqSnap = await get(reqRef);
+           if (reqSnap.exists()) {
+               const reqData = reqSnap.val() || {};
+               if (reqData.status === "approved") {
+                   await set(userRef, {
+                       status: "approved",
+                       accessID: user.uid,
+                       email: user.email || "",
+                       name: reqData.telegramUsername || user.displayName || "Vault Member",
+                       role: "user"
+                   });
+                   snapshot = await get(userRef);
+               } else if (reqData.status === "pending") {
+                   window.location.replace("login.html");
+                   return;
+               } else {
+                   showToast("Access Denied: You are not approved to enter Zone Vault.", "error");
+                   await signOut(auth);
+                   window.location.replace("login.html");
+                   return;
+               }
+           } else {
+               // Auto-initialize new authenticated account
+               await set(userRef, {
+                   status: "approved",
+                   accessID: user.uid,
+                   email: user.email || "",
+                   name: user.displayName || "Vault Member",
+                   role: "user"
+               });
+               snapshot = await get(userRef);
+           }
+       }
+
+       const data = snapshot.val() || {};
+
+console.log("USER DATA:", data);
+console.log("STATUS:", data.status);
+
+// Check approval status directly from Firebase
+if (data.status !== "approved") {
+    showToast("Access Denied: You are not approved to enter Zone Vault.", "error");
+    await signOut(auth);
+    window.location.replace("login.html");
+    return;
+}
+
+// Restore local access flag for compatibility
+localStorage.setItem("internalAccess", "true");
+
+// Now that we're a confirmed, approved, authenticated user, it's safe
+// to start listening for notifications.
+initNotifications();
+initStatusSecurityWatchdog(auth, db);
+
+const userEmail = user.email || "";
+
+        // --- B. FETCH PROFILE DATA FROM DATABASE ---
         try {
-            // --- A. VERIFY USER FROM DATABASE ---
-            const userRef = ref(db, 'users/' + user.uid);
-            const snapshot = await get(userRef);
 
-            if (!snapshot.exists()) {
-                clearCachedUser();
-                alert("Account not found.");
-                await signOut(auth);
-                window.location.replace("login.html");
-                return;
-            }
+    let userName = "Vault Member";
+    let userPic = "https://via.placeholder.com/150";
 
-            const data = snapshot.val();
+    userName = data.name || data.telegramUsername || "Vault Member";
+    userPic = data.profilePicture || "https://via.placeholder.com/150";
 
-            // Check approval status directly from Firebase
-            if (data.status !== "approved") {
-                clearCachedUser();
-                alert("Access Denied: You are not approved to enter Zone Vault.");
-                await signOut(auth);
-                window.location.replace("login.html");
-                return;
-            }
-
-            // Restore local access flag for compatibility
-            localStorage.setItem("internalAccess", "true");
-
-            initNotifications();
-
-            const userEmail = user.email || "";
-            const userName = data.name || data.telegramUsername || "Vault Member";
-            const userPic = data.profilePicture || "https://via.placeholder.com/150";
-            const userRole = (data.role || "member").toLowerCase();
-
-            // Cache immediately to eliminate lag across subsequent page switches
-            setCachedUser({
-                uid: user.uid,
-                email: userEmail,
-                name: userName,
-                profilePicture: userPic,
-                role: userRole,
-                status: "approved",
-                accessID: data.accessID || user.uid,
-                favorites: data.favorites || []
-            });
+    // Cache user profile for instant transitions on all pages
+    setCachedUser({
+        uid: user.uid,
+        email: userEmail,
+        name: userName,
+        profilePicture: userPic,
+        status: data.status,
+        role: data.role || "member",
+        isAdmin: (data.role || "").toLowerCase() === 'admin'
+    });
 
             // --- C. UPDATE UI ---
+            // Desktop Sidebar only — the mobile slide-out sidebar was removed
+            // in favor of the Bottom Nav Bar, which reads name/email/pic from the Profile page.
             if (document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = userName;
             if (document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = userEmail;
             if (document.getElementById("sidebar-pic")) {
                 const picEl = document.getElementById("sidebar-pic");
                 picEl.src = userPic;
-                picEl.onerror = () => { picEl.src = "https://via.placeholder.com/150"; };
-            }
-            if (document.getElementById("status-text-pc")) {
-                document.getElementById("status-text-pc").innerText = userRole === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
+                picEl.onerror = () => { picEl.src = "https://via.placeholder.com/150"; }; // Iwas broken image
             }
         } catch (error) {
-            console.error("Error verifying user session:", error);
+            console.error("Error fetching database profile:", error);
         }
+
     } else {
-        clearCachedUser();
         window.location.replace("login.html");
     }
 });
+
 
 // ==========================================
 // 2. GLOBALS, MODALS, & LOGOUT
@@ -140,16 +174,24 @@ window.isKickedOut = false;
 let expirationTimer = null; 
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
+    const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme') || 'dark';
+    if (savedTheme === 'light' || savedTheme === '#ffffff' || savedTheme === 'white') {
+        document.body.classList.add('light-mode');
+        document.documentElement.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.documentElement.classList.remove('light-mode');
+    }
 }
 initTheme();
 
 window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
+    document.documentElement.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode') || document.documentElement.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
-};
+    localStorage.setItem('zoneVaultTheme', isLight ? 'light' : 'dark');
+}
 
 window.toggleNotifModal = function() {
     const modal = document.getElementById('notifModal');
@@ -162,7 +204,7 @@ window.toggleNotifModal = function() {
         if (badgeMobile) badgeMobile.classList.remove('active');
         localStorage.setItem('lastReadNotif', latestNotifTimestamp);
     }
-};
+}
 
 window.openInfoModal = function(cardElement) {
     const title = cardElement.querySelector('.card-head h4').innerText;
@@ -180,28 +222,29 @@ window.closeInfoModal = function(event) {
     }
 };
 
-window.logout = function() {
-    if(confirm("Are you sure you want to log out?")) {
+window.logout = async function() {
+    const confirmed = await showConfirm({
+        title: "Log Out",
+        text: "Are you sure you want to sign out of Zone Vault?",
+        confirmText: "Sign Out",
+        danger: true
+    });
+    if (confirmed) {
         clearCachedUser();
         signOut(auth).then(() => {
             window.location.replace("login.html"); 
         }).catch((error) => {
-            alert("Logout failed: " + error.message);
+            showToast("Logout failed: " + error.message, "error");
         });
     }
-};
+}
+
 
 // ==========================================
 // 3. UI AND CAROUSEL LOGIC 
 // ==========================================
 function initializeUI() {
-    setTimeout(() => {
-        const toast = document.getElementById('toast');
-        if(toast) {
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 4000);
-        }
-    }, 1000);
+    // Welcome toast removed
 
     const slideData = [
         { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", title: "DXS [SERENADE ON STAGE] ICHEON" },
@@ -243,7 +286,7 @@ function initializeUI() {
         
         window.switchImage = function(index) {
             switchImageByIndex(index);
-        };
+        }
     }
 
     const scroller = document.getElementById('recentlyAddedScroller');
@@ -303,4 +346,24 @@ if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initializeUI);
 } else {
     initializeUI();
+}
+
+// ==========================================
+// SCROLL / PAGE LOAD REVEAL ANIMATION FOR HERO
+// ==========================================
+function triggerHeroRevealAnimation() {
+    const heroBox = document.querySelector('.hero-content-box');
+    const heroImg = document.getElementById('mainDisplay');
+    
+    // Add revealed class smoothly
+    requestAnimationFrame(() => {
+        if (heroBox) heroBox.classList.add('hero-revealed');
+        if (heroImg) heroImg.classList.add('hero-revealed');
+    });
+}
+
+if (document.readyState === 'complete') {
+    triggerHeroRevealAnimation();
+} else {
+    window.addEventListener('load', triggerHeroRevealAnimation);
 }

@@ -1,0 +1,231 @@
+/* ========================================================
+   Zone Vault — Modern In-App Toast & Confirmation System
+   Ultra-lightweight, GPU-accelerated (60fps), non-blocking
+   ======================================================== */
+
+.zv-toast-container {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  width: 90%;
+  max-width: 440px;
+}
+
+.zv-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  border-radius: 50px;
+  background: rgba(18, 18, 22, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f4f4f5;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(-20px) scale(0.96);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  max-width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+body.light-mode .zv-toast,
+html.light-mode .zv-toast {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #18181b;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.zv-toast.zv-toast-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.zv-toast.zv-toast-hiding {
+  opacity: 0;
+  transform: translateY(-16px) scale(0.96);
+}
+
+.zv-toast-icon {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.zv-toast.success .zv-toast-icon { color: #34d399; }
+.zv-toast.error .zv-toast-icon { color: #f87171; }
+.zv-toast.warning .zv-toast-icon { color: #fbbf24; }
+.zv-toast.info .zv-toast-icon { color: #60a5fa; }
+
+.zv-toast-msg {
+  flex: 1;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Modal Confirmation Dialog (Replaces native confirm dialog) */
+.zv-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 100001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  will-change: opacity;
+}
+
+.zv-confirm-overlay.zv-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.zv-confirm-box {
+  background: #141417;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  transform: scale(0.92);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Outfit', sans-serif;
+}
+
+body.light-mode .zv-confirm-box,
+html.light-mode .zv-confirm-box {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.zv-confirm-overlay.zv-active .zv-confirm-box {
+  transform: scale(1);
+}
+
+.zv-confirm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #e4e4e7;
+  font-size: 20px;
+}
+
+body.light-mode .zv-confirm-icon,
+html.light-mode .zv-confirm-icon {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #27272a;
+}
+
+.zv-confirm-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+body.light-mode .zv-confirm-title,
+html.light-mode .zv-confirm-title {
+  color: #09090b;
+}
+
+.zv-confirm-text {
+  font-size: 13.5px;
+  color: #a1a1aa;
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
+
+body.light-mode .zv-confirm-text,
+html.light-mode .zv-confirm-text {
+  color: #71717a;
+}
+
+.zv-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.zv-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.15s;
+  flex: 1;
+}
+
+.zv-btn:active {
+  transform: scale(0.97);
+}
+
+.zv-btn-cancel {
+  background: rgba(255, 255, 255, 0.07);
+  color: #d4d4d8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.zv-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+body.light-mode .zv-btn-cancel,
+html.light-mode .zv-btn-cancel {
+  background: rgba(0, 0, 0, 0.06);
+  color: #3f3f46;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.zv-btn-confirm {
+  background: #ffffff;
+  color: #09090b;
+}
+.zv-btn-confirm:hover {
+  background: #f4f4f5;
+}
+
+.zv-btn-danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+.zv-btn-danger:hover {
+  background: #dc2626;
+}
+
+

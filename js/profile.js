@@ -1,22 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue, get, update, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, onValue, get, update, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-init.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
 
 console.log("✅ Profile.js successfully loaded!");
 
-const firebaseConfig = {
-    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-    authDomain: "tvnstream-b4497.firebaseapp.com",
-    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-    projectId: "tvnstream-b4497",
-    storageBucket: "tvnstream-b4497.appspot.com",
-    messagingSenderId: "308384754214",
-    appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+// Instantly apply user info from cache
+applyCachedUserToUI();
 
 const CLOUDINARY_UPLOAD_PRESET = "zone_vault_avatars"; 
 const CLOUDINARY_CLOUD_NAME = "dp6x9xmku"; 
@@ -69,22 +59,25 @@ function maskEmail(email) {
 }
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
+    const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme') || 'dark';
+    if (savedTheme === 'light' || savedTheme === '#ffffff' || savedTheme === 'white') {
+        document.body.classList.add('light-mode');
+        document.documentElement.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.documentElement.classList.remove('light-mode');
+    }
 }
 window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
+    document.documentElement.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode') || document.documentElement.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
+    localStorage.setItem('zoneVaultTheme', isLight ? 'light' : 'dark');
 }
 initTheme();
 
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        document.getElementById('toast').classList.add('show');
-        setTimeout(() => { document.getElementById('toast').classList.remove('show'); }, 4000);
-    }, 1000);
-});
+// Welcome toast removed
 
 window.toggleEditMode = function() {
     const display = document.getElementById('display-mode');
@@ -161,6 +154,16 @@ onAuthStateChanged(auth, user => {
             const bannerColor = data.bannerColor || "#27272a"; 
             const bannerImage = data.bannerImage || null;
             const bannerEl = document.getElementById('profile-banner');
+            
+            setCachedUser({
+                uid: uid,
+                email: user.email,
+                name: name,
+                profilePicture: pic,
+                role: data.role || "member",
+                isAdmin: (data.role || "").toLowerCase() === 'admin',
+                status: data.status || "approved"
+            });
             
             if (bannerImage) {
                 bannerEl.style.backgroundImage = `url('${bannerImage}')`;
@@ -367,6 +370,7 @@ window.saveProfile = function() {
 
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
+        clearCachedUser();
         signOut(auth).then(() => window.location.replace("index"));
     }
 }
@@ -572,3 +576,34 @@ function showAccessDeniedModal() {
     document.body.appendChild(modal);
     setTimeout(() => { window.location.href = "index"; }, 3000);
 }
+
+// Card View Modal Helpers (Account, Notifications, History, Codes)
+window.openCardViewModal = function(type) {
+    const modal = document.getElementById('cardViewModal');
+    const title = document.getElementById('cardViewTitle');
+    const content = document.getElementById('cardViewContent');
+    if (!modal || !title || !content) return;
+    if (type === 'account') {
+        title.innerHTML = '<i class="fas fa-id-card"></i> Account Status';
+        const src = document.getElementById('account-status-content');
+        if (src) content.innerHTML = src.innerHTML;
+    } else if (type === 'notifications') {
+        title.innerHTML = '<i class="fas fa-bell"></i> Notifications';
+        const src = document.getElementById('notice-container');
+        if (src) content.innerHTML = src.innerHTML;
+    } else if (type === 'history') {
+        title.innerHTML = '<i class="fas fa-history"></i> Continue Watching';
+        const src = document.getElementById('watched-list');
+        if (src) content.innerHTML = src.innerHTML;
+    } else if (type === 'codes') {
+        title.innerHTML = '<i class="fas fa-ticket-alt"></i> My Codes';
+        const src = document.getElementById('my-codes-content');
+        if (src) content.innerHTML = src.innerHTML;
+    }
+    modal.style.display = 'flex';
+};
+
+window.closeCardViewModal = function() {
+    const modal = document.getElementById('cardViewModal');
+    if (modal) modal.style.display = 'none';
+};

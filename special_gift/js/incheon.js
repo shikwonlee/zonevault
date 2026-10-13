@@ -1,23 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, onValue, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, onValue, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 console.log("✅ incheon.js successfully loaded!");
 
 // ---------- FIREBASE CONFIG ----------
-const firebaseConfig = {
-    apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-    authDomain: "tvnstream-b4497.firebaseapp.com",
-    databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-    projectId: "tvnstream-b4497",
-    storageBucket: "tvnstream-b4497.appspot.com",
-    messagingSenderId: "308384754214",
-    appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import { auth, db } from "/js/firebase-init.js";
 
 // ==========================================
 // 1. THE MAINTENANCE KILL SWITCH (REALTIME)
@@ -61,13 +48,21 @@ window.addEventListener('load', () => {
 });
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
+    const savedTheme = localStorage.getItem("zoneTheme") || localStorage.getItem("zoneVaultTheme") || "dark";
+    if (savedTheme === "light" || savedTheme === "#ffffff" || savedTheme === "white") {
+        document.body.classList.add("light-mode");
+        document.documentElement.classList.add("light-mode");
+    } else {
+        document.body.classList.remove("light-mode");
+        document.documentElement.classList.remove("light-mode");
+    }
 }
 window.toggleTheme = function() {
-    document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
-    localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
+    document.body.classList.toggle("light-mode");
+    document.documentElement.classList.toggle("light-mode");
+    const isLight = document.body.classList.contains("light-mode") || document.documentElement.classList.contains("light-mode");
+    localStorage.setItem("zoneTheme", isLight ? "light" : "dark");
+    localStorage.setItem("zoneVaultTheme", isLight ? "light" : "dark");
 }
 initTheme();
 

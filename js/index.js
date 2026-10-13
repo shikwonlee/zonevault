@@ -1,90 +1,51 @@
-// ==========================================
-// ZONE VAULT — Landing Page Controller (js/index.js)
-// ==========================================
-import { auth, db, getCachedUser, setCachedUser, cleanStaleCaches } from "./firebase-init.js";
+// ========================================================
+// Zone Vault — Index Logic (js/index.js)
+// Modular: Auth check, UI interaction, particles, and modals
+// ========================================================
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-init.js";
+import { getCachedUser, setCachedUser } from "./user-cache.js";
 
-cleanStaleCaches();
+console.log("✅ Index.js loaded: Clean, Modular, and Secure");
 
-const currentPath = window.location.pathname.toLowerCase();
+// Initialize Google Tag Manager
+(function() {
+  if (typeof window !== 'undefined' && !window.dataLayer) {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=G-1B2RJ659GL";
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ window.dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-1B2RJ659GL');
+  }
+})();
 
-// --- 1. INSTANT CACHE CHECK (0ms Redirect) ---
-const cached = getCachedUser();
-if (cached && cached.status === "approved" && cached.uid) {
-  const accessID = cached.accessID || cached.uid;
-  if (!currentPath.includes("home")) {
-    window.location.replace(`home?access=${accessID}`);
+// ==========================================
+// 1. SERVICE WORKER PURGE (Kills stale cache)
+// ==========================================
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const reg of registrations) {
+      reg.unregister();
+    }
+  }).catch(() => {});
+  if ('caches' in window) {
+    caches.keys().then(names => {
+      for (const name of names) caches.delete(name);
+    }).catch(() => {});
   }
 }
 
-// --- 2. FIREBASE AUTH CHECK ---
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    try {
-      const userRef = ref(db, "users/" + user.uid);
-      const userSnap = await get(userRef);
-
-      if (userSnap.exists()) {
-        const data = userSnap.val();
-        const userStatus = data.status || "approved";
-        const userAccessID = data.accessID || user.uid;
-
-        setCachedUser({
-          uid: user.uid,
-          email: user.email,
-          name: data.name || data.telegramUsername || "Vault Member",
-          profilePicture: data.profilePicture || "https://via.placeholder.com/150",
-          role: (data.role || "member").toLowerCase(),
-          status: userStatus,
-          accessID: userAccessID,
-          favorites: data.favorites || []
-        });
-
-        if (userStatus === "approved") {
-          if (!currentPath.includes("home")) {
-            window.location.replace(`home?access=${userAccessID}`);
-          }
-        } else {
-          if (!currentPath.includes("login")) window.location.replace("login");
-        }
-      } else {
-        await set(userRef, {
-          status: "approved",
-          accessID: user.uid,
-          email: user.email || "No Email"
-        });
-
-        setCachedUser({
-          uid: user.uid,
-          email: user.email,
-          status: "approved",
-          accessID: user.uid
-        });
-
-        if (!currentPath.includes("home")) {
-          window.location.replace(`home?access=${user.uid}`);
-        }
-      }
-    } catch (error) {
-      console.error("Database check failed:", error);
-      if (!currentPath.includes("login")) window.location.replace("login");
-    }
-  } else {
-    // Visitor has no session — reveal landing page smoothly
-    const mainContent = document.getElementById("main-app-content");
-    if (mainContent) {
-      mainContent.style.visibility = "visible";
-      mainContent.style.opacity = "1";
-    }
-  }
-});
-
-// --- 3. PARTICLES GENERATOR ---
+// ==========================================
+// 2. UI HELPERS: PARTICLES & ANIMATIONS
+// ==========================================
 function initParticles() {
   const container = document.getElementById("particle-container");
   if (!container) return;
-  const particleCount = 40;
+  const particleCount = 45;
   for (let i = 0; i < particleCount; i++) {
     const particle = document.createElement("div");
     particle.classList.add("particle");
@@ -99,11 +60,10 @@ function initParticles() {
   }
 }
 
-// --- 4. HEADER SCROLL EFFECT ---
 function initHeaderScroll() {
-  const header = document.getElementById('navbar');
-  if (!header) return;
   window.addEventListener('scroll', () => {
+    const header = document.getElementById('navbar');
+    if (!header) return;
     if (window.scrollY > 50) {
       header.classList.add('scrolled');
     } else {
@@ -112,38 +72,84 @@ function initHeaderScroll() {
   }, { passive: true });
 }
 
-// --- 5. MODAL HANDLERS ---
-window.closeModal = function () {
+// ==========================================
+// SCROLL-TRIGGERED REVEAL (Intersection Observer API)
+// ==========================================
+function initScrollReveal() {
+  const elements = document.querySelectorAll('.reveal-on-scroll, .reveal-scale');
+  if (!elements.length) return;
+
+  if (!('IntersectionObserver' in window)) {
+    elements.forEach(el => el.classList.add('is-revealed'));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-revealed');
+        obs.unobserve(entry.target);
+      }
+    });
+  }, {
+    root: null,
+    rootMargin: '0px 0px -40px 0px',
+    threshold: 0.1
+  });
+
+  elements.forEach(el => observer.observe(el));
+}
+
+// Sync dynamic OpenGraph and Twitter URLs
+try {
+  if (typeof window !== 'undefined' && window.location) {
+    const currentHref = window.location.href;
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', currentHref);
+    const twUrl = document.querySelector('meta[name="twitter:url"]');
+    if (twUrl) twUrl.setAttribute('content', currentHref);
+  }
+} catch (e) {}
+
+// ==========================================
+// 3. MODALS & POPUPS
+// ==========================================
+export function closeModal() {
   const modal = document.getElementById("welcomeModal");
   if (modal) modal.style.display = "none";
   document.body.style.overflow = "auto";
   localStorage.setItem('welcomeModalShown', 'true');
-};
+}
 
-window.openModal = function () {
+export function openModal() {
   const modal = document.getElementById("welcomeModal");
   if (modal) modal.style.display = "flex";
   document.body.style.overflow = "hidden";
-};
+}
 
-window.closeAbout = function () {
-  const about = document.getElementById("aboutModal");
-  if (about) about.style.display = "none";
+export function closeAbout() {
+  const modal = document.getElementById("aboutModal");
+  if (modal) modal.style.display = "none";
   document.body.style.overflow = "auto";
-};
+}
 
-window.openAbout = function () {
-  const about = document.getElementById("aboutModal");
-  if (about) about.style.display = "flex";
+export function openAbout() {
+  const modal = document.getElementById("aboutModal");
+  if (modal) modal.style.display = "flex";
   document.body.style.overflow = "hidden";
-};
+}
 
-window.closeAppNotification = function () {
+export function closeAppNotification() {
   const notification = document.getElementById("appNotification");
-  if (notification) {
-    notification.classList.remove("show");
-  }
-};
+  if (notification) notification.classList.remove("show");
+}
+
+// Attach to window so existing inline onclick handlers in HTML continue working seamlessly
+window.closeModal = closeModal;
+window.openModal = openModal;
+window.closeAbout = closeAbout;
+window.openAbout = openAbout;
+window.closeAppNotification = closeAppNotification;
 
 window.addEventListener('click', (event) => {
   if (event.target && event.target.classList && event.target.classList.contains('modal-overlay')) {
@@ -152,21 +158,119 @@ window.addEventListener('click', (event) => {
   }
 });
 
-// App download notification trigger
+// App Download Toast Delay
 setTimeout(() => {
   const appNotif = document.getElementById('appNotification');
-  if (appNotif) {
-    appNotif.classList.add('show');
-  }
+  if (appNotif) appNotif.classList.add('show');
 }, 2500);
 
-// Initialize visual effects
+// Initialize UI
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     initParticles();
     initHeaderScroll();
+    initScrollReveal();
+    const existing = document.getElementById('scrollTopBtn');
+    if (existing) existing.remove();
   });
 } else {
   initParticles();
   initHeaderScroll();
+  initScrollReveal();
+  const existing = document.getElementById('scrollTopBtn');
+  if (existing) existing.remove();
 }
+
+// ==========================================
+// 4. FIREBASE AUTO-LOGIN CHECK WITH USER CACHE
+// ==========================================
+const currentPath = window.location.pathname.toLowerCase();
+
+// Instant cache check for faster response
+const cachedUser = getCachedUser();
+if (cachedUser && cachedUser.status === "approved" && cachedUser.uid) {
+  const accessID = cachedUser.accessID || cachedUser.uid;
+  if (!currentPath.includes("home")) {
+    window.location.replace(`home?access=${accessID}`);
+  }
+}
+
+function revealContent() {
+  const authLoader = document.getElementById("auth-loader");
+  const mainContent = document.getElementById("main-app-content");
+
+  if (authLoader) {
+    authLoader.style.opacity = "0";
+    setTimeout(() => {
+      authLoader.style.display = "none";
+    }, 400);
+  }
+
+  if (mainContent) {
+    mainContent.style.visibility = "visible";
+    mainContent.style.opacity = "1";
+    requestAnimationFrame(() => {
+      initScrollReveal();
+    });
+  }
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    try {
+      const userRef = ref(db, "users/" + user.uid);
+      const userSnap = await get(userRef);
+
+      if (userSnap.exists()) {
+        const data = userSnap.val();
+        const userStatus = data.status || "approved";
+        const userAccessID = data.accessID || user.uid;
+
+        // Update local session cache
+        setCachedUser({
+          uid: user.uid,
+          email: user.email || data.email || "",
+          name: data.name || data.telegramUsername || "Vault Member",
+          profilePicture: data.profilePicture || "https://via.placeholder.com/150",
+          status: userStatus,
+          role: data.role || "member",
+          accessID: userAccessID,
+          isAdmin: (data.role || "").toLowerCase() === 'admin'
+        });
+
+        if (userStatus === "approved") {
+          if (!currentPath.includes("home")) {
+            window.location.replace(`home?access=${userAccessID}`);
+          }
+        } else {
+          if (!currentPath.includes("login")) window.location.replace("login");
+        }
+      } else {
+        // Auto-fix for old accounts
+        await set(userRef, {
+          status: "approved",
+          accessID: user.uid,
+          email: user.email || "No Email"
+        });
+
+        setCachedUser({
+          uid: user.uid,
+          email: user.email || "",
+          name: "Vault Member",
+          status: "approved",
+          accessID: user.uid
+        });
+
+        if (!currentPath.includes("home")) {
+          window.location.replace(`home?access=${user.uid}`);
+        }
+      }
+    } catch (error) {
+      console.error("Database check failed:", error);
+      revealContent();
+    }
+  } else {
+    console.log("🛑 No active user session. Showing landing page.");
+    revealContent();
+  }
+});

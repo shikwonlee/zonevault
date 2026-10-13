@@ -1,10 +1,13 @@
-import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, get, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-cleanStaleCaches();
+import { auth, db } from "./firebase-init.js";
+import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI, initStatusSecurityWatchdog } from "./user-cache.js";
+import { showToast, showConfirm, escapeHTML } from "./toast.js";
 
 console.log("✅ Videos.js successfully loaded!");
+
+// Instantly hydrate sidebar from cache (0ms delay)
+applyCachedUserToUI();
 
 // ==========================================
 // 1. THE MAINTENANCE KILL SWITCH (REALTIME)
@@ -89,10 +92,7 @@ const data = [
 // 4. UI INITIALIZATION & THEMES
 // ==========================================
 window.addEventListener('load', () => {
-    setTimeout(() => {
-        document.getElementById('toast').classList.add('show');
-        setTimeout(() => { document.getElementById('toast').classList.remove('show'); }, 4000);
-    }, 1000);
+    // Welcome toast removed
     
     if (!sessionStorage.getItem('infoModalShown')) {
         document.getElementById('infoModal').classList.add('active');
@@ -101,13 +101,21 @@ window.addEventListener('load', () => {
 });
 
 function initTheme() {
-    const savedTheme = localStorage.getItem('zoneTheme') || 'dark';
-    if (savedTheme === 'light') document.body.classList.add('light-mode');
+    const savedTheme = localStorage.getItem('zoneTheme') || localStorage.getItem('zoneVaultTheme') || 'dark';
+    if (savedTheme === 'light' || savedTheme === '#ffffff' || savedTheme === 'white') {
+        document.body.classList.add('light-mode');
+        document.documentElement.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+        document.documentElement.classList.remove('light-mode');
+    }
 }
 window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
+    document.documentElement.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode') || document.documentElement.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
+    localStorage.setItem('zoneVaultTheme', isLight ? 'light' : 'dark');
 }
 initTheme();
 
@@ -178,7 +186,14 @@ function renderGrid(page) {
     const pageData = filtered.slice(start,end);
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="no-results"><i class="fas fa-video-slash"></i>No videos in this category yet.</div>`;
+        grid.innerHTML = `
+            <div class="no-results" style="grid-column: 1 / -1; padding: 60px 20px; text-align: center; color: var(--text-muted, #a1a1aa);">
+                <i class="fas fa-video-slash" style="font-size: 36px; margin-bottom: 14px; opacity: 0.5; display: block;"></i>
+                <h3 style="font-size: 16px; color: #fff; margin-bottom: 6px;">No Videos Found</h3>
+                <p style="font-size: 13px; margin-bottom: 16px;">There are no videos available in this category.</p>
+                <button onclick="handleCategoryChange('ALL')" class="btn-watch" style="padding: 8px 18px; font-size: 12px; margin: 0 auto; display: inline-block;">Show All Videos</button>
+            </div>
+        `;
         renderPagination(filtered.length);
         return;
     }
@@ -189,17 +204,19 @@ function renderGrid(page) {
         const isFav = favorites.includes(item.id) ? 'active' : '';
         const starIcon = favorites.includes(item.id) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
         
+        const safeLink = '/' + item.link.replace(/^\//, '');
+        const cleanTitle = (item.title || '').replace(/"/g, '&quot;');
         el.innerHTML = `
-          <div class="thumb-wrapper">
-            <img src="${item.thumb}" loading="lazy" alt="${item.title}">
+          <div class="thumb-wrapper" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'" style="cursor: pointer;" title="Watch ${cleanTitle}">
+            <img src="${item.thumb}" loading="lazy" alt="${cleanTitle}" onerror="this.onerror=null; this.src='https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png';">
             <div class="countdown-badge" data-date="${item.releaseDate || ''}"></div>
           </div>
           <div class="card-body">
             <div class="video-meta">${item.category}</div>
-            <div class="video-title">${item.title}</div>
+            <div class="video-title" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'" style="cursor: pointer;" title="Watch ${cleanTitle}">${item.title}</div>
             <div class="video-hashtags">${item.hashtags}</div>
             <div class="card-actions">
-                <button class="btn-watch" onclick="window.location.href='${item.link}'">WATCH</button>
+                <button class="btn-watch" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'">WATCH</button>
                 <button class="btn-fav ${isFav}" onclick="toggleFavorite('${item.id}')">${starIcon}</button>
             </div>
           </div>
@@ -246,26 +263,36 @@ function startCountdown() {
 // ==========================================
 // 7. FAVORITES LOGIC
 // ==========================================
+// Restore favorites from local cache for instant star indicators
+try {
+    const cachedFavs = localStorage.getItem('zone_cached_favorites');
+    if (cachedFavs) favorites = JSON.parse(cachedFavs);
+} catch (e) {}
+
 function loadFavoritesFromFirebase() {
     if (!userId) return;
     onValue(ref(db, 'users/' + userId + '/favorites'), snapshot => {
         favorites = snapshot.val() || [];
+        try { localStorage.setItem('zone_cached_favorites', JSON.stringify(favorites)); } catch (e) {}
         renderGrid(currentPaginationPage); 
     });
 }
 
 function saveFavoritesToFirebase() {
     if (!userId) return;
+    try { localStorage.setItem('zone_cached_favorites', JSON.stringify(favorites)); } catch (e) {}
     set(ref(db, 'users/' + userId + '/favorites'), favorites);
 }
 
 window.toggleFavorite = function(id) {
+    const isAdding = !favorites.includes(id);
     if (favorites.includes(id)) {
         favorites = favorites.filter(f => f !== id);
     } else {
         favorites.unshift(id);
     }
     saveFavoritesToFirebase();
+    showToast(isAdding ? "Added to your collection" : "Removed from collection", isAdding ? "success" : "info");
 }
 
 window.openFavoriteModal = function() {
@@ -281,14 +308,15 @@ window.openFavoriteModal = function() {
             if (item) {
                 const el = document.createElement('div');
                 el.className = 'fav-list-item';
+                const safeLink = '/' + item.link.replace(/^\//, '');
                 el.innerHTML = `
-                    <img src="${item.thumb}" class="fav-thumb" loading="lazy">
+                    <img src="${item.thumb}" class="fav-thumb" loading="lazy" onerror="this.onerror=null; this.src='https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png';">
                     <div class="fav-list-info">
                         <div class="fav-list-title">${item.title}</div>
                         <div class="fav-list-cat">${item.category}</div>
                     </div>
                     <div class="fav-actions">
-                        <button class="btn-watch" onclick="window.location.href='${item.link}'" style="padding: 5px 12px; font-size:10px;"><i class="fas fa-play"></i></button>
+                        <button class="btn-watch" onclick="sessionStorage.setItem('internalAccess', 'true'); window.location.href='${safeLink}'" style="padding: 5px 12px; font-size:10px;"><i class="fas fa-play"></i></button>
                         <button class="fav-btn-remove" onclick="toggleFavorite('${item.id}'); openFavoriteModal();"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `;
@@ -326,7 +354,7 @@ onValue(notifQuery, snapshot => {
         notifs.forEach(n => {
             const item = document.createElement('div');
             item.className = 'notif-item';
-            item.innerHTML = `<div class="notif-icon"><i class="fas ${n.icon || 'fa-bell'}"></i></div><div class="notif-content"><h5>${n.title}</h5><p>${n.message}</p></div>`;
+            item.innerHTML = `<div class="notif-icon"><i class="fas ${escapeHTML(n.icon || 'fa-bell')}"></i></div><div class="notif-content"><h5>${escapeHTML(n.title)}</h5><p>${escapeHTML(n.message)}</p></div>`;
             notifList.appendChild(item);
             if(n.timestamp > latestNotifTimestamp) latestNotifTimestamp = n.timestamp;
         });
@@ -364,8 +392,15 @@ window.toggleNotifModal = function() {
 // ==========================================
 // 9. AUTH, SESSIONS & SECURITY LOGIC
 // ==========================================
-window.logout = function() {
-    if(confirm("Are you sure you want to log out?")) {
+window.logout = async function() {
+    const confirmed = await showConfirm({
+        title: "Log Out",
+        text: "Are you sure you want to sign out of Zone Vault?",
+        confirmText: "Sign Out",
+        danger: true
+    });
+    if (confirmed) {
+        clearCachedUser();
         signOut(auth).then(() => window.location.replace("index"));
     }
 }
@@ -384,6 +419,17 @@ onAuthStateChanged(auth, user => {
             const role = (data.role || "member").toLowerCase();
             const isAdm = role === 'admin';
             
+            // Persist to user cache for all pages
+            setCachedUser({
+                uid: user.uid,
+                email: user.email,
+                name: name,
+                profilePicture: pic,
+                role: role,
+                isAdmin: isAdm,
+                status: data.status || "approved"
+            });
+
             if(!window.isKickedOut) {
                 if(document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = name;
                 if(document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = user.email;
@@ -402,6 +448,8 @@ onAuthStateChanged(auth, user => {
                 sessionStorage.setItem('internalAccess', 'true'); 
             }
 
+            initStatusSecurityWatchdog(auth, db);
+
             // Update Dynamic URL
             get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {
                 const reqStatus = reqSnap.val() || 'none';
@@ -410,6 +458,7 @@ onAuthStateChanged(auth, user => {
         });
     } else {
         if(!window.isKickedOut) {
+            clearCachedUser();
             window.location.replace("index");
         }
     }
@@ -419,7 +468,14 @@ onAuthStateChanged(auth, user => {
 const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', 'hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection'];
 const isAdminFlag = sessionStorage.getItem('isAdmin') === 'true';
 const currentPagePath = window.location.pathname;
-let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true';
+let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true' || localStorage.getItem('internalAccess') === 'true';
+try {
+  const cachedUser = JSON.parse(localStorage.getItem('zone_vault_user_cache'));
+  if (cachedUser && (cachedUser.uid || cachedUser.status === 'approved')) {
+    hasInternalAccessFlag = true;
+    sessionStorage.setItem('internalAccess', 'true');
+  }
+} catch(_) {}
 const referer = document.referrer;
 const refererPath = referer ? new URL(referer, location.origin).pathname : null;
 
@@ -438,10 +494,37 @@ function showAccessDeniedModal() {
     window.isKickedOut = true;
     const modal = document.createElement('div');
     modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.replace('index')">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.90); z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;';
+    modal.innerHTML = `
+      <div class="access-denied-card" style="position:relative; max-width:440px; width:100%; background:#000000; border:1px solid #27272a; border-radius:16px; padding:32px 24px 24px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.95); overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing:border-box;">
+        <div style="width:52px; height:52px; margin:0 auto 16px; border-radius:12px; background:#141414; border:1px solid #27272a; display:flex; align-items:center; justify-content:center; color:#ffffff;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <div style="display:inline-flex; align-items:center; gap:7px; padding:4px 12px; border-radius:9999px; background:#141414; border:1px solid #27272a; color:#a1a1aa; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#71717a;"></span>
+          <span>Permission Required</span>
+        </div>
+        <h2 style="font-size:22px; font-weight:700; color:#ffffff; margin:0 0 10px; letter-spacing:-0.3px;">Access Denied</h2>
+        <p style="font-size:14px; line-height:1.55; color:#a1a1aa; margin:0 0 20px;">
+          Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.
+        </p>
+        <div style="display:flex; gap:10px; width:100%; margin-bottom:8px;">
+          <button type="button" onclick="window.location.replace('/home')" style="flex:1; padding:12px 18px; border-radius:10px; background:#ffffff; color:#000000; font-weight:600; font-size:13.5px; border:none; cursor:pointer;">
+            Return to Home
+          </button>
+          <button type="button" onclick="window.location.href='mailto:seventeenzoneph@gmail.com?subject=Access%20Request'" style="flex:1; padding:12px 18px; border-radius:10px; background:#141414; color:#ffffff; font-weight:500; font-size:13.5px; border:1px solid #27272a; cursor:pointer;">
+            Contact Admin
+          </button>
+        </div>
+        <div style="font-size:12px; color:#71717a; margin-top:14px;">
+          Redirecting automatically in <strong style="color:#ffffff;">5</strong>s...
+        </div>
+      </div>
+    `;
     document.body.appendChild(modal);
-    setTimeout(() => { window.location.replace("index"); }, 3000);
+    setTimeout(() => { window.location.replace("/home"); }, 5000);
 }
+

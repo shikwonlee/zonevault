@@ -1,0 +1,288 @@
+
+html, body {
+    background-color: var(--surface-bg, #000000) !important;
+    color: var(--text-primary, #ffffff);
+}
+:root {
+    --surface-bg: #000000;
+    --text-primary: #ffffff;
+}
+html.light-mode,
+html.light-mode body,
+body.light-mode,
+.light-mode {
+    --surface-bg: #f8f9fa;
+    --text-primary: #111111;
+}
+/* Access Denied Modal - Hyper Glass */
+  .access-denied-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85); 
+    color: #fff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 11000; text-align: center; padding: 20px;
+    opacity: 0; animation: fadeIn 0.5s forwards; flex-direction: column;
+    backdrop-filter: blur(15px);
+    transform: translateZ(0);
+    will-change: opacity, backdrop-filter;
+  }
+  .access-denied-modal strong { font-size: 24px; margin-bottom: 10px; text-shadow: var(--text-shadow); }
+  .access-denied-modal button {
+    margin-top: 15px; padding: 10px 25px; 
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white; border-radius: 50px;
+    cursor: pointer; font-weight: bold; transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+  }
+  .access-denied-modal button:hover { background: rgba(255,255,255,0.25); color: white; }
+  @keyframes fadeIn { to { opacity: 1; } }
+/* ========================================================
+   ADAPTIVE ARTPLAYER CONTROLS & SCREEN RESIZING
+   - Adaptive scaling for controls, font sizes, and buttons
+   - Clean responsive sizing for small screens and mobile devices
+   - White theme & clean contrast (no harsh eye-strain red)
+   ======================================================== */
+.art-video-player,
+#artplayer-app,
+.artplayer-app {
+    width: 100% !important;
+    max-width: 100% !important;
+    position: relative !important;
+}
+
+/* Ensure controls container scales responsively */
+.art-video-player .art-bottom,
+.art-bottom {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 64px !important;
+    padding: 28px 12px 6px 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    z-index: 70 !important;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 50%, rgba(0, 0, 0, 0.12) 78%, transparent 100%) !important;
+    background-size: 100% 100% !important;
+    background-repeat: no-repeat !important;
+    background-position: bottom !important;
+    pointer-events: none !important;
+    transition: opacity 0.25s ease, transform 0.25s ease !important;
+}
+
+.art-video-player .art-controls,
+.art-video-player .art-progress {
+    pointer-events: auto !important;
+}
+
+.art-video-player.art-lock .art-bottom,
+.art-video-player.art-mini-progress-bar .art-bottom {
+    background: none !important;
+    padding: 0 !important;
+}
+
+.art-video-player .art-control {
+    font-size: 14px !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
+}
+
+.art-video-player .art-control-icon {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.art-video-player .art-control-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+    fill: #ffffff !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
+}
+
+/* Tablet & Mobile Screens (max-width: 768px) */
+@media (max-width: 768px) {
+    .art-video-player .art-bottom,
+    .art-bottom {
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 0 6px !important;
+        height: auto !important;
+        min-height: 40px !important;
+    }
+    
+    .art-video-player .art-control {
+        font-size: 11.5px !important;
+    }
+
+    .art-video-player .art-control-icon {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .art-video-player .art-control-icon svg {
+        width: 17px !important;
+        height: 17px !important;
+    }
+
+    .art-video-player .art-control-time {
+        font-size: 11px !important;
+        padding: 0 4px !important;
+    }
+
+    .art-video-player .art-control-volume {
+        display: none !important; /* Hide redundant volume slider on mobile touch devices */
+    }
+
+    .art-video-player .art-progress {
+        height: 3px !important;
+    }
+    .art-video-player .art-progress:hover {
+        height: 5px !important;
+    }
+
+    .art-video-player .custom-live-badge {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        margin-left: 2px !important;
+        margin-right: 10px !important;
+    }
+
+    .next-ep-btn, .skip-intro-btn {
+        padding: 6px 12px !important;
+        font-size: 11px !important;
+        border-radius: 6px !important;
+    }
+}
+
+/* Very Small Mobile Screens (max-width: 480px) */
+@media (max-width: 480px) {
+    .art-video-player .art-bottom,
+    .art-bottom {
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 0 4px !important;
+        height: auto !important;
+        min-height: 36px !important;
+    }
+
+    .art-video-player .art-control {
+        font-size: 10.5px !important;
+    }
+
+    .art-video-player .art-control-icon {
+        width: 24px !important;
+        height: 24px !important;
+    }
+
+    .art-video-player .art-control-icon svg {
+        width: 15px !important;
+        height: 15px !important;
+    }
+
+    .art-video-player .art-control-time {
+        font-size: 10px !important;
+        padding: 0 2px !important;
+    }
+
+    .art-video-player .art-progress-indicator {
+        width: 10px !important;
+        height: 10px !important;
+    }
+
+    .art-video-player .art-subtitle {
+        font-size: 12.5px !important;
+        bottom: 8% !important;
+    }
+}
+
+/* Video Admin Toast in White Theme */
+.admin-toast {
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: #09090b !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+.admin-toast svg, .admin-toast i {
+    color: #09090b !important;
+    stroke: #09090b !important;
+}
+
+
+/* ========================================================
+   CLEAN WHITE ADAPTIVE ADMIN TOAST NOTIFICATION
+   - Pure white matte capsule background
+   - Deep rich black text (#09090b)
+   - Size-adaptive (compact & sleek, never bulky or oversized)
+   ======================================================== */
+.admin-toast {
+    position: fixed !important;
+    top: -120px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: #ffffff !important;
+    color: #09090b !important;
+    padding: 8px 18px !important;
+    border-radius: 9999px !important;
+    font-weight: 700 !important;
+    font-size: 12.5px !important;
+    line-height: 1.2 !important;
+    z-index: 2147483647 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    transition: top 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease !important;
+    pointer-events: none !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    width: auto !important;
+    max-width: 90vw !important;
+    box-sizing: border-box !important;
+}
+
+.admin-toast.show {
+    top: 20px !important;
+    opacity: 1 !important;
+}
+
+.admin-toast i,
+.admin-toast svg {
+    font-size: 13px !important;
+    width: 14px !important;
+    height: 14px !important;
+    color: #09090b !important;
+    stroke: #09090b !important;
+    fill: none !important;
+    flex-shrink: 0 !important;
+}
+
+/* Adaptive scaling for mobile screens */
+@media (max-width: 600px) {
+    .admin-toast {
+        padding: 6px 14px !important;
+        font-size: 11px !important;
+        gap: 6px !important;
+        top: -100px !important;
+    }
+    .admin-toast.show {
+        top: 14px !important;
+    }
+    .admin-toast i,
+    .admin-toast svg {
+        font-size: 11.5px !important;
+        width: 12px !important;
+        height: 12px !important;
+    }
+}
+

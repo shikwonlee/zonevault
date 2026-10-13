@@ -1,26 +1,14 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signOut
+  createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getDatabase, ref, onValue, get, update
+  ref, onValue, get, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-init.js";
+import { setCachedUser } from "./user-cache.js";
+import { showToast } from "./toast.js";
 
 console.log("✅ Code.js (Quick Access) loaded!");
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
-  authDomain: "tvnstream-b4497.firebaseapp.com",
-  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
-  projectId: "tvnstream-b4497",
-  storageBucket: "tvnstream-b4497.appspot.com",
-  messagingSenderId: "308384754214",
-  appId: "1:308384754214:web:2938e76cd29b288f75d4e7"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
 
 // Maintenance Kill Switch
 const maintenanceRef = ref(db, 'settings/maintenanceMode');
@@ -65,7 +53,7 @@ window.quickCodeLogin = async function() {
   let nickname = document.getElementById("guest-name").value.trim();
   const btn = document.getElementById("btn-quick-login");
   
-  if (!code) return alert("Please enter your access code.");
+  if (!code) return showToast("Please enter your access code.", "warning");
   if (!nickname) nickname = "Guest_" + Math.floor(Math.random() * 10000);
 
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
@@ -79,7 +67,7 @@ window.quickCodeLogin = async function() {
       const codeData = snapshot.val();
       
       if (codeData.used === true) {
-         alert("❌ This code has already been used.");
+         showToast("This code has already been used.", "error");
          btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
          return;
       }
@@ -107,7 +95,17 @@ window.quickCodeLogin = async function() {
 
         await Promise.all([userProfilePromise, markCodeUsedPromise]);
 
-        // Session Setup
+        // Session Setup & Cache
+        setCachedUser({
+          uid: uid,
+          email: dummyEmail,
+          name: nickname,
+          profilePicture: "https://via.placeholder.com/150",
+          status: "approved",
+          role: "guest",
+          accessID: newAccessID,
+          isAdmin: false
+        });
         sessionStorage.setItem("internalAccess", "true");
         sessionStorage.setItem("fromIndex", "true");
         sessionStorage.setItem("accessID", newAccessID);
@@ -116,16 +114,16 @@ window.quickCodeLogin = async function() {
         show("approved");
         setTimeout(() => { window.location.href = `home.html?access=${newAccessID}`; }, 1200);
       } else {
-        alert("❌ This access code has expired.");
+        showToast("This access code has expired.", "error");
         btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
       }
     } else {
-      alert("❌ Invalid access code. Please check your spelling.");
+      showToast("Invalid access code. Please check your spelling.", "error");
       btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
     }
   } catch (error) {
     console.error(error);
-    alert("An error occurred. Please try again.");
+    showToast("An error occurred. Please try again.", "error");
     btn.innerHTML = 'Unlock Vault'; btn.disabled = false;
   }
 };

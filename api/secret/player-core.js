@@ -242,60 +242,13 @@
       let checkSettled = false;
 
       // === CASE 1: FREE ACCESS PAGE (pageId is empty or not provided) ===
-      // All pages where pageId has no content are FREE FOR ALL APPROVED MEMBERS!
+      // All pages where pageId has no content are FREE FOR ALL APPROVED MEMBERS! Walang page id, walang permission needed!
       if (!hasPageRestriction) {
+        this.hasPermission = true;
+        this.removeAccessDeniedModal();
         const initialSession = getSession();
-
-        // 1. Explicitly banned or denied accounts
-        if (initialSession.isBanned) {
-          checkSettled = true;
-          deny("Your account has been restricted or denied.");
-          return;
-        }
-
-        // 2. Immediate grant if already an approved member or logged in
-        if (initialSession.isApprovedMember) {
-          checkSettled = true;
-          grant(initialSession.isAdmin);
-          return;
-        }
-
-        // 3. Grace period for Firebase Auth to hydrate from IndexedDB
-        let authTimer = null;
-        if (auth) {
-          const unsub = auth.onAuthStateChanged((user) => {
-            if (checkSettled) return;
-            const liveSession = getSession();
-            if (liveSession.isBanned) {
-              checkSettled = true;
-              if (authTimer) clearTimeout(authTimer);
-              deny("Your account has been restricted or denied.");
-            } else if (user || liveSession.isApprovedMember) {
-              checkSettled = true;
-              if (authTimer) clearTimeout(authTimer);
-              grant(liveSession.isAdmin);
-            }
-          });
-
-          authTimer = setTimeout(() => {
-            if (!checkSettled) {
-              const finalCheck = getSession();
-              if (finalCheck.isBanned) {
-                checkSettled = true;
-                deny("Your account has been restricted or denied.");
-              } else if (finalCheck.isApprovedMember) {
-                checkSettled = true;
-                grant(finalCheck.isAdmin);
-              } else {
-                checkSettled = true;
-                deny("Please sign in or enter an access code to view this video.");
-              }
-            }
-          }, 1800);
-        } else {
-          checkSettled = true;
-          deny("Please sign in to view this video.");
-        }
+        if (initialSession.isAdmin) this.showAdminToast();
+        if (typeof callback === 'function') callback(true);
         return;
       }
 
@@ -427,7 +380,7 @@
       });
     },
 
-    loadAndPlayEpisode: async function(epId, updateUrl) {
+    loadAndPlayEpisode: function(epId, updateUrl) {
       if (!this.config) return;
 
       const ep = this.config.playlist.find(item => item.id === String(epId));
@@ -436,8 +389,8 @@
       const rawPageId = (this.config.pageId && typeof this.config.pageId === 'string') ? this.config.pageId.trim() : '';
       const hasPageRestriction = Boolean(rawPageId !== '');
 
-      // If user permission is evaluated as denied, prevent playback immediately
-      if (this.hasPermission === false || (hasPageRestriction && this.hasPermission !== true)) {
+      // Only restrict pages with a non-empty pageId! Free access pages require zero permissions!
+      if (hasPageRestriction && this.hasPermission === false) {
         this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
         return;
       }
@@ -468,200 +421,171 @@
         if (item.dataset.id === String(epId)) item.classList.add('active');
       });
 
-      // 1. Resolve Stream Data (via Protected Server Endpoint or Direct config)
-      let streamData = null;
+      const { auth, db } = ensureFirebase();
+      const self = this;
+
+      const proceedWithStreamData = (data) => {
+        if (!data || (!data.url && typeof data !== 'string')) {
+          alert("Video unavailable");
+          return;
+        }
+
+        let videoUrl = typeof data === 'string' ? data : (data.url || data.src || '');
+        if (videoUrl.startsWith('enc:')) {
+          try { videoUrl = atob(videoUrl.slice(4)); } catch (_) {}
+        }
+
+        let artSubtitles = [];
+        if (data.subtitles) {
+          if (Array.isArray(data.subtitles)) {
+            artSubtitles = data.subtitles;
+          } else if (typeof data.subtitles === 'object') {
+            Object.entries(data.subtitles).forEach(([lang, url]) => {
+              artSubtitles.push({
+                html: lang.toUpperCase(),
+                url: url,
+                default: lang.toLowerCase() === 'en'
+              });
+            });
+          }
+        }
+
+        const introEnd = (data.introEnd !== undefined) ? data.introEnd : (ep.introEnd || 0);
+        window.introEndTime = introEnd;
+
+        // If player is already running with the same stream URL
+        if (self.art && self.art.video && self.art.option && self.art.option.url === videoUrl) {
+          if (ep.time !== undefined) {
+            self.art.currentTime = ep.time;
+            self.art.play().catch(() => {});
+          }
+          return;
+        }
+
+        self.destroyPlayer();
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const defaultSub = artSubtitles.find(s => s.default) || artSubtitles[0];
+
+        const artConfig = {
+          container: '#artplayer',
+          url: videoUrl,
+          title: data.title || ep.title,
+          poster: ep.image || self.config.poster || 'https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png',
+          volume: 0.7,
+          isLive: false,
+          muted: false,
+          autoplay: true,
+          fullscreen: true,
+          fullscreenWeb: true,
+          miniProgressBar: true,
+          mutex: true,
+          airplay: true,
+          theme: self.config.theme || '#ffffff',
+          autoOrientation: true,
+          isMobile: false,
+          setting: true,
+          hotkey: true,
+          moreVideoAttr: {
+            playsInline: true,
+            'webkit-playsinline': true
+          },
+          subtitle: {
+            url: defaultSub ? defaultSub.url : '',
+            type: 'vtt',
+            encoding: 'utf-8',
+            style: {
+              color: '#fff',
+              fontSize: isMobile ? '16px' : '18px',
+              textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000',
+              background: 'none',
+              marginBottom: isMobile ? '20px' : '10px'
+            }
+          },
+          customType: {
+            m3u8: function (video, url, art) {
+              if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                art.hls = hls;
+
+                hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                  const levels = hls.levels.map((level, index) => ({
+                    html: (level.height ? level.height + 'P' : 'Unknown'),
+                    level: level.height,
+                    index: index
+                  }));
+                  levels.unshift({ html: 'Auto', index: -1, default: true });
+                  art.setting.update({
+                    name: 'quality',
+                    width: 150,
+                    html: 'Quality',
+                    tooltip: 'Auto',
+                    selector: levels.map(item => ({ html: item.html, default: item.default, url: '#', $index: item.index })),
+                    onSelect: function (item) {
+                      hls.currentLevel = item.$index;
+                      return item.html;
+                    }
+                  });
+                });
+              } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+              }
+            }
+          }
+        };
+
+        if (typeof Artplayer === 'undefined') {
+          console.error('Artplayer is not loaded.');
+          return;
+        }
+
+        self.art = new Artplayer(artConfig);
+        window.art = self.art;
+
+        if (artSubtitles.length > 0 && self.art && self.art.setting) {
+          self.art.setting.add({
+            html: 'Subtitles',
+            width: 200,
+            selector: artSubtitles.map(s => ({
+              html: s.html,
+              url: s.url,
+              default: s.default
+            })),
+            onSelect: function (item) {
+              self.art.subtitle.switch(item.url, { name: item.html });
+              return item.html;
+            }
+          });
+        }
+
+        self.setupGesturesAndEvents(ep);
+      };
 
       if (ep.url || this.config.videoUrl) {
-        streamData = {
+        proceedWithStreamData({
           url: ep.url || this.config.videoUrl,
           title: ep.title,
           subtitles: ep.subtitles || null,
           introEnd: ep.introEnd || 0
-        };
+        });
+      } else if (this.config.dbNode && db) {
+        // Direct Firebase path structure: db.ref(`${node}/${ep.id}`).once('value')
+        db.ref(`${this.config.dbNode}/${ep.id}`).once('value').then(snapshot => {
+          const data = snapshot.val();
+          if (!data || (!data.url && typeof data !== 'string')) {
+            alert("Video unavailable");
+            return;
+          }
+          proceedWithStreamData(data);
+        }).catch(err => {
+          console.error("Firebase fetch error:", err);
+          alert("Video unavailable");
+        });
       } else {
-        // Resolve authenticated user token first
-        const authToken = await this.resolveAuthToken(2500);
-
-        if (this.config.dbNode) {
-          try {
-            const headers = {};
-            let fetchUrl = `/api/secret/video-stream?node=${encodeURIComponent(this.config.dbNode)}&ep=${encodeURIComponent(ep.id)}`;
-            if (authToken) {
-              headers['Authorization'] = `Bearer ${authToken}`;
-              fetchUrl += `&auth=${encodeURIComponent(authToken)}`;
-            }
-
-            const res = await fetch(fetchUrl, { headers });
-            if (res.ok) {
-              const json = await res.json();
-              if (json && json.ok && json.url) {
-                streamData = json;
-              }
-            }
-          } catch (e) {
-            console.warn('API secret stream fetch failed, trying direct database fallback...');
-          }
-
-          // 2. Direct Firebase Realtime Database fallback if server proxy was blocked
-          if ((!streamData || !streamData.url) && this.config.allowDirectFallback) {
-            const { db } = ensureFirebase();
-            if (db) {
-              try {
-                const snap = await db.ref(`${this.config.dbNode}/${ep.id}`).once('value');
-                if (snap.exists()) {
-                  const val = snap.val();
-                  if (typeof val === 'string') {
-                    streamData = { ok: true, url: val, title: ep.title };
-                  } else if (val && typeof val === 'object') {
-                    let resolvedUrl = val.url || val.src || null;
-                    if (resolvedUrl && typeof resolvedUrl === 'string' && resolvedUrl.startsWith('enc:')) {
-                      try { resolvedUrl = atob(resolvedUrl.slice(4)); } catch (_) {}
-                    }
-                    streamData = {
-                      ok: true,
-                      url: resolvedUrl,
-                      title: val.title || ep.title,
-                      subtitles: val.subtitles || null,
-                      introEnd: val.introEnd || 0,
-                      key: val.key || null
-                    };
-                  }
-                }
-              } catch (e) {
-                console.error('Database query fallback failed:', e);
-              }
-            }
-          }
-        }
+        alert("Video unavailable");
       }
-
-      if (!streamData || !streamData.url) {
-        this.destroyPlayer();
-        if (hasPageRestriction && this.hasPermission !== true) {
-          this.showAccessDeniedModal("Your account does not have the required permissions to access this video. If you believe this is a mistake, please contact the administrator for assistance.");
-        } else {
-          // Free access video or authorized user: do not lock out with permission error
-          if (mainTitle) mainTitle.innerText = `${ep.title} (Stream Currently Offline)`;
-          let notice = document.getElementById('zv-stream-notice');
-          if (!notice) {
-            notice = document.createElement('div');
-            notice.id = 'zv-stream-notice';
-            notice.style.cssText = 'background:#111111; border:1px solid #27272a; color:#d4d4d8; padding:12px 18px; border-radius:10px; margin:16px 0; font-size:13px; text-align:center;';
-            const leftWrap = document.querySelector('.video-wrapper-left');
-            if (leftWrap) leftWrap.appendChild(notice);
-          }
-          notice.innerHTML = '<i class="fas fa-info-circle" style="margin-right:6px; color:#ffffff;"></i> Video stream is currently updating. Please select another episode or try again shortly.';
-          if (posterContainer) posterContainer.style.display = "block";
-          if (playerContainer) playerContainer.style.display = "none";
-        }
-        return;
-      }
-
-      const prevNotice = document.getElementById('zv-stream-notice');
-      if (prevNotice) prevNotice.remove();
-
-      // If player is already running with the same stream URL (e.g. multi-part concert with timestamp markers)
-      if (this.art && this.art.video && this.art.option && this.art.option.url === streamData.url) {
-        if (ep.time !== undefined) {
-          this.art.currentTime = ep.time;
-          this.art.play().catch(() => {});
-        }
-        return;
-      }
-
-      this.destroyPlayer();
-
-      // 3. Initialize Artplayer
-      const self = this;
-      const artConfig = {
-        container: '#artplayer',
-        url: streamData.url,
-        title: streamData.title || ep.title,
-        poster: ep.image || this.config.poster || 'https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png',
-        volume: 0.7,
-        isLive: false,
-        muted: false,
-        autoplay: true,
-        fullscreen: true,
-        fullscreenWeb: true,
-        miniProgressBar: true,
-        mutex: true,
-        airplay: true,
-        theme: this.config.theme || '#a1a1aa',
-        autoOrientation: true,
-        isMobile: false, // Allows custom gesture overlay
-        setting: true,
-        hotkey: true,
-        moreVideoAttr: {
-          playsInline: true,
-          'webkit-playsinline': true
-        },
-        customType: {
-          m3u8: function (video, url, art) {
-            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-              const hls = new Hls();
-              hls.loadSource(url);
-              hls.attachMedia(video);
-              art.hls = hls;
-
-              hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                const levels = hls.levels.map((level, index) => ({
-                  html: (level.height ? level.height + 'P' : 'Unknown'),
-                  level: level.height,
-                  index: index
-                }));
-                levels.unshift({ html: 'Auto', index: -1, default: true });
-                art.setting.update({
-                  name: 'quality',
-                  width: 150,
-                  html: 'Quality',
-                  tooltip: 'Auto',
-                  selector: levels.map(item => ({ html: item.html, default: item.default, url: '#', $index: item.index })),
-                  onSelect: function (item) {
-                    hls.currentLevel = item.$index;
-                    return item.html;
-                  }
-                });
-              });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-              video.src = url;
-            }
-          }
-        }
-      };
-
-      // 4. Subtitle Processing (Safe fetch to Blob to prevent CORS failure)
-      if (streamData.subtitles) {
-        try {
-          const subUrl = typeof streamData.subtitles === 'string' ? streamData.subtitles : (streamData.subtitles.en || Object.values(streamData.subtitles)[0]);
-          if (subUrl) {
-            const subRes = await fetch(subUrl);
-            if (subRes.ok) {
-              const subBlob = await subRes.blob();
-              const blobUrl = URL.createObjectURL(subBlob);
-              self.currentSubBlobUrls.push(blobUrl);
-              artConfig.subtitle = {
-                url: blobUrl,
-                type: 'vtt',
-                encoding: 'utf-8'
-              };
-            }
-          }
-        } catch(subErr) {
-          console.warn('Subtitle blob conversion note:', subErr);
-        }
-      }
-
-      if (typeof Artplayer === 'undefined') {
-        console.error('Artplayer is not loaded.');
-        return;
-      }
-
-      this.art = new Artplayer(artConfig);
-      window.art = this.art;
-
-      // 5. Gestures, Layers & Watch History
-      this.setupGesturesAndEvents(ep);
     },
 
     setupGesturesAndEvents: function(ep) {
@@ -929,39 +853,34 @@
       ` : '';
 
       modal.innerHTML = `
-        <div class="access-denied-card" style="position:relative; max-width:440px; width:100%; background:#000000; border:1px solid #27272a; border-radius:16px; padding:32px 24px 24px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.95); overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing:border-box;">
+        <div class="access-denied-card" style="position:relative; max-width:420px; width:100%; background:#000000; border:1px solid #27272a; border-radius:14px; padding:28px 22px 20px; text-align:center; box-shadow:0 15px 35px rgba(0,0,0,0.9); font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing:border-box;">
           
-          <div class="access-denied-icon-wrap" style="width:52px; height:52px; margin:0 auto 16px; border-radius:12px; background:#141414; border:1px solid #27272a; display:flex; align-items:center; justify-content:center; color:#ffffff;">
-            <svg class="access-denied-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="access-denied-icon-wrap" style="width:48px; height:48px; margin:0 auto 14px; border-radius:10px; background:#111111; border:1px solid #27272a; display:flex; align-items:center; justify-content:center; color:#ffffff;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
           </div>
 
-          <div class="access-denied-pill" style="display:inline-flex; align-items:center; gap:7px; padding:4px 12px; border-radius:9999px; background:#141414; border:1px solid #27272a; color:#a1a1aa; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px;">
-            <span class="access-denied-pill-dot" style="width:6px; height:6px; border-radius:50%; background:#71717a;"></span>
-            <span>Permission Required</span>
-          </div>
-
-          <h2 class="access-denied-title" style="font-size:22px; font-weight:700; color:#ffffff; margin:0 0 10px; letter-spacing:-0.3px; line-height:1.2;">Access Denied</h2>
+          <h2 class="access-denied-title" style="font-size:20px; font-weight:700; color:#ffffff; margin:0 0 8px; letter-spacing:-0.2px;">Access Denied</h2>
           
-          <p class="access-denied-message" style="font-size:14px; line-height:1.55; color:#a1a1aa; margin:0 0 20px;">
+          <p class="access-denied-message" style="font-size:13.5px; line-height:1.5; color:#a1a1aa; margin:0 0 18px;">
             ${displayMsg}
           </p>
 
           ${accountHtml}
 
           <div class="access-denied-actions" style="display:flex; gap:10px; width:100%; margin-bottom:8px;">
-            <button type="button" id="zv-back-btn" class="access-denied-primary-btn" style="flex:1; padding:12px 18px; border-radius:10px; background:#ffffff; color:#000000; font-weight:600; font-size:13.5px; border:none; cursor:pointer; transition:all 0.2s; margin:0;">
+            <button type="button" id="zv-back-btn" class="access-denied-primary-btn" style="flex:1; padding:11px 16px; border-radius:8px; background:#ffffff; color:#000000; font-weight:600; font-size:13px; border:none; cursor:pointer; transition:opacity 0.2s; margin:0;">
               Return to Videos
             </button>
-            <button type="button" id="zv-contact-btn" class="access-denied-secondary-btn" style="flex:1; padding:12px 18px; border-radius:10px; background:#141414; color:#ffffff; font-weight:500; font-size:13.5px; border:1px solid #27272a; cursor:pointer; transition:all 0.2s; margin:0;">
+            <button type="button" id="zv-contact-btn" class="access-denied-secondary-btn" style="flex:1; padding:11px 16px; border-radius:8px; background:#111111; color:#ffffff; font-weight:500; font-size:13px; border:1px solid #27272a; cursor:pointer; transition:opacity 0.2s; margin:0;">
               Contact Admin
             </button>
           </div>
 
-          <div class="access-denied-footer" style="font-size:12px; color:#71717a; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px;">
-            <span id="access-countdown-text">Redirecting automatically in <strong id="access-countdown" style="color:#ffffff; font-weight:600;">6</strong>s</span>
+          <div class="access-denied-footer" style="font-size:12px; color:#71717a; margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span id="access-countdown-text">Redirecting in <strong id="access-countdown" style="color:#ffffff; font-weight:600;">6</strong>s</span>
             <span style="color:#3f3f46;">·</span>
             <button type="button" id="zv-pause-btn" style="background:none; border:none; color:#a1a1aa; text-decoration:underline; cursor:pointer; font-size:11.5px; padding:0; margin:0;">Stay on page</button>
           </div>

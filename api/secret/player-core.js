@@ -213,9 +213,15 @@
         const uid = (auth && auth.currentUser && auth.currentUser.uid) || (cached && cached.uid) || '';
         const email = (auth && auth.currentUser && auth.currentUser.email) || (cached && cached.email) || '';
         const isBanned = Boolean(cached && (cached.status === 'banned' || cached.status === 'denied'));
-        const isUserLoggedIn = Boolean(uid || isInternal || hasAccessId || cached);
+        const isApprovedMember = Boolean(
+          (cached && (cached.status === 'approved' || cached.role || cached.uid || cached.accessID)) ||
+          isInternal ||
+          hasAccessId ||
+          isAdmin ||
+          (auth && auth.currentUser)
+        );
 
-        return { cached, isInternal, hasAccessId, isAdmin, uid, email, isBanned, isUserLoggedIn };
+        return { cached, isInternal, hasAccessId, isAdmin, uid, email, isBanned, isApprovedMember };
       };
 
       const deny = (msg) => {
@@ -235,48 +241,90 @@
 
       let checkSettled = false;
 
-      const runCheck = (user) => {
+      // === CASE 1: FREE ACCESS PAGE (pageId is empty or not provided) ===
+      // All pages where pageId has no content are FREE FOR ALL APPROVED MEMBERS!
+      if (!hasPageRestriction) {
+        const initialSession = getSession();
+
+        // 1. Explicitly banned or denied accounts
+        if (initialSession.isBanned) {
+          checkSettled = true;
+          deny("Your account has been restricted or denied.");
+          return;
+        }
+
+        // 2. Immediate grant if already an approved member or logged in
+        if (initialSession.isApprovedMember) {
+          checkSettled = true;
+          grant(initialSession.isAdmin);
+          return;
+        }
+
+        // 3. Grace period for Firebase Auth to hydrate from IndexedDB
+        let authTimer = null;
+        if (auth) {
+          const unsub = auth.onAuthStateChanged((user) => {
+            if (checkSettled) return;
+            const liveSession = getSession();
+            if (liveSession.isBanned) {
+              checkSettled = true;
+              if (authTimer) clearTimeout(authTimer);
+              deny("Your account has been restricted or denied.");
+            } else if (user || liveSession.isApprovedMember) {
+              checkSettled = true;
+              if (authTimer) clearTimeout(authTimer);
+              grant(liveSession.isAdmin);
+            }
+          });
+
+          authTimer = setTimeout(() => {
+            if (!checkSettled) {
+              const finalCheck = getSession();
+              if (finalCheck.isBanned) {
+                checkSettled = true;
+                deny("Your account has been restricted or denied.");
+              } else if (finalCheck.isApprovedMember) {
+                checkSettled = true;
+                grant(finalCheck.isAdmin);
+              } else {
+                checkSettled = true;
+                deny("Please sign in or enter an access code to view this video.");
+              }
+            }
+          }, 1800);
+        } else {
+          checkSettled = true;
+          deny("Please sign in to view this video.");
+        }
+        return;
+      }
+
+      // === CASE 2: RESTRICTED PAGE (pageId is non-empty) ===
+      // Only for specific authorized users!
+      const runRestrictedCheck = (user) => {
         if (checkSettled) return;
         const session = getSession();
 
         // 1. Explicitly banned or denied accounts
         if (session.isBanned) {
           checkSettled = true;
-          deny();
+          deny("Your account has been restricted or denied.");
           return;
         }
 
-        // 2. Unauthenticated visitors (Not logged in)
-        // All videos (including pages without pageId) are "free access for user only"
-        if (!session.isUserLoggedIn && !user) {
-          checkSettled = true;
-          deny();
-          return;
-        }
-
-        // 3. Admin user has full access to ALL videos
+        // 2. Admin user has full access to ALL videos
         if (session.isAdmin || (user && user.uid && session.cached && session.cached.role === 'admin')) {
           checkSettled = true;
           grant(true);
           return;
         }
 
-        // 4. CASE A: Page has NO pageId -> FREE ACCESS FOR ALL LOGGED-IN USERS!
-        if (!hasPageRestriction) {
-          checkSettled = true;
-          grant(false);
-          return;
-        }
-
-        // 5. CASE B: Page HAS pageId -> RESTRICTED TO SPECIFIC AUTHORIZED USERS!
         const currentUid = user ? user.uid : session.uid;
         if (!currentUid) {
-          checkSettled = true;
-          deny();
-          return;
+          return; // Allow onAuthStateChanged to resolve before denying
         }
 
-        // Check if user was already verified for this page in session cache
+        // 3. Check session and cached allowed pages
         if (sessionStorage.getItem(`zv_allowed_${rawPageId}`) === 'true' ||
             (session.cached && session.cached.allowedPages && session.cached.allowedPages[rawPageId] === true) ||
             (session.cached && session.cached.page_access && session.cached.page_access[rawPageId] === true)) {
@@ -285,7 +333,7 @@
           return;
         }
 
-        // Safety timeout: if database check hangs or rules block read, trigger modal
+        // Safety timeout for database query
         const safetyTimer = setTimeout(() => {
           if (!checkSettled) {
             checkSettled = true;
@@ -293,7 +341,7 @@
           }
         }, 2500);
 
-        // Query Realtime Database for access: page_access/${pageId}/${uid}
+        // 4. Query Realtime Database: page_access/${pageId}/${uid}
         if (db) {
           db.ref(`page_access/${rawPageId}/${currentUid}`).once('value', (snap) => {
             if (checkSettled) return;
@@ -304,7 +352,7 @@
               sessionStorage.setItem(`zv_allowed_${rawPageId}`, 'true');
               grant(false);
             } else {
-              // Check secondary user node: users/${uid}/page_access/${pageId}
+              // Secondary node: users/${uid}/page_access/${pageId}
               db.ref(`users/${currentUid}/page_access/${rawPageId}`).once('value', (uSnap) => {
                 if (checkSettled) return;
                 checkSettled = true;
@@ -319,11 +367,8 @@
                 if (!checkSettled) { checkSettled = true; clearTimeout(safetyTimer); deny(); }
               });
             }
-          }, (err) => {
-            if (checkSettled) return;
-            clearTimeout(safetyTimer);
-            checkSettled = true;
-            deny();
+          }, () => {
+            if (!checkSettled) { checkSettled = true; clearTimeout(safetyTimer); deny(); }
           });
         } else {
           clearTimeout(safetyTimer);
@@ -332,14 +377,24 @@
         }
       };
 
-      // 0ms startup pre-check using cached session
-      runCheck(auth ? auth.currentUser : null);
+      runRestrictedCheck(auth ? auth.currentUser : null);
 
-      // Also listen to onAuthStateChanged for live authentication restoration
       if (auth) {
         auth.onAuthStateChanged((user) => {
           if (!checkSettled) {
-            runCheck(user);
+            if (user) {
+              runRestrictedCheck(user);
+            } else {
+              setTimeout(() => {
+                if (!checkSettled) {
+                  const s = getSession();
+                  if (!s.uid && !s.isAdmin) {
+                    checkSettled = true;
+                    deny();
+                  }
+                }
+              }, 1600);
+            }
           }
         });
       }
@@ -491,11 +546,11 @@
           if (!notice) {
             notice = document.createElement('div');
             notice.id = 'zv-stream-notice';
-            notice.style.cssText = 'background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.28); color:#fca5a5; padding:12px 18px; border-radius:12px; margin:16px 0; font-size:13px; text-align:center;';
+            notice.style.cssText = 'background:#111111; border:1px solid #27272a; color:#d4d4d8; padding:12px 18px; border-radius:10px; margin:16px 0; font-size:13px; text-align:center;';
             const leftWrap = document.querySelector('.video-wrapper-left');
             if (leftWrap) leftWrap.appendChild(notice);
           }
-          notice.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i> Video stream is currently updating. Please select another episode or try again shortly.';
+          notice.innerHTML = '<i class="fas fa-info-circle" style="margin-right:6px; color:#ffffff;"></i> Video stream is currently updating. Please select another episode or try again shortly.';
           if (posterContainer) posterContainer.style.display = "block";
           if (playerContainer) playerContainer.style.display = "none";
         }
@@ -844,14 +899,12 @@
       modal.setAttribute('role', 'alertdialog');
       modal.setAttribute('aria-modal', 'true');
 
-      // Built-in resilient styling for immediate render
+      // Built-in resilient styling for immediate render (Pure black, no glassmorphism, no red)
       modal.style.cssText = `
         position: fixed;
         inset: 0;
-        background: rgba(5, 5, 8, 0.88);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        color: #fff;
+        background: rgba(0, 0, 0, 0.90);
+        color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -866,50 +919,49 @@
         || 'Video';
 
       const accountHtml = userUid ? `
-        <div class="access-denied-account" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; margin-bottom:22px; font-size:12px; color:#a1a1aa; text-align:left;">
+        <div class="access-denied-account" style="display:flex; align-items:center; justify-content:space-between; background:#0d0d0d; border:1px solid #222222; border-radius:10px; padding:9px 12px; margin-bottom:20px; font-size:12px; color:#a1a1aa; text-align:left;">
           <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Account ID: <strong style="color:#fff; font-family:monospace; font-size:11.5px;">${userUid}</strong></span>
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Account ID: <strong style="color:#ffffff; font-family:monospace; font-size:11.5px;">${userUid}</strong></span>
           </div>
-          <button type="button" id="zv-copy-uid-btn" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; cursor:pointer; font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; transition:all 0.2s; flex-shrink:0;">Copy ID</button>
+          <button type="button" id="zv-copy-uid-btn" style="background:#1c1c1f; border:1px solid #2e2e32; color:#ffffff; cursor:pointer; font-size:11px; font-weight:600; padding:4px 10px; border-radius:6px; transition:all 0.2s; flex-shrink:0;">Copy ID</button>
         </div>
       ` : '';
 
       modal.innerHTML = `
-        <div class="access-denied-card" style="position:relative; max-width:480px; width:100%; background:linear-gradient(180deg, rgba(24,24,30,0.96) 0%, rgba(12,12,16,0.98) 100%); border:1px solid rgba(239,68,68,0.32); border-radius:24px; padding:38px 28px 28px; text-align:center; box-shadow:0 30px 70px -15px rgba(0,0,0,0.85), 0 0 50px rgba(239,68,68,0.18), inset 0 1px 0 rgba(255,255,255,0.12); overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing:border-box;">
-          <div class="access-denied-glow" style="position:absolute; top:-70px; left:50%; transform:translateX(-50%); width:240px; height:140px; background:radial-gradient(ellipse, rgba(239,68,68,0.35) 0%, rgba(239,68,68,0) 70%); pointer-events:none;"></div>
+        <div class="access-denied-card" style="position:relative; max-width:440px; width:100%; background:#000000; border:1px solid #27272a; border-radius:16px; padding:32px 24px 24px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.95); overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing:border-box;">
           
-          <div class="access-denied-icon-wrap" style="width:68px; height:68px; margin:0 auto 18px; border-radius:20px; background:linear-gradient(135deg, rgba(239,68,68,0.22), rgba(185,28,28,0.08)); border:1px solid rgba(239,68,68,0.45); display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(239,68,68,0.28); color:#ef4444;">
-            <svg class="access-denied-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="access-denied-icon-wrap" style="width:52px; height:52px; margin:0 auto 16px; border-radius:12px; background:#141414; border:1px solid #27272a; display:flex; align-items:center; justify-content:center; color:#ffffff;">
+            <svg class="access-denied-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
           </div>
 
-          <div class="access-denied-pill" style="display:inline-flex; align-items:center; gap:7px; padding:5px 14px; border-radius:9999px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.28); color:#fca5a5; font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; margin-bottom:14px;">
-            <span class="access-denied-pill-dot" style="width:6px; height:6px; border-radius:50%; background:#ef4444; box-shadow:0 0 8px #ef4444;"></span>
+          <div class="access-denied-pill" style="display:inline-flex; align-items:center; gap:7px; padding:4px 12px; border-radius:9999px; background:#141414; border:1px solid #27272a; color:#a1a1aa; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px;">
+            <span class="access-denied-pill-dot" style="width:6px; height:6px; border-radius:50%; background:#71717a;"></span>
             <span>Permission Required</span>
           </div>
 
-          <h2 class="access-denied-title" style="font-size:26px; font-weight:800; color:#ffffff; margin:0 0 12px; letter-spacing:-0.5px; line-height:1.2;">Access Denied</h2>
+          <h2 class="access-denied-title" style="font-size:22px; font-weight:700; color:#ffffff; margin:0 0 10px; letter-spacing:-0.3px; line-height:1.2;">Access Denied</h2>
           
-          <p class="access-denied-message" style="font-size:14.5px; line-height:1.6; color:#d4d4d8; margin:0 0 22px;">
+          <p class="access-denied-message" style="font-size:14px; line-height:1.55; color:#a1a1aa; margin:0 0 20px;">
             ${displayMsg}
           </p>
 
           ${accountHtml}
 
-          <div class="access-denied-actions" style="display:flex; gap:12px; width:100%; margin-bottom:8px;">
-            <button type="button" id="zv-back-btn" class="access-denied-primary-btn" style="flex:1; padding:13px 20px; border-radius:12px; background:#ffffff; color:#09090b; font-weight:700; font-size:13.5px; border:none; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 16px rgba(255,255,255,0.15); margin:0;">
+          <div class="access-denied-actions" style="display:flex; gap:10px; width:100%; margin-bottom:8px;">
+            <button type="button" id="zv-back-btn" class="access-denied-primary-btn" style="flex:1; padding:12px 18px; border-radius:10px; background:#ffffff; color:#000000; font-weight:600; font-size:13.5px; border:none; cursor:pointer; transition:all 0.2s; margin:0;">
               Return to Videos
             </button>
-            <button type="button" id="zv-contact-btn" class="access-denied-secondary-btn" style="flex:1; padding:13px 20px; border-radius:12px; background:rgba(255,255,255,0.06); color:#ffffff; font-weight:600; font-size:13.5px; border:1px solid rgba(255,255,255,0.16); cursor:pointer; transition:all 0.2s; margin:0;">
+            <button type="button" id="zv-contact-btn" class="access-denied-secondary-btn" style="flex:1; padding:12px 18px; border-radius:10px; background:#141414; color:#ffffff; font-weight:500; font-size:13.5px; border:1px solid #27272a; cursor:pointer; transition:all 0.2s; margin:0;">
               Contact Admin
             </button>
           </div>
 
-          <div class="access-denied-footer" style="font-size:12px; color:#71717a; margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px;">
-            <span id="access-countdown-text">Redirecting automatically in <strong id="access-countdown" style="color:#f87171; font-weight:700;">6</strong>s</span>
+          <div class="access-denied-footer" style="font-size:12px; color:#71717a; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span id="access-countdown-text">Redirecting automatically in <strong id="access-countdown" style="color:#ffffff; font-weight:600;">6</strong>s</span>
             <span style="color:#3f3f46;">·</span>
             <button type="button" id="zv-pause-btn" style="background:none; border:none; color:#a1a1aa; text-decoration:underline; cursor:pointer; font-size:11.5px; padding:0; margin:0;">Stay on page</button>
           </div>

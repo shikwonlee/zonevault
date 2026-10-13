@@ -1,26 +1,33 @@
 // ==========================================
 // 1. FIREBASE AUTHENTICATION & DATABASE SYNC
 // ==========================================
+import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { auth, db } from "./firebase-init.js";
-import { getCachedUser, setCachedUser, clearCachedUser, applyCachedUserToUI } from "./user-cache.js";
 
-// Instantly hydrate sidebar user profile from cache (0ms delay)
-applyCachedUserToUI();
+cleanStaleCaches();
+
+// --- INSTANT SKELETON-FREE HYDRATION FROM CACHE (0ms) ---
+const initialCached = getCachedUser();
+if (initialCached) {
+  if (document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = initialCached.name || "Vault Member";
+  if (document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = initialCached.email || "";
+  if (document.getElementById("sidebar-pic") && initialCached.profilePicture) {
+    const pic = document.getElementById("sidebar-pic");
+    pic.src = initialCached.profilePicture;
+    pic.onerror = () => { pic.src = "https://via.placeholder.com/150"; };
+  }
+  if (document.getElementById("status-text-pc")) {
+    document.getElementById("status-text-pc").innerText = initialCached.role === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
+  }
+}
 
 // --- NOTIFICATIONS (bell dropdown) ---
-// IMPORTANT: This is only started AFTER we confirm the user is authenticated
-// (see onAuthStateChanged below). Starting it earlier can race against
-// Firebase Auth restoring the session, causing a silent permission-denied
-// on the Database Rules check — the listener then never fires again, which
-// is why the notif list stayed empty on Home but worked fine on Profile
-// (Profile is usually opened after the session is already warm).
 let latestNotifTimestamp = 0;
 let notifListenerStarted = false;
 
 function initNotifications() {
-    if (notifListenerStarted) return; // avoid double-subscribing
+    if (notifListenerStarted) return;
     notifListenerStarted = true;
 
     const notifList = document.getElementById('notif-list');
@@ -53,8 +60,6 @@ function initNotifications() {
             notifList.innerHTML = '<div class="notif-empty">No new notifications</div>';
         }
     }, (error) => {
-        // Surfaces Database Rules / permission issues in the console instead
-        // of failing silently, so future issues like this are easy to spot.
         console.error("Notifications listener error:", error);
     });
 }
@@ -62,79 +67,71 @@ function initNotifications() {
 // Check user state on load
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        
-       // --- A. VERIFY USER FROM DATABASE ---
-const userRef = ref(db, 'users/' + user.uid);
-const snapshot = await get(userRef);
-
-if (!snapshot.exists()) {
-    alert("Account not found.");
-    await signOut(auth);
-    window.location.replace("login.html");
-    return;
-}
-
-const data = snapshot.val();
-
-console.log("USER DATA:", data);
-console.log("STATUS:", data.status);
-
-// Check approval status directly from Firebase
-if (data.status !== "approved") {
-    alert("Access Denied: You are not approved to enter Zone Vault.");
-    await signOut(auth);
-    window.location.replace("login.html");
-    return;
-}
-
-// Restore local access flag for compatibility
-localStorage.setItem("internalAccess", "true");
-
-// Now that we're a confirmed, approved, authenticated user, it's safe
-// to start listening for notifications.
-initNotifications();
-
-const userEmail = user.email || "";
-
-        // --- B. FETCH PROFILE DATA FROM DATABASE ---
         try {
+            // --- A. VERIFY USER FROM DATABASE ---
+            const userRef = ref(db, 'users/' + user.uid);
+            const snapshot = await get(userRef);
 
-    let userName = "Vault Member";
-    let userPic = "https://via.placeholder.com/150";
+            if (!snapshot.exists()) {
+                clearCachedUser();
+                alert("Account not found.");
+                await signOut(auth);
+                window.location.replace("login.html");
+                return;
+            }
 
-    userName = data.name || data.telegramUsername || "Vault Member";
-    userPic = data.profilePicture || "https://via.placeholder.com/150";
+            const data = snapshot.val();
 
-    // Cache user profile for instant transitions on all pages
-    setCachedUser({
-        uid: user.uid,
-        email: userEmail,
-        name: userName,
-        profilePicture: userPic,
-        status: data.status,
-        role: data.role || "member",
-        isAdmin: (data.role || "").toLowerCase() === 'admin'
-    });
+            // Check approval status directly from Firebase
+            if (data.status !== "approved") {
+                clearCachedUser();
+                alert("Access Denied: You are not approved to enter Zone Vault.");
+                await signOut(auth);
+                window.location.replace("login.html");
+                return;
+            }
+
+            // Restore local access flag for compatibility
+            localStorage.setItem("internalAccess", "true");
+
+            initNotifications();
+
+            const userEmail = user.email || "";
+            const userName = data.name || data.telegramUsername || "Vault Member";
+            const userPic = data.profilePicture || "https://via.placeholder.com/150";
+            const userRole = (data.role || "member").toLowerCase();
+
+            // Cache immediately to eliminate lag across subsequent page switches
+            setCachedUser({
+                uid: user.uid,
+                email: userEmail,
+                name: userName,
+                profilePicture: userPic,
+                role: userRole,
+                status: "approved",
+                accessID: data.accessID || user.uid,
+                favorites: data.favorites || []
+            });
 
             // --- C. UPDATE UI ---
-            // Desktop Sidebar only — the mobile slide-out sidebar was removed
-            // in favor of the Bottom Nav Bar, which reads name/email/pic from the Profile page.
             if (document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = userName;
             if (document.getElementById("sidebar-email")) document.getElementById("sidebar-email").innerText = userEmail;
             if (document.getElementById("sidebar-pic")) {
                 const picEl = document.getElementById("sidebar-pic");
                 picEl.src = userPic;
-                picEl.onerror = () => { picEl.src = "https://via.placeholder.com/150"; }; // Iwas broken image
+                picEl.onerror = () => { picEl.src = "https://via.placeholder.com/150"; };
+            }
+            if (document.getElementById("status-text-pc")) {
+                document.getElementById("status-text-pc").innerText = userRole === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
             }
         } catch (error) {
-            console.error("Error fetching database profile:", error);
+            console.error("Error verifying user session:", error);
         }
-
     } else {
+        clearCachedUser();
         window.location.replace("login.html");
     }
 });
-
 
 // ==========================================
 // 2. GLOBALS, MODALS, & LOGOUT
@@ -152,7 +149,7 @@ window.toggleTheme = function() {
     document.body.classList.toggle('light-mode');
     const isLight = document.body.classList.contains('light-mode');
     localStorage.setItem('zoneTheme', isLight ? 'light' : 'dark');
-}
+};
 
 window.toggleNotifModal = function() {
     const modal = document.getElementById('notifModal');
@@ -165,7 +162,7 @@ window.toggleNotifModal = function() {
         if (badgeMobile) badgeMobile.classList.remove('active');
         localStorage.setItem('lastReadNotif', latestNotifTimestamp);
     }
-}
+};
 
 window.openInfoModal = function(cardElement) {
     const title = cardElement.querySelector('.card-head h4').innerText;
@@ -186,21 +183,25 @@ window.closeInfoModal = function(event) {
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
         clearCachedUser();
-        
         signOut(auth).then(() => {
             window.location.replace("login.html"); 
         }).catch((error) => {
             alert("Logout failed: " + error.message);
         });
     }
-}
-
+};
 
 // ==========================================
 // 3. UI AND CAROUSEL LOGIC 
 // ==========================================
 function initializeUI() {
-    // Welcome toast removed
+    setTimeout(() => {
+        const toast = document.getElementById('toast');
+        if(toast) {
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 4000);
+        }
+    }, 1000);
 
     const slideData = [
         { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", title: "DXS [SERENADE ON STAGE] ICHEON" },
@@ -242,7 +243,7 @@ function initializeUI() {
         
         window.switchImage = function(index) {
             switchImageByIndex(index);
-        }
+        };
     }
 
     const scroller = document.getElementById('recentlyAddedScroller');
@@ -302,24 +303,4 @@ if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initializeUI);
 } else {
     initializeUI();
-}
-
-// ==========================================
-// SCROLL / PAGE LOAD REVEAL ANIMATION FOR HERO
-// ==========================================
-function triggerHeroRevealAnimation() {
-    const heroBox = document.querySelector('.hero-content-box');
-    const heroImg = document.getElementById('mainDisplay');
-    
-    // Add revealed class smoothly
-    requestAnimationFrame(() => {
-        if (heroBox) heroBox.classList.add('hero-revealed');
-        if (heroImg) heroImg.classList.add('hero-revealed');
-    });
-}
-
-if (document.readyState === 'complete') {
-    triggerHeroRevealAnimation();
-} else {
-    window.addEventListener('load', triggerHeroRevealAnimation);
 }

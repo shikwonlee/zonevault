@@ -617,7 +617,7 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
       
     const uniqueHistoryKey = `${ep.id}_${pageIdentifier}`;
 
-    db.ref(`dxs_onstage/${ep.id}`).once('value').then(async snapshot => {
+    db.ref(`members_access/${PAGE_ID}/${ep.id}`).once('value').then(async snapshot => {
       const data = snapshot.val();
       if(!data || !data.url) { alert("Video unavailable"); return; }
 

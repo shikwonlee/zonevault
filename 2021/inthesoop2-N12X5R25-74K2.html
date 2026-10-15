@@ -687,7 +687,9 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         miniProgressBar: true,
         autoOrientation: true,
         lock: true,
-        fastForward: false, // DISABLE DRAG-TO-SEEK
+        fastForward: false, // DISABLE BUILT-IN FAST FORWARD SLIDE
+        gesture: false,     // DISABLE ALL SWIPE GESTURES
+        touch: false,       // DISABLE BUILT-IN TOUCH DRAGGING
         mutex: true,
         backdrop: false,
         playsInline: true,
@@ -750,16 +752,17 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         }
     });
 
-    /* INVERTED TAP LOGIC: 1 TAP = TOGGLE CONTROLS | DOUBLE TAP = PAUSE/PLAY OR SEEK (ZERO FLICKER) */
+    /* BLOCK ALL SWIPES/SLIDING AND HANDLE CUSTOM TAP LOGIC WITH SETTINGS EXCEPTION */
     art.on('ready', () => {
         const playerEl = art.template.$player;
         
-        // Prevent screen drag from doing native seek
+        // Prevent screen touch-sliding gestures completely
         playerEl.addEventListener('touchmove', (e) => {
             if (!e.target.closest('.art-control-progress')) {
+                e.preventDefault();
                 e.stopPropagation();
             }
-        }, { passive: true });
+        }, { passive: false });
 
         let lastTapTime = 0;
         let singleTapTimer = null;
@@ -772,7 +775,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
             const timeSinceLastTap = now - lastTapTime;
 
             if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-                // DOUBLE TAP DETECTED: CANCEL SINGLE TAP CONTROLS TOGGLE
+                // DOUBLE TAP DETECTED
                 clearTimeout(singleTapTimer);
 
                 if (x < width * 0.35) {
@@ -789,7 +792,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
                     triggerCustomAnimation(art.playing ? 'play' : 'pause', 'center');
                 }
             } else {
-                // SINGLE TAP DETECTED: SHOW / HIDE CONTROLS (Delayed 300ms to confirm not double tap)
+                // SINGLE TAP DETECTED: SHOW / HIDE CONTROLS ONLY
                 singleTapTimer = setTimeout(() => {
                     art.controls.toggle();
                 }, 300);
@@ -797,9 +800,11 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
             lastTapTime = now;
         };
 
-        // Attach custom tap handler
         playerEl.addEventListener('touchend', (e) => {
-            if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
+            // ALLOW SETTINGS & CONTROLS INTERACTION
+            if (e.target.closest('.art-controls') || e.target.closest('.art-setting') || e.target.closest('.art-setting-panel')) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             if (e.changedTouches && e.changedTouches.length > 0) {
@@ -808,8 +813,11 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         });
 
         playerEl.addEventListener('click', (e) => {
+            // ALLOW SETTINGS & CONTROLS INTERACTION
+            if (e.target.closest('.art-controls') || e.target.closest('.art-setting') || e.target.closest('.art-setting-panel')) {
+                return;
+            }
             if ('ontouchstart' in window) return;
-            if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
             e.preventDefault();
             e.stopPropagation();
             processTapLogic(e.clientX, e);

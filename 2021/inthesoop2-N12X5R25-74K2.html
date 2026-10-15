@@ -119,8 +119,6 @@
         #playlist, .title-box, .back-to-video-btn { display: none !important; }
         #player-container { display: block !important; width: 100%; height: 100%; max-height: 100vh; border-radius: 0 !important; box-shadow: none; z-index: 9999; }
         .art-video-player { width: 100% !important; height: 100% !important; }
-        #click-catcher { display: block !important; z-index: 80 !important; }
-        .gesture-overlay { z-index: 90 !important; }
     }
 
     .art-subtitle {
@@ -239,22 +237,11 @@
     #player-container { 
         display: none; width: 100%; aspect-ratio: 16/9; border-radius: 20px; 
         overflow: hidden; position: relative; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.7);
-        touch-action: none; background: #000; border: var(--glass-border);
+        touch-action: manipulation; background: #000; border: var(--glass-border);
     }
     .art-video-player { width: 100%; height: 100%; }
-    .art-layer-mobile { pointer-events: auto !important; }
 
-    #click-catcher {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: calc(100% - 55px);
-        z-index: 30;
-        cursor: pointer;
-    }
-
-    .gesture-overlay { position: absolute; top: 0; left: 0; bottom: 0; right: 0; pointer-events: none; overflow: hidden; z-index: 40; }
+    .gesture-overlay { position: absolute; top: 0; left: 0; bottom: 0; right: 0; pointer-events: none; overflow: hidden; z-index: 999; }
     .gesture-icon {
         position: absolute; top: 50%; transform: translate(-50%, -50%);
         background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px;
@@ -472,7 +459,6 @@
       <div id="player-container">
          <div id="artplayer" class="art-video-player"></div>
          
-         <div id="click-catcher"></div>
          <div class="gesture-overlay">
              <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
                  <div>
@@ -588,6 +574,13 @@ function formatTime(seconds) {
         return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
     return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+function showGestureFeedback(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 500);
 }
 
 const firebaseConfig = {
@@ -747,6 +740,56 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         }
     });
 
+    /* MOBILE DOUBLE TAP & LANDSCAPE GESTURE HANDLER */
+    let lastTapTime = 0;
+    let clickTimer = null;
+
+    const handleTapOrClick = (clientX) => {
+        if (!art) return;
+        const rect = art.template.$player.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const width = rect.width;
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapTime;
+
+        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+            clearTimeout(clickTimer);
+            if (x < width * 0.35) {
+                art.currentTime = Math.max(0, art.currentTime - 10);
+                showGestureFeedback('icon-rewind');
+            } else if (x > width * 0.65) {
+                art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
+                showGestureFeedback('icon-forward');
+            } else {
+                art.toggle();
+            }
+        } else {
+            clickTimer = setTimeout(() => {
+                art.toggle();
+                if (art.playing) showGestureFeedback('icon-play');
+                else showGestureFeedback('icon-pause');
+            }, 300);
+        }
+        lastTapTime = now;
+    };
+
+    art.on('ready', () => {
+        const playerEl = art.template.$player;
+
+        playerEl.addEventListener('touchend', (e) => {
+            if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                handleTapOrClick(e.changedTouches[0].clientX);
+            }
+        });
+
+        playerEl.addEventListener('click', (e) => {
+            if ('ontouchstart' in window) return; // Prevent duplicate trigger on touch devices
+            if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
+            handleTapOrClick(e.clientX);
+        });
+    });
+
     art.layers.add({
         name: 'nextEpLayer',
         html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
@@ -844,53 +887,36 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
     else art.once('video:loadedmetadata', resume);
 }
 
-const catcher = document.getElementById('click-catcher');
-let clickTimer = null;
-let lastTapTime = 0;
-
-function showGestureFeedback(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add('active');
-    setTimeout(() => el.classList.remove('active'), 500);
-}
-
-function handleTapGesture(e) {
+/* GLOBAL SHORTCUT KEYS (Left/Right Arrow: Seek -10s/+10s, F: Fullscreen, M: Mute) */
+document.addEventListener('keydown', (e) => {
     if (!art) return;
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapTime;
-    const rect = catcher.getBoundingClientRect();
-    const x = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX) - rect.left;
-    const width = rect.width;
+    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+    if (activeTag === 'input' || activeTag === 'textarea') return;
 
-    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-        clearTimeout(clickTimer);
-        if (x < width * 0.35) {
+    switch (e.key) {
+        case 'ArrowLeft':
+            e.preventDefault();
             art.currentTime = Math.max(0, art.currentTime - 10);
             showGestureFeedback('icon-rewind');
-        } else if (x > width * 0.65) {
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
             art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
             showGestureFeedback('icon-forward');
-        } else {
-            art.toggle();
-        }
-    } else {
-        clickTimer = setTimeout(() => {
-            art.toggle();
-            if (art.playing) showGestureFeedback('icon-play');
-            else showGestureFeedback('icon-pause');
-        }, 300);
+            break;
+        case 'f':
+        case 'F':
+            e.preventDefault();
+            art.fullscreen = !art.fullscreen;
+            break;
+        case 'm':
+        case 'M':
+            e.preventDefault();
+            art.muted = !art.muted;
+            art.notice.show = art.muted ? 'Muted' : 'Unmuted';
+            break;
     }
-    lastTapTime = now;
-}
-
-if (catcher) {
-    catcher.addEventListener('click', handleTapGesture);
-    catcher.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        handleTapGesture(e);
-    }, { passive: false });
-}
+});
 
 window.addEventListener('popstate', (event) => {
     if (event.state && event.state.id) loadAndPlayEpisode(event.state.id, false);

@@ -16,12 +16,11 @@
 
   <style>
     /* =========================================
-       1. VARIABLES & THEME GRADIENTS
+       1. VARIABLES & THEME ENGINE
        ========================================= */
     :root {
         --bg-color: #09090b; 
-        --bg-gradient: linear-gradient(180deg, #09090b 0%, #121215 100%);
-        --card-bg: rgba(24, 24, 27, 0.9);  
+        --card-bg: #18181b;  
         --border-color: #27272a; 
         --hover-bg: #27272a;
         --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -46,33 +45,9 @@
         --skeleton-shimmer: #3f3f46;
     }
 
-    /* PRESET GRADIENT BACKGROUNDS */
-    body[data-gradient="seventeen"] {
-        --bg-gradient: linear-gradient(135deg, #f7cae0 0%, #92a8d1 100%);
-        --card-bg: rgba(20, 20, 30, 0.85);
-        --text-main: #ffffff;
-    }
-    body[data-gradient="cyberpunk"] {
-        --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-        --card-bg: rgba(15, 12, 41, 0.85);
-    }
-    body[data-gradient="sunset"] {
-        --bg-gradient: linear-gradient(135deg, #2b1055 0%, #7597de 100%);
-        --card-bg: rgba(30, 15, 55, 0.85);
-    }
-    body[data-gradient="midnight"] {
-        --bg-gradient: linear-gradient(135deg, #16003b 0%, #410056 100%);
-        --card-bg: rgba(20, 5, 40, 0.85);
-    }
-    body[data-gradient="emerald"] {
-        --bg-gradient: linear-gradient(135deg, #06281e 0%, #004d40 100%);
-        --card-bg: rgba(6, 35, 28, 0.85);
-    }
-
     body.light-mode {
         --bg-color: #f4f4f5;
-        --bg-gradient: linear-gradient(180deg, #f4f4f5 0%, #e4e4e7 100%);
-        --card-bg: rgba(255, 255, 255, 0.9);
+        --card-bg: #ffffff;
         --border-color: #e4e4e7;
         --hover-bg: #f4f4f5;
         --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -90,10 +65,9 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
 
     body { 
-        background: var(--bg-gradient); 
-        background-attachment: fixed;
+        background-color: var(--bg-color); 
         color: var(--text-main); font-family: 'Outfit', sans-serif;
-        min-height: 100vh; transition: background 0.4s ease, color 0.3s ease; overflow-x: hidden;
+        min-height: 100vh; transition: background-color 0.3s ease, color 0.3s ease; overflow-x: hidden;
         padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
         padding-right: 40px;
         position: relative;
@@ -141,7 +115,7 @@
     .sidebar-desktop {
         position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
         border-radius: 16px; width: var(--sidebar-width-collapsed);
-        background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
         z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         overflow: hidden; display: flex; flex-direction: column; will-change: width;
     }
@@ -187,7 +161,7 @@
        3. NOTIFICATIONS & MODALS
        ========================================= */
     .hero-notif-btn, .header-btn {
-        background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle); 
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle); 
         color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
     }
     .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
@@ -201,36 +175,10 @@
 
     .notif-modal { 
         position: absolute !important; top: 85px; right: 40px; width: 340px; max-height: 400px; 
-        background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
     }
     .notif-modal.active { display: flex; animation: dropDown 0.2s ease; }
     @keyframes dropDown { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
-
-    /* GRADIENT PICKER PALETTE STYLES */
-    .theme-palette-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin-top: 10px;
-    }
-    .palette-item {
-        height: 45px;
-        border-radius: 10px;
-        border: 2px solid var(--border-color);
-        cursor: pointer;
-        transition: transform 0.2s, border-color 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: 700;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-        color: #fff;
-    }
-    .palette-item:hover {
-        transform: scale(1.05);
-        border-color: var(--text-main);
-    }
     
     .notif-header { padding: 16px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
     .notif-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 14px; align-items: flex-start; transition: 0.2s; }
@@ -251,7 +199,7 @@
         padding-bottom: 30px; 
         position: relative; 
     }
-    .glass-card { background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow-subtle); width: 100%; }
+    .glass-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow-subtle); width: 100%; }
 
     .banner { width: 100%; height: 220px; background: var(--banner-gradient); position: relative; transition: background 0.3s ease; }
     .banner.has-image { background-size: cover; background-position: center; }
@@ -329,7 +277,7 @@
     
     /* MODALS */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; align-items: center; justify-content: center; }
-    .modal-box-avatar { background: var(--card-bg); backdrop-filter: blur(16px); border: 1px solid var(--border-color); padding: 25px; border-radius: 16px; width: 90%; max-width: 450px; color: var(--text-main); max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-float); }
+    .modal-box-avatar { background: var(--card-bg); border: 1px solid var(--border-color); padding: 25px; border-radius: 16px; width: 90%; max-width: 450px; color: var(--text-main); max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-float); }
     #cardViewContent::-webkit-scrollbar { width: 6px; }
     #cardViewContent::-webkit-scrollbar-track { background: var(--input-bg); border-radius: 4px; }
     #cardViewContent::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
@@ -350,7 +298,7 @@
         left: 0; 
         width: 100%; 
         z-index: 900; 
-        background: var(--card-bg); backdrop-filter: blur(12px);
+        background: var(--card-bg); 
         border-bottom: 1px solid var(--border-color); 
         border-bottom-left-radius: 20px; 
         border-bottom-right-radius: 20px; 
@@ -386,7 +334,7 @@
         width: auto; 
         max-width: 480px;
         margin: 0 auto;
-        background: var(--card-bg); backdrop-filter: blur(16px);
+        background: var(--card-bg); 
         border: 1px solid var(--border-color); 
         border-radius: 18px; 
         box-shadow: var(--shadow-float); 
@@ -520,10 +468,6 @@
             <li class="nav-item"> <a href="profile" class="nav-link active"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
         </ul>
         <div class="sidebar-bottom">
-            <div class="nav-link" onclick="openGradientModal()">
-                <i class="fas fa-palette"></i> 
-                <span class="nav-text">Background</span>
-            </div>
             <div class="nav-link" onclick="toggleTheme()">
                 <i class="fas fa-cog"></i> 
                 <span class="nav-text">Switch Theme</span>
@@ -623,11 +567,11 @@
             </div>
             <div class="card-content" style="padding: 15px;">
                 <div class="pref-actions-container">
-                    <div class="pref-action-btn skeleton" onclick="openGradientModal()">
-                        <i class="fas fa-palette"></i> <span>Gradients</span>
-                    </div>
                     <div class="pref-action-btn skeleton" onclick="toggleTheme()">
                         <i class="fas fa-adjust"></i> <span>Theme</span>
+                    </div>
+                    <div class="pref-action-btn danger skeleton" style="cursor: default;">
+                        <i class="fas fa-shield-alt"></i> <span id="status-text-card">ADMIN</span>
                     </div>
                     <div class="pref-action-btn danger skeleton" onclick="logout()">
                         <i class="fas fa-sign-out-alt"></i> <span>Log Out</span>
@@ -700,25 +644,6 @@
     </div>
 </div>
 
-<!-- DYNAMIC MODAL FOR GRADIENT THEMES -->
-<div id="gradientThemeModal" class="modal-overlay">
-    <div class="modal-box-avatar" style="max-width: 480px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
-            <h3 style="margin:0; font-size: 16px;"><i class="fas fa-palette"></i> Background Themes</h3>
-            <button onclick="closeGradientModal()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;">&times;</button>
-        </div>
-        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Select a gradient background that syncs across all pages:</p>
-        <div class="theme-palette-grid">
-            <div class="palette-item" style="background: linear-gradient(135deg, #09090b 0%, #121215 100%);" onclick="setGradientTheme('default')">Default</div>
-            <div class="palette-item" style="background: linear-gradient(135deg, #f7cae0 0%, #92a8d1 100%);" onclick="setGradientTheme('seventeen')">Seventeen</div>
-            <div class="palette-item" style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);" onclick="setGradientTheme('cyberpunk')">Cyberpunk</div>
-            <div class="palette-item" style="background: linear-gradient(135deg, #2b1055 0%, #7597de 100%);" onclick="setGradientTheme('sunset')">Sunset</div>
-            <div class="palette-item" style="background: linear-gradient(135deg, #16003b 0%, #410056 100%);" onclick="setGradientTheme('midnight')">Midnight</div>
-            <div class="palette-item" style="background: linear-gradient(135deg, #06281e 0%, #004d40 100%);" onclick="setGradientTheme('emerald')">Emerald</div>
-        </div>
-    </div>
-</div>
-
 <!-- DYNAMIC MODAL FOR EYE ICONS -->
 <div id="cardViewModal" class="modal-overlay">
     <div class="modal-box-avatar" style="max-width: 500px;">
@@ -782,40 +707,13 @@
 
 <script>
     (function () {
-        // ACTIVE PAGE NAVIGATION SYNC
         var current = (window.location.pathname.split('/').pop() || 'profile').replace('.html', '') || 'profile';
         document.querySelectorAll('.bottom-nav-link').forEach(function (link) {
             var page = link.getAttribute('href');
             if (page === current) link.classList.add('active');
             else link.classList.remove('active');
         });
-
-        // SYNC SAVED BACKGROUND GRADIENTS FROM LOCALSTORAGE ACROSS PAGES
-        const savedGradient = localStorage.getItem('preferredGradient');
-        if (savedGradient) {
-            document.body.setAttribute('data-gradient', savedGradient);
-        }
     })();
-
-    // GRADIENT PICKER MODAL LOGIC
-    window.openGradientModal = function() {
-        document.getElementById('gradientThemeModal').style.display = 'flex';
-    };
-
-    window.closeGradientModal = function() {
-        document.getElementById('gradientThemeModal').style.display = 'none';
-    };
-
-    window.setGradientTheme = function(theme) {
-        if (theme === 'default') {
-            document.body.removeAttribute('data-gradient');
-            localStorage.removeItem('preferredGradient');
-        } else {
-            document.body.setAttribute('data-gradient', theme);
-            localStorage.setItem('preferredGradient', theme);
-        }
-        closeGradientModal();
-    };
 
     // REMOVE SKELETON LOADING CLASS ONCE DATA IS READY
     window.removeSkeletonLoading = function() {

@@ -688,7 +688,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
 
     let snapshot;
     try {
-        snapshot = await db.ref(`members_access/${PAGE_ID}/${ep.id}`).once('value').then(async snapshot => {
+        snapshot = await db.ref(`members_access/fukuokashow/${ep.id}`).once('value');
     } catch (error) {
         console.error('Video metadata request failed:', error);
         if (loadToken === episodeLoadToken) alert('Video unavailable');

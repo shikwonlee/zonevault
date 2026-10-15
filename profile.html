@@ -61,8 +61,8 @@
     body { 
         background-color: var(--bg-color); color: var(--text-main); font-family: 'Outfit', sans-serif;
         min-height: 100vh; transition: background-color 0.3s ease, color 0.3s ease; overflow-x: hidden;
-        padding-left: calc(var(--sidebar-width-collapsed) + 24px); 
-        padding-right: 24px;
+        padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
+        padding-right: 40px;
         position: relative;
     }
 
@@ -124,7 +124,7 @@
         background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle); 
         color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
     }
-    .hero-notif-btn { position: absolute !important; top: 20px; right: 24px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
+    .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
     .header-btn { width: 40px; height: 40px; border-radius: 50%; font-size: 16px; pointer-events: auto; position: relative; }
     .hero-notif-btn:hover, .header-btn:hover { background: var(--hover-bg); transform: translateY(-2px); box-shadow: var(--shadow-float); }
     
@@ -134,7 +134,7 @@
     .hero-notif-btn .badge.active, .header-btn .badge.active { display: block; }
 
     .notif-modal { 
-        position: absolute !important; top: 75px; right: 24px; width: 340px; max-height: 400px; 
+        position: absolute !important; top: 85px; right: 40px; width: 340px; max-height: 400px; 
         background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); border-radius: 16px; display: none; flex-direction: column; z-index: 9999; overflow-y: auto; 
     }
     .notif-modal.active { display: flex; animation: dropDown 0.2s ease; }
@@ -155,8 +155,8 @@
         width: 100%; 
         max-width: 1600px; 
         margin: 0 auto; 
-        padding-top: 20px; 
-        padding-bottom: 20px; 
+        padding-top: 30px; 
+        padding-bottom: 30px; 
         position: relative; 
     }
     .glass-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow-subtle); width: 100%; }
@@ -246,7 +246,7 @@
     .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* =========================================
-       5. MOBILE RESPONSIVENESS & CLASSIC FLOATING BOTTOM NAV
+       5. MOBILE RESPONSIVENESS & CLASSIC BOTTOM NAV WITH TOP INDICATOR LINE
        ========================================= */
     .mobile-header { 
         display: none; 
@@ -284,32 +284,25 @@
     body.light-mode .mobile-logo-img.logo-dark { display: none; }
     body.light-mode .mobile-logo-img.logo-light { display: block; }
 
-    /* CLASSIC MODERN FLOATING BOTTOM NAV */
+    /* LESS ROUNDED FLOATING NAV WITH TOP WHITE INDICATOR LINE */
     .bottom-nav-mobile { 
         display: none; 
         position: fixed; 
-        bottom: 20px; 
-        left: 20px; 
-        right: 20px; 
+        bottom: 16px; 
+        left: 16px; 
+        right: 16px; 
         width: auto; 
         max-width: 480px;
         margin: 0 auto;
-        background: rgba(24, 24, 27, 0.85); 
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1); 
-        border-radius: 30px; 
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); 
+        background: var(--card-bg); 
+        border: 1px solid var(--border-color); 
+        border-radius: 14px; 
+        box-shadow: var(--shadow-float); 
         z-index: 950; 
-        padding: 6px 10px; 
+        padding: 0 4px calc(4px + env(safe-area-inset-bottom, 0px)); 
         align-items: center; 
         justify-content: space-around; 
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease; 
-    }
-    body.light-mode .bottom-nav-mobile {
-        background: rgba(255, 255, 255, 0.85);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; 
     }
     .bottom-nav-mobile.hide-on-scroll { transform: translateY(160%); opacity: 0; }
     
@@ -319,41 +312,35 @@
         flex-direction: column; 
         align-items: center; 
         justify-content: center; 
-        gap: 3px; 
+        gap: 4px; 
         text-decoration: none; 
         color: var(--text-muted); 
         font-size: 10px; 
-        font-weight: 600; 
-        letter-spacing: 0.3px; 
-        padding: 8px 12px; 
-        border-radius: 20px; 
+        font-weight: 500; 
+        padding: 10px 4px 8px; 
         position: relative; 
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+        border-top: 3px solid transparent; 
+        transition: all 0.25s ease; 
     }
     .bottom-nav-link i { 
         font-size: 18px; 
-        transition: transform 0.3s ease, color 0.3s ease; 
+        transition: transform 0.2s ease, color 0.2s ease; 
     }
     .bottom-nav-link span {
-        opacity: 0.7;
-        transition: opacity 0.3s ease, transform 0.3s ease;
+        transition: color 0.2s ease;
     }
     .bottom-nav-link:hover i {
-        transform: translateY(-2px);
+        color: var(--text-main);
     }
     .bottom-nav-link.active { 
         color: var(--text-main); 
-        background: var(--text-main); 
-        color: var(--bg-color);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        border-top: 3px solid var(--text-main); 
+        font-weight: 700;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
     }
     .bottom-nav-link.active i { 
-        transform: translateY(0) scale(1.1); 
-        color: var(--bg-color);
-    }
-    .bottom-nav-link.active span {
-        opacity: 1;
-        font-weight: 700;
+        transform: translateY(-1px); 
+        color: var(--text-main);
     }
 
     @media (max-width: 900px) {
@@ -374,8 +361,8 @@
     }
 
     @media (max-width: 480px) {
-        .bottom-nav-mobile { left: 12px; right: 12px; padding: 5px 6px; }
-        .bottom-nav-link { padding: 6px 8px; font-size: 9px; }
+        .bottom-nav-mobile { left: 10px; right: 10px; }
+        .bottom-nav-link { padding: 8px 2px 6px; font-size: 9px; }
         .bottom-nav-link i { font-size: 16px; }
         .pref-actions-container { gap: 6px; }
         .pref-action-btn { padding: 12px 2px; font-size: 10px; }
@@ -405,7 +392,7 @@
     </div>
 </div>
 
-<!-- CLASSIC FLOATING BOTTOM NAV BAR -->
+<!-- FLOATING BOTTOM NAV WITH TOP WHITE INDICATOR LINE -->
 <nav class="bottom-nav-mobile" id="bottomNav">
     <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="videos" class="bottom-nav-link"><i class="fas fa-play-circle"></i><span>Videos</span></a>

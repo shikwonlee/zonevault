@@ -287,7 +287,7 @@
     .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* =========================================
-       5. MOBILE RESPONSIVENESS & CLASSIC BOTTOM NAV WITH TOP INDICATOR LINE
+       5. MOBILE RESPONSIVENESS & SHORT TOP PILL INDICATOR LINE
        ========================================= */
     .mobile-header { 
         display: none; 
@@ -325,7 +325,7 @@
     body.light-mode .mobile-logo-img.logo-dark { display: none; }
     body.light-mode .mobile-logo-img.logo-light { display: block; }
 
-    /* LESS ROUNDED FLOATING NAV WITH TOP WHITE INDICATOR LINE */
+    /* FLOATING NAV WITH SHORT CENTERED PILL LINE IN TOP */
     .bottom-nav-mobile { 
         display: none; 
         position: fixed; 
@@ -337,10 +337,10 @@
         margin: 0 auto;
         background: var(--card-bg); 
         border: 1px solid var(--border-color); 
-        border-radius: 14px; 
+        border-radius: 18px; 
         box-shadow: var(--shadow-float); 
         z-index: 950; 
-        padding: 0 4px calc(4px + env(safe-area-inset-bottom, 0px)); 
+        padding: 6px; 
         align-items: center; 
         justify-content: space-around; 
         transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; 
@@ -353,14 +353,14 @@
         flex-direction: column; 
         align-items: center; 
         justify-content: center; 
-        gap: 4px; 
+        gap: 3px; 
         text-decoration: none; 
         color: var(--text-muted); 
         font-size: 10px; 
         font-weight: 500; 
-        padding: 10px 4px 8px; 
+        padding: 8px 4px 6px; 
         position: relative; 
-        border-top: 3px solid transparent; 
+        border-radius: 12px;
         transition: all 0.25s ease; 
     }
     .bottom-nav-link i { 
@@ -373,14 +373,26 @@
     .bottom-nav-link:hover i {
         color: var(--text-main);
     }
+
+    /* SHORT WHITE PILL LINE AT TOP CENTER OF ACTIVE ITEM */
     .bottom-nav-link.active { 
         color: var(--text-main); 
-        border-top: 3px solid var(--text-main); 
         font-weight: 700;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+        background: rgba(255, 255, 255, 0.08);
+    }
+    .bottom-nav-link.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background-color: var(--text-main);
+        border-radius: 4px;
     }
     .bottom-nav-link.active i { 
-        transform: translateY(-1px); 
+        transform: translateY(1px); 
         color: var(--text-main);
     }
 
@@ -403,7 +415,7 @@
 
     @media (max-width: 480px) {
         .bottom-nav-mobile { left: 10px; right: 10px; }
-        .bottom-nav-link { padding: 8px 2px 6px; font-size: 9px; }
+        .bottom-nav-link { padding: 8px 2px 5px; font-size: 9px; }
         .bottom-nav-link i { font-size: 16px; }
         .pref-actions-container { gap: 6px; }
         .pref-action-btn { padding: 12px 2px; font-size: 10px; }
@@ -433,7 +445,7 @@
     </div>
 </div>
 
-<!-- FLOATING BOTTOM NAV WITH TOP WHITE INDICATOR LINE -->
+<!-- FLOATING BOTTOM NAV WITH SHORT CENTERED TOP PILL LINE -->
 <nav class="bottom-nav-mobile" id="bottomNav">
     <a href="home" class="bottom-nav-link"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="videos" class="bottom-nav-link"><i class="fas fa-play-circle"></i><span>Videos</span></a>
@@ -712,7 +724,7 @@
         });
     };
 
-    // AUTOMATIC SKELETON REMOVAL FALLBACK (E.G. AFTER DATA LOADS)
+    // AUTOMATIC SKELETON REMOVAL FALLBACK
     window.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             window.removeSkeletonLoading();

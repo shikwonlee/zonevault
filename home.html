@@ -201,12 +201,12 @@
     /* =========================================
        4. HERO SECTION 
        ========================================= */
-    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; position: relative;}
+    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-top: 30px; padding-bottom: 10px; position: relative; }
     
     .hero-container { 
         position: relative; 
         width: 100%; 
-        margin: 40px auto 40px auto; 
+        margin: 0 auto 30px auto; 
         height: 48vh; min-height: 400px; 
         border-radius: 24px; 
         overflow: hidden; display: flex; align-items: center; 
@@ -232,11 +232,11 @@
     /* =========================================
        5. CONTENT CARDS & SCROLLERS
        ========================================= */
-    .section-header { padding: 0 10px; margin-top: 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; color: var(--text-main); }
+    .section-header { padding: 0 10px; margin-top: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; color: var(--text-main); }
     .section-header h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
     .section-header i { font-size: 18px; }
     
-    .swipe-scroller { display: flex; gap: 24px; padding: 0 10px 40px 10px; overflow-x: auto; scrollbar-width: none; cursor: grab; }
+    .swipe-scroller { display: flex; gap: 20px; padding: 0 10px 20px 10px; overflow-x: auto; scrollbar-width: none; cursor: grab; }
     .swipe-scroller::-webkit-scrollbar { display: none; }
     .swipe-scroller.active { cursor: grabbing; } 
     
@@ -263,7 +263,7 @@
     .swipe-info { padding: 18px; }
     .swipe-info h4 { font-size: 15px; color: var(--text-main); margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
     
-    .cards-scroller { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 0 10px 60px 10px; }
+    .cards-scroller { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 0 10px 10px 10px; }
 
     /* INFO CARDS */
     .info-card { 
@@ -425,10 +425,11 @@
         .mobile-header { display: flex; } 
         .bottom-nav-mobile { display: flex; }
         body { padding-left: 15px; padding-right: 15px; padding-bottom: var(--bottom-nav-height); }
+        .main-wrapper { padding-top: 75px; padding-bottom: 10px; }
         
         .hero-container { 
             width: 100%; 
-            margin: 75px auto 25px auto; 
+            margin: 0 auto 20px auto; 
             height: auto; min-height: 50vh; 
             border-radius: 20px;
             align-items: flex-end; padding-bottom: 25px;
@@ -443,10 +444,10 @@
         .thumbnails-floating { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
         .thumb-btn { width: 55px; height: 35px; }
         
-        .section-header { padding: 0 5px; margin-top: 10px;}
-        .swipe-scroller { padding: 0 5px 25px 5px; gap: 16px; }
+        .section-header { padding: 0 5px; margin-top: 5px;}
+        .swipe-scroller { padding: 0 5px 20px 5px; gap: 16px; }
         .swipe-card { flex: 0 0 280px; } 
-        .cards-scroller { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; padding: 0 5px 25px 5px; scrollbar-width: none; }
+        .cards-scroller { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; padding: 0 5px 20px 5px; scrollbar-width: none; }
         .info-card { min-width: 85vw; scroll-snap-align: center; }
     }
   </style>
@@ -455,7 +456,7 @@
 
 <div id="toast" class="toast">
     <i class="fas fa-check-circle" style="color:var(--status-online);"></i>
-    <span>Welcome back to Zone Vault</span>
+    <span>Welcome to Home</span>
 </div>
 
 <a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">

@@ -23,10 +23,9 @@
   
   <style>
     /* =========================================
-       1. VARIABLES & THEME ENGINE (MODERN SOLID)
+       1. VARIABLES & THEME ENGINE (SOLID DARK)
        ========================================= */
     :root {
-        /* SOLID DARK THEME (MATTE) */
         --bg-color: #09090b; 
         --card-bg: #18181b;  
         --border-color: #27272a; 
@@ -46,11 +45,13 @@
         --sidebar-width-expanded: 220px; 
         
         --input-bg: #27272a;
-        --bottom-nav-height: 96px;
+        --bottom-nav-height: 85px;
+
+        --skeleton-bg: #27272a;
+        --skeleton-shimmer: #3f3f46;
     }
 
     body.light-mode {
-        /* SOLID LIGHT THEME (MATTE) */
         --bg-color: #f4f4f5;
         --card-bg: #ffffff;
         --border-color: #e4e4e7;
@@ -61,13 +62,13 @@
         --text-main: #18181b;
         --text-muted: #71717a;
         --input-bg: #f4f4f5;
+
+        --skeleton-bg: #e4e4e7;
+        --skeleton-shimmer: #f4f4f5;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
 
-    /* =========================================
-       2. AMBIENT BACKGROUND
-       ========================================= */
     body { 
         background-color: var(--bg-color);
         color: var(--text-main);
@@ -76,6 +77,7 @@
         transition: background-color 0.3s ease, color 0.3s ease;
         overflow-x: hidden;
         padding-left: calc(var(--sidebar-width-collapsed) + 40px); 
+        padding-right: 40px;
         position: relative;
     }
 
@@ -83,7 +85,33 @@
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       3. SOLID SIDEBAR & MENUS 
+       SKELETON LOADING ANIMATION STYLES
+       ========================================= */
+    .skeleton {
+        background-color: var(--skeleton-bg) !important;
+        background: linear-gradient(
+            90deg,
+            var(--skeleton-bg) 25%,
+            var(--skeleton-shimmer) 37%,
+            var(--skeleton-bg) 63%
+        ) !important;
+        background-size: 400% 100% !important;
+        animation: skeleton-loading 1.4s ease infinite !important;
+        color: transparent !important;
+        border-color: transparent !important;
+        pointer-events: none !important;
+        user-select: none !important;
+    }
+
+    .skeleton * { visibility: hidden !important; }
+
+    @keyframes skeleton-loading {
+        0% { background-position: 100% 50%; }
+        100% { background-position: 0 50%; }
+    }
+
+    /* =========================================
+       2. SIDEBAR DESKTOP
        ========================================= */
     .sidebar-desktop {
         position: fixed; top: 20px; left: 20px; height: calc(100vh - 40px); 
@@ -93,18 +121,17 @@
         box-shadow: var(--shadow-subtle);
         z-index: 1000; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         overflow: hidden; display: flex; flex-direction: column;
-        will-change: width; -webkit-transform: translateZ(0);
+        will-change: width;
     }
     .sidebar-desktop:hover { width: var(--sidebar-width-expanded); }
     .sidebar-container { display: flex; flex-direction: column; height: 100%; padding: 25px 0; width: 100%; }
 
     .sidebar-brand { display: flex; align-items: center; height: 40px; margin-bottom: 25px; width: 100%; white-space: nowrap; position: relative; padding-left: 0; justify-content: center; transition: padding 0.3s ease; overflow: hidden; }
-    /* Collapsed state: small icon-only mark, shown while the sidebar rail is not expanded */
     .sidebar-brand-collapsed-logo { height: 30px; width: auto; object-fit: contain; z-index: 2; flex-shrink: 0; display: block; }
     .sidebar-brand-collapsed-logo.logo-light { display: none; }
     body.light-mode .sidebar-brand-collapsed-logo.logo-dark { display: none; }
     body.light-mode .sidebar-brand-collapsed-logo.logo-light { display: block; }
-    /* Expanded state: same full logo used in the mobile header, revealed on hover */
+    
     .sidebar-brand-logo { height: 28px; width: auto; object-fit: contain; z-index: 2; flex-shrink: 0; display: none; }
     .sidebar-desktop:hover .sidebar-brand-collapsed-logo { display: none !important; }
     .sidebar-desktop:hover .sidebar-brand-logo.logo-dark { display: block; }
@@ -137,14 +164,11 @@
     .sidebar-useremail { font-size: 10px; color: var(--text-muted); }
 
     /* =========================================
-       4. MODERN BUTTONS & MODAL (NO BLUR)
+       3. BUTTONS & NOTIFICATIONS
        ========================================= */
     .hero-notif-btn, .header-btn {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        box-shadow: var(--shadow-subtle); 
-        color: var(--text-main);
-        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
+        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle); 
+        color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
     }
     
     .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
@@ -175,13 +199,13 @@
     .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
     /* =========================================
-       5. HERO SECTION 
+       4. HERO SECTION 
        ========================================= */
     .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 40px; position: relative;}
     
     .hero-container { 
         position: relative; 
-        width: calc(100% - 80px); 
+        width: 100%; 
         margin: 40px auto 40px auto; 
         height: 48vh; min-height: 400px; 
         border-radius: 24px; 
@@ -206,13 +230,13 @@
     .thumb-btn.active img, .thumb-btn:hover img { opacity: 1; }
 
     /* =========================================
-       6. SOLID CARDS 
+       5. CONTENT CARDS & SCROLLERS
        ========================================= */
-    .section-header { padding: 0 40px; margin-top: 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; color: var(--text-main); }
+    .section-header { padding: 0 10px; margin-top: 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; color: var(--text-main); }
     .section-header h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
     .section-header i { font-size: 18px; }
     
-    .swipe-scroller { display: flex; gap: 24px; padding: 0 40px 40px 40px; overflow-x: auto; scrollbar-width: none; cursor: grab; }
+    .swipe-scroller { display: flex; gap: 24px; padding: 0 10px 40px 10px; overflow-x: auto; scrollbar-width: none; cursor: grab; }
     .swipe-scroller::-webkit-scrollbar { display: none; }
     .swipe-scroller.active { cursor: grabbing; } 
     
@@ -239,11 +263,9 @@
     .swipe-info { padding: 18px; }
     .swipe-info h4 { font-size: 15px; color: var(--text-main); margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
     
-    .cards-scroller { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 0 40px; padding-bottom: 60px; }
+    .cards-scroller { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 0 10px 60px 10px; }
 
-    /* =========================================
-       7. INFO CARDS (Popup Triggers)
-       ========================================= */
+    /* INFO CARDS */
     .info-card { 
         background: var(--card-bg); 
         border: 1px solid var(--border-color); 
@@ -269,9 +291,7 @@
         color: var(--code-accent); transform: scale(1.1);
     }
 
-    /* =========================================
-       8. INFORMATION MODAL POPUP
-       ========================================= */
+    /* MODAL POPUP */
     .info-modal-overlay {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0, 0, 0, 0.7);
@@ -311,112 +331,122 @@
     .info-modal-body li { margin-bottom: 10px; }
     .info-modal-body strong { color: var(--text-main); font-weight: 600; }
 
-    /* Modals & Toasts */
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); color: var(--text-main); padding: 14px 28px; border-radius: 50px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.4s ease; }
     .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* =========================================
-       9. SKELETON LOADERS
+       6. MOBILE RESPONSIVENESS & SHORT TOP PILL NAV
        ========================================= */
-    .skeleton {
-        background: linear-gradient(90deg, var(--input-bg) 25%, var(--hover-bg) 50%, var(--input-bg) 75%);
-        background-size: 200% 100%;
-        animation: skeleton-shimmer 1.4s ease-in-out infinite;
-        border-radius: 8px;
-    }
-    @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .skeleton-line { height: 12px; margin-bottom: 10px; }
-    .skeleton-line.short { width: 50%; }
-    .skeleton-line.medium { width: 75%; }
-    .skeleton-line:last-child { margin-bottom: 0; }
-    .skeleton-notif-item { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
-    .skeleton-notif-icon { width: 34px; height: 34px; min-width: 34px; border-radius: 50%; }
-    .skeleton-notif-text { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 3px; }
-
-    /* =========================================
-       10. MOBILE RESPONSIVENESS
-       ========================================= */
-    /* CLEAR/TRANSPARENT HEADER */
     .mobile-header { 
-        display: none; padding: 15px 20px; align-items: center; justify-content: space-between; 
+        display: none; padding: 12px 20px; align-items: center; justify-content: space-between; 
         position: fixed !important; top: 0; left: 0; width: 100%; z-index: 900; 
-        background: transparent; /* No solid background */
-        border: none; pointer-events: none; /* Lets clicks pass through the center */
+        background: var(--card-bg); 
+        border-bottom: 1px solid var(--border-color); 
+        border-bottom-left-radius: 20px; 
+        border-bottom-right-radius: 20px; 
+        box-shadow: var(--shadow-subtle);
+        transition: transform 0.3s ease, opacity 0.3s ease; 
     }
+    .mobile-header.hide-on-scroll { transform: translateY(-110%); opacity: 0; }
     
-    /* Logo pill: wide rounded rectangle so the full logo (icon + wordmark) reads clearly */
     .mobile-logo-container { 
         display: flex; align-items: center; justify-content: center; pointer-events: auto; 
-        background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-subtle);
-        height: 44px; width: 132px; padding: 2px 6px; border-radius: 14px;
+        height: 38px; width: 120px; padding: 2px 4px; 
     }
     .mobile-logo-img { width: 100%; height: 100%; object-fit: contain; }
     .mobile-logo-img.logo-light { display: none; }
     body.light-mode .mobile-logo-img.logo-dark { display: none; }
     body.light-mode .mobile-logo-img.logo-light { display: block; }
 
-    /* =========================================
-       11. BOTTOM NAVIGATION BAR (MOBILE) — FLOATING PILL
-       ========================================= */
-    .bottom-nav-mobile {
-        display: none;
-        position: fixed; bottom: 16px; left: 16px; right: 16px; width: auto;
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 22px;
-        box-shadow: var(--shadow-float);
-        z-index: 950;
-        padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
-        align-items: center; justify-content: space-around;
-        transition: transform 0.3s ease, opacity 0.3s ease;
+    /* FLOATING BOTTOM NAV WITH SHORT CENTERED PILL LINE IN TOP */
+    .bottom-nav-mobile { 
+        display: none; 
+        position: fixed; 
+        bottom: 16px; 
+        left: 16px; 
+        right: 16px; 
+        width: auto; 
+        max-width: 480px;
+        margin: 0 auto;
+        background: var(--card-bg); 
+        border: 1px solid var(--border-color); 
+        border-radius: 18px; 
+        box-shadow: var(--shadow-float); 
+        z-index: 950; 
+        padding: 6px; 
+        align-items: center; 
+        justify-content: space-around; 
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; 
     }
-    .bottom-nav-mobile.hide-on-scroll { transform: translateY(140%); opacity: 0; }
+    .bottom-nav-mobile.hide-on-scroll { transform: translateY(160%); opacity: 0; }
+    
+    .bottom-nav-link { 
+        flex: 1; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 3px; 
+        text-decoration: none; 
+        color: var(--text-muted); 
+        font-size: 10px; 
+        font-weight: 500; 
+        padding: 8px 4px 6px; 
+        position: relative; 
+        border-radius: 12px;
+        transition: all 0.25s ease; 
+    }
+    .bottom-nav-link i { font-size: 18px; transition: transform 0.2s ease, color 0.2s ease; }
+    .bottom-nav-link span { transition: color 0.2s ease; }
+    .bottom-nav-link:hover i { color: var(--text-main); }
 
-    .bottom-nav-link {
-        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 4px; text-decoration: none; color: var(--text-muted);
-        font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
-        padding: 6px 2px; border-radius: 14px; position: relative;
-        transition: color 0.2s ease, transform 0.15s ease;
+    /* SHORT WHITE PILL LINE AT TOP CENTER OF ACTIVE ITEM */
+    .bottom-nav-link.active { 
+        color: var(--text-main); 
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.08);
     }
-    .bottom-nav-link i { font-size: 19px; transition: transform 0.15s ease; }
-    .bottom-nav-link:active { transform: scale(0.92); }
-    .bottom-nav-link.active { color: var(--text-main); background: var(--hover-bg); }
-    .bottom-nav-link.active i { transform: translateY(-1px); }
     .bottom-nav-link.active::before {
-        content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
-        width: 18px; height: 3px; border-radius: 3px; background: var(--text-main);
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background-color: var(--text-main);
+        border-radius: 4px;
     }
+    .bottom-nav-link.active i { transform: translateY(1px); color: var(--text-main); }
 
     @media (max-width: 900px) {
         .sidebar-desktop { display: none; }
         .hero-notif-btn { display: none !important; } 
         .mobile-header { display: flex; } 
         .bottom-nav-mobile { display: flex; }
-        body { padding-left: 0; padding-bottom: var(--bottom-nav-height); }
+        body { padding-left: 15px; padding-right: 15px; padding-bottom: var(--bottom-nav-height); }
         
         .hero-container { 
-            width: calc(100% - 40px); 
-            margin: 80px auto 30px auto; 
-            height: auto; min-height: 55vh; 
+            width: 100%; 
+            margin: 75px auto 25px auto; 
+            height: auto; min-height: 50vh; 
             border-radius: 20px;
-            align-items: flex-end; padding-bottom: 30px;
-            box-shadow: var(--shadow-float);
+            align-items: flex-end; padding-bottom: 25px;
         }
         
         .hero-overlay { background: linear-gradient(to top, var(--bg-color) 0%, rgba(9,9,11,0.4) 60%, transparent 100%); }
-        .hero-content-box { text-align: center; padding: 25px; display: flex; flex-direction: column; align-items: center; }
-        .hero-content-box h1 { display: block; font-size: 1.6rem; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .hero-content-box { text-align: center; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .hero-content-box h1 { font-size: 1.5rem; margin-bottom: 10px; }
         
-        .notif-modal { position: fixed !important; top: 75px !important; right: 15px !important; width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; }
+        .notif-modal { position: fixed !important; top: 70px !important; right: 15px !important; width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; }
         
-        .thumbnails-floating { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
-        .thumb-btn { width: 60px; height: 38px; }
+        .thumbnails-floating { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+        .thumb-btn { width: 55px; height: 35px; }
         
-        .section-header { padding: 0 25px; margin-top: 10px;}
-        .swipe-scroller { padding: 0 25px 30px 25px; gap: 18px; }
-        .swipe-card { flex: 0 0 300px; } 
-        .cards-scroller { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 18px; padding: 0 25px 30px 25px; scrollbar-width: none; }
+        .section-header { padding: 0 5px; margin-top: 10px;}
+        .swipe-scroller { padding: 0 5px 25px 5px; gap: 16px; }
+        .swipe-card { flex: 0 0 280px; } 
+        .cards-scroller { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; padding: 0 5px 25px 5px; scrollbar-width: none; }
         .info-card { min-width: 85vw; scroll-snap-align: center; }
     }
   </style>
@@ -439,24 +469,11 @@
         <i class="fas fa-check-double" style="cursor:pointer;" title="Mark all read"></i>
     </div>
     <div id="notif-list">
-        <div class="skeleton-notif-item">
-            <div class="skeleton skeleton-notif-icon"></div>
-            <div class="skeleton-notif-text">
-                <div class="skeleton skeleton-line medium"></div>
-                <div class="skeleton skeleton-line short"></div>
-            </div>
-        </div>
-        <div class="skeleton-notif-item">
-            <div class="skeleton skeleton-notif-icon"></div>
-            <div class="skeleton-notif-text">
-                <div class="skeleton skeleton-line medium"></div>
-                <div class="skeleton skeleton-line short"></div>
-            </div>
-        </div>
+        <div class="notif-empty">Loading notifications...</div>
     </div>
 </div>
 
-<div class="mobile-header">
+<div class="mobile-header" id="mobileHeader">
     <div class="mobile-logo-container">
          <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault" class="mobile-logo-img logo-dark">
          <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/WHITE_THEME_blxmt7.png" alt="Zone Vault" class="mobile-logo-img logo-light">
@@ -469,15 +486,15 @@
     </div>
 </div>
 
-<!-- BOTTOM NAVIGATION BAR (mobile only) -->
+<!-- FLOATING BOTTOM NAV WITH SHORT CENTERED TOP PILL LINE -->
 <nav class="bottom-nav-mobile" id="bottomNav">
-    <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
     <a href="home" class="bottom-nav-link active"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="videos" class="bottom-nav-link"><i class="fas fa-play-circle"></i><span>Videos</span></a>
     <a href="collection" class="bottom-nav-link"><i class="fas fa-images"></i><span>Collection</span></a>
-    <a href="live" class="bottom-nav-link"><i class="fas fa-broadcast-tower"></i><span>Live</span></a>
+    <a href="profile" class="bottom-nav-link"><i class="fas fa-user"></i><span>Profile</span></a>
 </nav>
 
+<!-- SIDEBAR DESKTOP -->
 <aside class="sidebar-desktop">
     <div class="sidebar-container">
         <div class="sidebar-brand">
@@ -487,11 +504,10 @@
             <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/WHITE_THEME_blxmt7.png" alt="Zone Vault" class="sidebar-brand-logo logo-light">
         </div>
         <ul class="nav-list">
-            <li class="nav-item"> <a href="profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
             <li class="nav-item"> <a href="home" class="nav-link active"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a> </li>
             <li class="nav-item"> <a href="videos" class="nav-link"><i class="fas fa-play-circle"></i> <span class="nav-text">Videos</span></a> </li>
             <li class="nav-item"> <a href="collection" class="nav-link"><i class="fas fa-images"></i> <span class="nav-text">Collection</span></a> </li>
-            <li class="nav-item"> <a href="live" class="nav-link"><i class="fas fa-broadcast-tower"></i> <span class="nav-text">Live</span></a> </li>
+            <li class="nav-item"> <a href="profile" class="nav-link"><i class="fas fa-user"></i> <span class="nav-text">Profile</span></a> </li>
         </ul>
         <div class="sidebar-bottom">
             <div class="nav-link" onclick="toggleTheme()">
@@ -517,7 +533,7 @@
 </aside>
 
 <div class="main-wrapper fade-in">
-    <div class="hero-container">
+    <div class="hero-container skeleton" id="hero-box">
         <div class="hero-bg-image">
              <img id="mainDisplay" src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Main" loading="eager">
         </div>
@@ -542,7 +558,7 @@
 
     <div class="swipe-scroller drag-scrollable" id="recentlyAddedScroller">
         
-        <div class="swipe-card" onclick="window.location.href='2025/dxs_icheon'">
+        <div class="swipe-card skeleton" onclick="window.location.href='2025/dxs_icheon'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -553,7 +569,7 @@
             </div>
         </div>
 
-        <div class="swipe-card" onclick="window.location.href='2025/svt_new_encore'">
+        <div class="swipe-card skeleton" onclick="window.location.href='2025/svt_new_encore'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -564,7 +580,7 @@
             </div>
         </div>
 
-        <div class="swipe-card" onclick="window.location.href='2025/magic_hour'">
+        <div class="swipe-card skeleton" onclick="window.location.href='2025/magic_hour'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -574,7 +590,8 @@
                 <h4>MAGIC HOUR THE SEVENTEEN</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="window.location.href='2025/cxminjapan'">
+        
+        <div class="swipe-card skeleton" onclick="window.location.href='2025/cxminjapan'">
             <div class="swipe-thumbnail">
                 <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg" alt="Video" loading="lazy">
                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -584,86 +601,7 @@
                 <h4>CxM [DOUBLE UP] LIVE PARTY in JAPAN</h4>
             </div>
         </div>
-        <div class="swipe-card" onclick="window.location.href='2025/9th_caratland'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">FAN MEET</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN IN CARAT LAND 2025 SVT 9TH FAN MEETING</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2024/8th_caratland'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">VOD</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/cxm_in_incheon'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>CxM [DOUBLE UP] LIVE PARTY in INCHEON</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/fukuokanewtour'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN WORLD TOUR [NEW_] Fukuoka Show</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/japannewtour'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN WORLD TOUR [NEW_] Osaka Show</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/the-shadows-edge'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/the-shadow's-edge.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">MOVIE</span>
-            </div>
-            <div class="swipe-info">
-                <h4>The Shadow's Edge</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2025/ourchapterS17N-111025-6B4'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/svt_ourchapter.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">DOCU</span>
-            </div>
-            <div class="swipe-info">
-                <h4>SEVENTEEN: OUR CHAPTER</h4>
-            </div>
-        </div>
-        <div class="swipe-card" onclick="window.location.href='2021/inthesoop2-N12X5R25-74K2'">
-            <div class="swipe-thumbnail">
-                <img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">VARIETY</span>
-            </div>
-            <div class="swipe-info">
-                <h4>IN THE SOOP SEVENTEEN ver. Season2</h4>
-            </div>
-        </div>
+
     </div>
 
     <div class="section-header">
@@ -671,7 +609,7 @@
     </div>
 
     <div class="cards-scroller" id="infoCardsContainer">
-        <div class="info-card" onclick="openInfoModal(this)">
+        <div class="info-card skeleton" onclick="openInfoModal(this)">
             <div class="card-head">
                 <h4>Rules</h4>
                 <i class="fas fa-expand-alt popup-icon"></i>
@@ -688,7 +626,8 @@
                 </p>
             </div>
         </div>
-        <div class="info-card" onclick="openInfoModal(this)">
+        
+        <div class="info-card skeleton" onclick="openInfoModal(this)">
             <div class="card-head">
                 <h4>Announcements</h4>
                 <i class="fas fa-expand-alt popup-icon"></i>
@@ -706,7 +645,8 @@
                 <p style="margin-top: 15px;">💬 <strong>Need help?</strong> Just visit the Vault Help section or email us if you have any other questions.</p>
             </div>
         </div>
-        <div class="info-card" onclick="openInfoModal(this)">
+
+        <div class="info-card skeleton" onclick="openInfoModal(this)">
             <div class="card-head">
                 <h4>Notes</h4>
                 <i class="fas fa-expand-alt popup-icon"></i>
@@ -719,7 +659,8 @@
                 </ul>
             </div>
         </div>
-        <div class="info-card" onclick="openInfoModal(this)">
+
+        <div class="info-card skeleton" onclick="openInfoModal(this)">
             <div class="card-head">
                 <h4>Vault Help</h4>
                 <i class="fas fa-expand-alt popup-icon"></i>
@@ -731,12 +672,6 @@
                 A: No. Account sharing is strictly prohibited and will result in a permanent ban.</p>
                 <p style="margin-top: 15px;"><strong>Q: Is it okay to repost or reupload the videos?</strong><br>
                 A: Absolutely not. All content is private. No screenshots, screen recordings, or reposts are allowed.</p>
-                <p style="margin-top: 15px;"><strong>Q: What happens if someone breaks the rules?</strong><br>
-                A: Any violation will lead to immediate removal and a permanent ban, with no warnings.</p>
-                <p style="margin-top: 15px;"><strong>Q: Can I request specific SEVENTEEN content?</strong><br>
-                A: You may send a request, but approval depends on the admin and content availability.</p>
-                <p style="margin-top: 15px;"><strong>Q: Where can I get the access code?</strong><br>
-                A: The access code is shared by the admin through email, DM, or after payment confirmation.</p>
             </div>
         </div>
     </div>
@@ -749,37 +684,49 @@
             <button class="info-modal-close" onclick="closeInfoModal(event)">&times;</button>
         </div>
         <div class="info-modal-body" id="infoPopupBody">
-            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // Highlight the correct Bottom Nav item based on current page,
-    // and auto-hide the bar on scroll-down / show it again on scroll-up.
     (function () {
         var current = (window.location.pathname.split('/').pop() || 'home').replace('.html', '') || 'home';
         document.querySelectorAll('.bottom-nav-link').forEach(function (link) {
             var page = link.getAttribute('href');
-            if (page === current) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
+            if (page === current) link.classList.add('active');
+            else link.classList.remove('active');
         });
-
-        var bottomNav = document.getElementById('bottomNav');
-        var lastScrollY = window.scrollY;
-        window.addEventListener('scroll', function () {
-            if (!bottomNav) return;
-            var currentScrollY = window.scrollY;
-            if (currentScrollY > lastScrollY && currentScrollY > 80) {
-                bottomNav.classList.add('hide-on-scroll');
-            } else {
-                bottomNav.classList.remove('hide-on-scroll');
-            }
-            lastScrollY = currentScrollY;
-        }, { passive: true });
     })();
+
+    // REMOVE SKELETON LOADING
+    window.removeSkeletonLoading = function() {
+        document.querySelectorAll('.skeleton').forEach(function(el) {
+            el.classList.remove('skeleton');
+        });
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            window.removeSkeletonLoading();
+        }, 1200);
+    });
+
+    // SCROLL LISTENERS FOR AUTO-HIDING MOBILE HEADER & BOTTOM NAV
+    let lastScrollTop = 0;
+    const mobileHeader = document.getElementById('mobileHeader');
+    const bottomNav = document.getElementById('bottomNav');
+
+    window.addEventListener('scroll', function() {
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        if (scrollTop > lastScrollTop && scrollTop > 50) {
+            if (mobileHeader) mobileHeader.classList.add('hide-on-scroll');
+            if (bottomNav) bottomNav.classList.add('hide-on-scroll');
+        } else {
+            if (mobileHeader) mobileHeader.classList.remove('hide-on-scroll');
+            if (bottomNav) bottomNav.classList.remove('hide-on-scroll');
+        }
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    }, false);
 </script>
 
 <script type="module" src="/js/home.js"></script>

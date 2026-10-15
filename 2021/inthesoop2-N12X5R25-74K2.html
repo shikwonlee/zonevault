@@ -241,12 +241,12 @@
     }
     .art-video-player { width: 100%; height: 100%; }
 
-    /* DOUBLE TAP ANIMATION FEEDBACK STYLING */
+    /* ANIMATION OVERLAY FOR DOUBLE TAP FEEDBACK */
     .custom-gesture-anim {
         position: absolute;
         top: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0, 0, 0, 0.75);
         border-radius: 50%;
         width: 70px;
         height: 70px;
@@ -265,7 +265,7 @@
 
     @keyframes popFade {
         0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
-        30% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        30% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
         100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
     }
 
@@ -574,12 +574,19 @@ function triggerCustomAnimation(type, side) {
 
     const animEl = document.createElement('div');
     animEl.className = 'custom-gesture-anim';
-    animEl.style.left = side === 'left' ? '22%' : '78%';
+
+    if (side === 'left') animEl.style.left = '22%';
+    else if (side === 'right') animEl.style.left = '78%';
+    else animEl.style.left = '50%';
 
     if (type === 'rewind') {
         animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg><span>-10s</span>`;
-    } else {
+    } else if (type === 'forward') {
         animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg><span>+10s</span>`;
+    } else if (type === 'play') {
+        animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><span>PLAY</span>`;
+    } else if (type === 'pause') {
+        animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg><span>PAUSE</span>`;
     }
 
     art.template.$player.appendChild(animEl);
@@ -680,7 +687,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         miniProgressBar: true,
         autoOrientation: true,
         lock: true,
-        fastForward: false, // REMOVE HORIZONTAL SLIDE SEEKING
+        fastForward: false, // DISABLE DRAG-TO-SEEK
         mutex: true,
         backdrop: false,
         playsInline: true,
@@ -743,21 +750,21 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         }
     });
 
-    /* BLOCK SCREEN SLIDING TO SEEK ENTIRELY */
+    /* INVERTED TAP LOGIC: 1 TAP = TOGGLE CONTROLS | DOUBLE TAP = PAUSE/PLAY OR SEEK (ZERO FLICKER) */
     art.on('ready', () => {
         const playerEl = art.template.$player;
         
+        // Prevent screen drag from doing native seek
         playerEl.addEventListener('touchmove', (e) => {
             if (!e.target.closest('.art-control-progress')) {
                 e.stopPropagation();
             }
         }, { passive: true });
 
-        /* CLEAN DOUBLE TAP & NO CONTROL SHOW ON DOUBLE TAP */
         let lastTapTime = 0;
         let singleTapTimer = null;
 
-        const processTap = (clientX, e) => {
+        const processTapLogic = (clientX, e) => {
             const rect = playerEl.getBoundingClientRect();
             const x = clientX - rect.left;
             const width = rect.width;
@@ -765,22 +772,24 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
             const timeSinceLastTap = now - lastTapTime;
 
             if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-                // DOUBLE TAP DETECTED
+                // DOUBLE TAP DETECTED: CANCEL SINGLE TAP CONTROLS TOGGLE
                 clearTimeout(singleTapTimer);
-                if (e) e.stopImmediatePropagation();
-                art.controls.show = false; // Keep controls hidden during double tap
 
                 if (x < width * 0.35) {
+                    // Double tap left: Seek Rewind -10s
                     art.currentTime = Math.max(0, art.currentTime - 10);
                     triggerCustomAnimation('rewind', 'left');
                 } else if (x > width * 0.65) {
+                    // Double tap right: Seek Forward +10s
                     art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
                     triggerCustomAnimation('forward', 'right');
                 } else {
+                    // Double tap center: Pause / Play Toggle
                     art.toggle();
+                    triggerCustomAnimation(art.playing ? 'play' : 'pause', 'center');
                 }
             } else {
-                // SINGLE TAP DETECTED
+                // SINGLE TAP DETECTED: SHOW / HIDE CONTROLS (Delayed 300ms to confirm not double tap)
                 singleTapTimer = setTimeout(() => {
                     art.controls.toggle();
                 }, 300);
@@ -788,17 +797,22 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
             lastTapTime = now;
         };
 
+        // Attach custom tap handler
         playerEl.addEventListener('touchend', (e) => {
             if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
+            e.preventDefault();
+            e.stopPropagation();
             if (e.changedTouches && e.changedTouches.length > 0) {
-                processTap(e.changedTouches[0].clientX, e);
+                processTapLogic(e.changedTouches[0].clientX, e);
             }
         });
 
         playerEl.addEventListener('click', (e) => {
             if ('ontouchstart' in window) return;
             if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
-            processTap(e.clientX, e);
+            e.preventDefault();
+            e.stopPropagation();
+            processTapLogic(e.clientX, e);
         });
     });
 

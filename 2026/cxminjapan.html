@@ -524,8 +524,8 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
     
     const uniqueHistoryKey = `${ep.id}_${pageIdentifier}`;
 
-    // FIREBASE PATH FOR THE SHADOW'S EDGE
-    db.ref(`cxminjapan/${ep.id}`).once('value').then(snapshot => {
+  
+    db.ref(`free_access/cxminjapan/${ep.id}`).once('value').then(snapshot => {
       const data = snapshot.val();
       if(!data || !data.url) { alert("Video unavailable"); return; }
 

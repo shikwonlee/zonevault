@@ -241,19 +241,26 @@
     }
     .art-video-player { width: 100%; height: 100%; }
 
-    .gesture-overlay { position: absolute; top: 0; left: 0; bottom: 0; right: 0; pointer-events: none; overflow: hidden; z-index: 999; }
+    /* GESTURE OVERLAY STYLING (ALWAYS VISIBLE OVER ARTPLAYER) */
+    .gesture-overlay { 
+        position: absolute; 
+        inset: 0; 
+        pointer-events: none; 
+        overflow: hidden; 
+        z-index: 99999 !important; 
+    }
     .gesture-icon {
         position: absolute; top: 50%; transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px;
-        display: flex; align-items: center; justify-content: center;
-        color: white; font-weight: bold; font-size: 12px;
-        opacity: 0; transition: opacity 0.2s;
+        background: rgba(0,0,0,0.75); border-radius: 50%; width: 65px; height: 65px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: white; font-weight: 700; font-size: 11px;
+        opacity: 0; pointer-events: none;
     }
-    .gesture-icon svg { width: 24px; height: 24px; fill: white; display: block; margin: 0 auto; }
+    .gesture-icon svg { width: 26px; height: 26px; fill: white; display: block; margin-bottom: 2px; }
     .gesture-icon.active { opacity: 1; animation: popFade 0.5s forwards; }
     @keyframes popFade {
-        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
-        20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+        25% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
         100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
     }
 
@@ -458,27 +465,6 @@
 
       <div id="player-container">
          <div id="artplayer" class="art-video-player"></div>
-         
-         <div class="gesture-overlay">
-             <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
-                 <div>
-                     <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
-                     <span>-10s</span>
-                 </div>
-             </div>
-             <div id="icon-forward" class="gesture-icon" style="left: 80%;">
-                 <div>
-                     <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
-                     <span>+10s</span>
-                 </div>
-             </div>
-             <div id="icon-play" class="gesture-icon" style="left: 50%;">
-                 <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-             </div>
-             <div id="icon-pause" class="gesture-icon" style="left: 50%;">
-                 <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-             </div>
-         </div>
       </div>
 
       <!-- TITLE BOX BELOW VIDEO -->
@@ -689,6 +675,29 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
             type: 'vtt',
             encoding: 'utf-8'
         },
+        layers: [
+            {
+                name: 'gestureLayer',
+                html: `
+                    <div class="gesture-overlay">
+                        <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
+                            <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
+                            <span>-10s</span>
+                        </div>
+                        <div id="icon-forward" class="gesture-icon" style="left: 80%;">
+                            <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
+                            <span>+10s</span>
+                        </div>
+                        <div id="icon-play" class="gesture-icon" style="left: 50%;">
+                            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                        </div>
+                        <div id="icon-pause" class="gesture-icon" style="left: 50%;">
+                            <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                        </div>
+                    </div>
+                `
+            }
+        ],
         moreVideoAttr: {
             playsInline: true,
             'webkit-playsinline': true,
@@ -740,7 +749,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         }
     });
 
-    /* MOBILE DOUBLE TAP & LANDSCAPE GESTURE HANDLER */
+    /* DOUBLE TAP & GESTURE LOGIC FOR ALL MODES (FULLSCREEN / LANDSCAPE / PORTRAIT) */
     let lastTapTime = 0;
     let clickTimer = null;
 
@@ -784,7 +793,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         });
 
         playerEl.addEventListener('click', (e) => {
-            if ('ontouchstart' in window) return; // Prevent duplicate trigger on touch devices
+            if ('ontouchstart' in window) return;
             if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
             handleTapOrClick(e.clientX);
         });
@@ -887,7 +896,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
     else art.once('video:loadedmetadata', resume);
 }
 
-/* GLOBAL SHORTCUT KEYS (Left/Right Arrow: Seek -10s/+10s, F: Fullscreen, M: Mute) */
+/* GLOBAL KEYBOARD SHORTCUTS */
 document.addEventListener('keydown', (e) => {
     if (!art) return;
     const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';

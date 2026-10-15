@@ -241,29 +241,6 @@
     }
     .art-video-player { width: 100%; height: 100%; }
 
-    /* GESTURE OVERLAY STYLING (ALWAYS VISIBLE OVER ARTPLAYER) */
-    .gesture-overlay { 
-        position: absolute; 
-        inset: 0; 
-        pointer-events: none; 
-        overflow: hidden; 
-        z-index: 99999 !important; 
-    }
-    .gesture-icon {
-        position: absolute; top: 50%; transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.75); border-radius: 50%; width: 65px; height: 65px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        color: white; font-weight: 700; font-size: 11px;
-        opacity: 0; pointer-events: none;
-    }
-    .gesture-icon svg { width: 26px; height: 26px; fill: white; display: block; margin-bottom: 2px; }
-    .gesture-icon.active { opacity: 1; animation: popFade 0.5s forwards; }
-    @keyframes popFade {
-        0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
-        25% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
-        100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-    }
-
     /* TITLE BOX STYLING BELOW VIDEO */
     .title-box {
         width: 100%; 
@@ -562,13 +539,6 @@ function formatTime(seconds) {
     return `${minutes}:${String(secs).padStart(2, '0')}`;
 }
 
-function showGestureFeedback(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add('active');
-    setTimeout(() => el.classList.remove('active'), 500);
-}
-
 const firebaseConfig = {
   apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
   authDomain: "tvnstream-b4497.firebaseapp.com",
@@ -675,29 +645,6 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
             type: 'vtt',
             encoding: 'utf-8'
         },
-        layers: [
-            {
-                name: 'gestureLayer',
-                html: `
-                    <div class="gesture-overlay">
-                        <div id="icon-rewind" class="gesture-icon" style="left: 20%;">
-                            <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
-                            <span>-10s</span>
-                        </div>
-                        <div id="icon-forward" class="gesture-icon" style="left: 80%;">
-                            <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
-                            <span>+10s</span>
-                        </div>
-                        <div id="icon-play" class="gesture-icon" style="left: 50%;">
-                            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                        </div>
-                        <div id="icon-pause" class="gesture-icon" style="left: 50%;">
-                            <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-                        </div>
-                    </div>
-                `
-            }
-        ],
         moreVideoAttr: {
             playsInline: true,
             'webkit-playsinline': true,
@@ -749,53 +696,54 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
         }
     });
 
-    /* DOUBLE TAP & GESTURE LOGIC FOR ALL MODES (FULLSCREEN / LANDSCAPE / PORTRAIT) */
+    /* PREVENT CONTROLS FLICKER ON DOUBLE TAP & HANDLE SEEK CLEANLY */
     let lastTapTime = 0;
-    let clickTimer = null;
-
-    const handleTapOrClick = (clientX) => {
-        if (!art) return;
-        const rect = art.template.$player.getBoundingClientRect();
-        const x = clientX - rect.left;
-        const width = rect.width;
-        const now = Date.now();
-        const timeSinceLastTap = now - lastTapTime;
-
-        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-            clearTimeout(clickTimer);
-            if (x < width * 0.35) {
-                art.currentTime = Math.max(0, art.currentTime - 10);
-                showGestureFeedback('icon-rewind');
-            } else if (x > width * 0.65) {
-                art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
-                showGestureFeedback('icon-forward');
-            } else {
-                art.toggle();
-            }
-        } else {
-            clickTimer = setTimeout(() => {
-                art.toggle();
-                if (art.playing) showGestureFeedback('icon-play');
-                else showGestureFeedback('icon-pause');
-            }, 300);
-        }
-        lastTapTime = now;
-    };
+    let singleTapTimer = null;
 
     art.on('ready', () => {
-        const playerEl = art.template.$player;
+        const videoEl = art.template.$video;
 
-        playerEl.addEventListener('touchend', (e) => {
+        const handleTap = (clientX) => {
+            const rect = art.template.$player.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const width = rect.width;
+            const now = Date.now();
+            const timeSinceLastTap = now - lastTapTime;
+
+            if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+                // Double Tap Detected - Cancel Single Tap Action (Controls stay hidden)
+                clearTimeout(singleTapTimer);
+                art.controls.show = false;
+
+                if (x < width * 0.35) {
+                    art.currentTime = Math.max(0, art.currentTime - 10);
+                    art.notice.show = '« 10 Seconds';
+                } else if (x > width * 0.65) {
+                    art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
+                    art.notice.show = '10 Seconds »';
+                } else {
+                    art.toggle();
+                }
+            } else {
+                // Single Tap Candidate - Wait briefly before toggling controls/play state
+                singleTapTimer = setTimeout(() => {
+                    art.controls.toggle();
+                }, 300);
+            }
+            lastTapTime = now;
+        };
+
+        art.template.$player.addEventListener('touchend', (e) => {
             if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
             if (e.changedTouches && e.changedTouches.length > 0) {
-                handleTapOrClick(e.changedTouches[0].clientX);
+                handleTap(e.changedTouches[0].clientX);
             }
         });
 
-        playerEl.addEventListener('click', (e) => {
+        art.template.$player.addEventListener('click', (e) => {
             if ('ontouchstart' in window) return;
             if (e.target.closest('.art-controls') || e.target.closest('.art-setting')) return;
-            handleTapOrClick(e.clientX);
+            handleTap(e.clientX);
         });
     });
 
@@ -906,12 +854,12 @@ document.addEventListener('keydown', (e) => {
         case 'ArrowLeft':
             e.preventDefault();
             art.currentTime = Math.max(0, art.currentTime - 10);
-            showGestureFeedback('icon-rewind');
+            art.notice.show = '« 10 Seconds';
             break;
         case 'ArrowRight':
             e.preventDefault();
             art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
-            showGestureFeedback('icon-forward');
+            art.notice.show = '10 Seconds »';
             break;
         case 'f':
         case 'F':

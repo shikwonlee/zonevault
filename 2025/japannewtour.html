@@ -689,7 +689,7 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
 
     let snapshot;
     try {
-        snapshot = await db.ref(`members_access/newtourjpn/${ep.id}`).once('value');
+       snapshot = await db.ref(`members_access/jpnnewtour/${ep.id}`).once('value');
     } catch (error) {
         console.error('Video metadata request failed:', error);
         if (loadToken === episodeLoadToken) alert('Video unavailable');

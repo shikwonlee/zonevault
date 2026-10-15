@@ -167,7 +167,7 @@
         display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; text-decoration: none;
     }
     
-    .hero-notif-btn { position: absolute !important; top: 30px; right: 40px; z-index: 9999; width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
+    .hero-notif-btn { display: none !important; } /* Hidden on desktop */
     .header-btn { width: 40px; height: 40px; border-radius: 50%; font-size: 16px; pointer-events: auto; position: relative; }
     
     .hero-notif-btn:hover, .header-btn:hover { background: var(--hover-bg); transform: translateY(-2px); box-shadow: var(--shadow-float); }
@@ -516,11 +516,6 @@
     </div>
 </aside>
 
-<a href="javascript:void(0)" class="hero-notif-btn" onclick="toggleNotifModal()">
-    <i class="fas fa-bell"></i>
-    <span id="notif-badge" class="badge"></span>
-</a>
-
 <div id="notifModal" class="notif-modal">
     <div class="notif-header">
         <span>Notifications</span>
@@ -544,7 +539,7 @@
         <div class="video-card skeleton" style="height: 250px;"></div>
         <div class="video-card skeleton" style="height: 250px;"></div>
     </div>
-     
+      
     <div id="pagination"></div>
 </div>
 
@@ -567,24 +562,42 @@
 <div id="infoModal" class="modal-overlay">
     <div class="modal-box">
         <div class="modal-header">
-            <div class="modal-title">Important Notice</div>
+            <div class="modal-title">Player Controls Guide</div>
             <button class="close-modal" onclick="closeInfoModal()">&times;</button>
         </div>
+
         <div class="modal-body">
-             <div class="info-text">
-                <p><b>Player Update:</b><br>
-                Double tap right to <b>Fast Forward</b>. Double tap left to <b>Rewind</b>. Double tap center to <b>Pause/Play</b>.<br>
-                Hold screen for 2s to show controls.</p>
-                
-                <p><b>Video Quality:</b><br>
-                Quality auto-adjusts based on your internet speed.</p>
-                
+            <div class="info-text">
+
+                <p><b>PC / Laptop Controls:</b><br>
+                ← Left Arrow: Rewind 10 seconds<br>
+                → Right Arrow: Fast-forward 10 seconds<br>
+                ↑ Up Arrow: Increase volume<br>
+                ↓ Down Arrow: Decrease volume<br>
+                F / f: Fullscreen<br>
+                M / m: Mute / Unmute</p>
+
                 <hr style="border-color:var(--border-color); margin:15px 0;">
-                
-                <p style="color: var(--admin-color);"><b>PLEASE READ:</b><br>
-                Do not record, reupload, or share content. Unauthorized distribution will result in a <b>permanent ban</b>.</p>
+
+                <p><b>Cellphone Controls:</b><br>
+                Touch the screen: Show / hide controls<br>
+                Double-tap center: Pause / play<br>
+                Double-tap left: Rewind 10 seconds<br>
+                Double-tap right: Fast-forward 10 seconds</p>
+
+                <hr style="border-color:var(--border-color); margin:15px 0;">
+
+                <p> <b>Important Reminder:</b><br>
+                Please note that these controls may not work on all mobile devices due to differences in device compatibility and browser settings. If you experience any issues with the player or its controls, please contact the admin on Telegram at <b>@Hoskwi_17</b> for assistance.</p>
+
+                <p>Thank you for your understanding and for using Zone Vault!</p>
+
             </div>
-            <button onclick="closeInfoModal()" class="btn-watch" style="width:100%; margin-top:10px; padding: 12px; font-size: 13px;">I Understand</button>
+
+            <button onclick="closeInfoModal()" class="btn-watch"
+                style="width:100%; margin-top:10px; padding:12px; font-size:13px;">
+                Got It
+            </button>
         </div>
     </div>
 </div>

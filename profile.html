@@ -40,6 +40,9 @@
         --input-bg: #27272a;
         --banner-gradient: linear-gradient(135deg, #27272a, #18181b);
         --bottom-nav-height: 85px;
+
+        --skeleton-bg: #27272a;
+        --skeleton-shimmer: #3f3f46;
     }
 
     body.light-mode {
@@ -54,6 +57,9 @@
         --text-muted: #71717a;
         --input-bg: #f4f4f5;
         --banner-gradient: linear-gradient(135deg, #e4e4e7, #ffffff);
+
+        --skeleton-bg: #e4e4e7;
+        --skeleton-shimmer: #f4f4f5;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -68,6 +74,41 @@
 
     .fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; transform: translateY(5px); }
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================
+       SKELETON LOADING ANIMATION STYLES
+       ========================================= */
+    .skeleton {
+        background-color: var(--skeleton-bg) !important;
+        background: linear-gradient(
+            90deg,
+            var(--skeleton-bg) 25%,
+            var(--skeleton-shimmer) 37%,
+            var(--skeleton-bg) 63%
+        ) !important;
+        background-size: 400% 100% !important;
+        animation: skeleton-loading 1.4s ease infinite !important;
+        color: transparent !important;
+        border-color: transparent !important;
+        pointer-events: none !important;
+        user-select: none !important;
+    }
+
+    .skeleton * {
+        visibility: hidden !important;
+    }
+
+    @keyframes skeleton-loading {
+        0% { background-position: 100% 50%; }
+        100% { background-position: 0 50%; }
+    }
+
+    .skeleton-text {
+        height: 14px;
+        margin-bottom: 8px;
+        border-radius: 6px;
+        display: inline-block;
+    }
 
     /* =========================================
        2. UI COMPONENTS & NAV
@@ -456,20 +497,20 @@
 <div class="main-wrapper fade-in">
     <!-- Main Profile Card -->
     <div class="glass-card">
-        <div class="banner" id="profile-banner"></div>
+        <div class="banner skeleton" id="profile-banner"></div>
         <div class="profile-body">
             <div class="avatar-wrapper" onclick="openAvatarModal()">
-                <img id="profile-pic" src="https://via.placeholder.com/150" class="profile-img">
+                <img id="profile-pic" src="https://via.placeholder.com/150" class="profile-img skeleton">
                 <div class="avatar-icon"><i class="fas fa-camera" style="font-size:12px;"></i></div>
             </div>
 
             <div class="user-info">
                 <div id="display-mode">
-                    <h1 id="display-name">Loading User...</h1>
-                    <p class="email" id="display-email">...</p>
-                    <p class="role" id="display-role">MEMBER</p>
-                    <p class="bio" id="display-bio">Loading bio...</p>
-                    <button class="btn btn-secondary" onclick="toggleEditMode()">
+                    <h1 id="display-name" class="skeleton skeleton-text" style="width: 180px; margin-top: 15px;">Loading User...</h1>
+                    <p class="email skeleton skeleton-text" id="display-email" style="width: 220px;">...</p>
+                    <p class="role skeleton skeleton-text" id="display-role" style="width: 80px;">MEMBER</p>
+                    <p class="bio skeleton skeleton-text" id="display-bio" style="width: 300px; display: block; margin: 0 auto 20px auto;">Loading bio...</p>
+                    <button class="btn btn-secondary skeleton" id="edit-profile-btn" onclick="toggleEditMode()">
                         <i class="fas fa-pencil-alt"></i> Edit Profile
                     </button>
                 </div>
@@ -515,13 +556,13 @@
             </div>
             <div class="card-content" style="padding: 15px;">
                 <div class="pref-actions-container">
-                    <div class="pref-action-btn" onclick="toggleTheme()">
+                    <div class="pref-action-btn skeleton" onclick="toggleTheme()">
                         <i class="fas fa-adjust"></i> <span>Theme</span>
                     </div>
-                    <div class="pref-action-btn danger" style="cursor: default;">
+                    <div class="pref-action-btn danger skeleton" style="cursor: default;">
                         <i class="fas fa-shield-alt"></i> <span id="status-text-card">ADMIN</span>
                     </div>
-                    <div class="pref-action-btn danger" onclick="logout()">
+                    <div class="pref-action-btn danger skeleton" onclick="logout()">
                         <i class="fas fa-sign-out-alt"></i> <span>Log Out</span>
                     </div>
                 </div>
@@ -529,7 +570,7 @@
         </div>
 
         <!-- My Codes Box -->
-        <div class="glass-card" style="grid-column: 1 / -1;">
+        <div class="glass-card skeleton" style="grid-column: 1 / -1;" id="card-codes">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-ticket-alt"></i> My Codes</div>
                 <i class="fas fa-eye eye-btn" title="View All" onclick="openCardViewModal('codes')"></i>
@@ -541,7 +582,7 @@
         </div>
 
         <!-- Account Status Card -->
-        <div class="glass-card">
+        <div class="glass-card skeleton" id="card-account">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-id-card"></i> Account Status</div>
                 <i class="fas fa-eye eye-btn" title="View Details" onclick="openCardViewModal('account')"></i>
@@ -566,7 +607,7 @@
         </div>
 
         <!-- Notifications Card -->
-        <div class="glass-card">
+        <div class="glass-card skeleton" id="card-notif">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-bell"></i> Notifications</div>
                 <i class="fas fa-eye eye-btn" title="View All" onclick="openCardViewModal('notifications')"></i>
@@ -578,7 +619,7 @@
         </div>
         
         <!-- Continue Watching Card -->
-        <div class="glass-card" style="grid-column: 1 / -1;">
+        <div class="glass-card skeleton" style="grid-column: 1 / -1;" id="card-history">
             <div class="card-header">
                 <div class="card-header-left"><i class="fas fa-history"></i> Continue Watching</div>
                 <i class="fas fa-eye eye-btn" title="View History" onclick="openCardViewModal('history')"></i>
@@ -662,6 +703,21 @@
             else link.classList.remove('active');
         });
     })();
+
+    // REMOVE SKELETON LOADING CLASS ONCE DATA IS READY
+    window.removeSkeletonLoading = function() {
+        document.querySelectorAll('.skeleton').forEach(function(el) {
+            el.classList.remove('skeleton', 'skeleton-text');
+            el.style.width = '';
+        });
+    };
+
+    // AUTOMATIC SKELETON REMOVAL FALLBACK (E.G. AFTER DATA LOADS)
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            window.removeSkeletonLoading();
+        }, 1200);
+    });
 
     // SCROLL LISTENERS FOR AUTO-HIDING MOBILE HEADER & BOTTOM NAV
     let lastScrollTop = 0;

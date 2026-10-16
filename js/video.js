@@ -14,13 +14,10 @@ onValue(maintenanceRef, (snapshot) => {
     const isUnderMaintenance = snapshot.val();
     const currentPage = window.location.pathname;
 
-    // Kapag naka-ON ang maintenance at wala sa maintenance page
     if (isUnderMaintenance === true && !currentPage.includes('maintenance')) {
-        // BAGO: I-save kung nasaan sila bago mag-maintenance
         sessionStorage.setItem('returnPage', window.location.href);
         window.location.href = 'maintenance';
     } 
-    // Kapag naka-OFF ang maintenance pero na-stuck sa maintenance page
     else if (isUnderMaintenance === false && currentPage.includes('maintenance')) {
         const returnUrl = sessionStorage.getItem('returnPage') || 'videos';
         window.location.href = returnUrl; 
@@ -89,13 +86,9 @@ const data = [
 // 4. UI INITIALIZATION & THEMES
 // ==========================================
 window.addEventListener('load', () => {
-    setTimeout(() => {
-        document.getElementById('toast').classList.add('show');
-        setTimeout(() => { document.getElementById('toast').classList.remove('show'); }, 4000);
-    }, 1000);
-    
     if (!sessionStorage.getItem('infoModalShown')) {
-        document.getElementById('infoModal').classList.add('active');
+        const infoModal = document.getElementById('infoModal');
+        if (infoModal) infoModal.classList.add('active');
         document.body.classList.add('no-scroll');
     }
 });
@@ -112,7 +105,8 @@ window.toggleTheme = function() {
 initTheme();
 
 window.closeInfoModal = function() { 
-    document.getElementById('infoModal').classList.remove('active'); 
+    const infoModal = document.getElementById('infoModal');
+    if (infoModal) infoModal.classList.remove('active'); 
     sessionStorage.setItem('infoModalShown', 'true'); 
     document.body.classList.remove('no-scroll');
 }
@@ -163,13 +157,11 @@ function renderGrid(page) {
     grid.innerHTML = "";
     const filtered = getFilteredData();
 
-    // Clamp requested page kung lampas na sa available pages (hal. pagbago ng category)
     const maxPage = Math.max(1, Math.ceil(filtered.length / cardsPerPage));
     if (page > maxPage) page = maxPage;
     if (page < 1) page = 1;
     currentPaginationPage = page;
 
-    // Sagipin ang kasalukuyang page/category para maibalik pagka-refresh
     sessionStorage.setItem('videosPage', currentPaginationPage);
     sessionStorage.setItem('videosCategory', activeCategory);
 
@@ -305,7 +297,6 @@ window.closeFavoriteModal = function() {
     document.body.classList.remove('no-scroll');
 }
 
-// Initialize Grid + Chips visually first (restores saved page/category if any)
 renderCategoryChips();
 renderGrid(currentPaginationPage);
 
@@ -370,9 +361,26 @@ window.logout = function() {
     }
 }
 
-window.isKickedOut = false; // FLAG PARA HINDI MAG-MULTIPLE MODAL
+window.isKickedOut = false;
+
+function showAccessDeniedModal() {
+    if (window.isKickedOut) return;
+    window.isKickedOut = true;
+    const modal = document.createElement('div');
+    modal.className = 'access-denied-modal';
+    const card = document.createElement('div');
+    card.className = 'access-card';
+    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.replace('index')">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    setTimeout(() => { window.location.replace("index"); }, 3000);
+}
 
 onAuthStateChanged(auth, user => {
+    const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', 'hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection'];
+    const currentPagePath = window.location.pathname;
+    const isIndexPagePath = currentPagePath.endsWith('index') || currentPagePath === '/';
+
     if(user) {
         userId = user.uid;
         loadFavoritesFromFirebase();
@@ -402,46 +410,22 @@ onAuthStateChanged(auth, user => {
                 sessionStorage.setItem('internalAccess', 'true'); 
             }
 
-            // Update Dynamic URL
+            const referer = document.referrer;
+            const refererPath = referer ? new URL(referer, location.origin).pathname : null;
+            const cameFromAllowedPageFlag = refererPath && allowedPaths.includes(refererPath);
+
+            if (cameFromAllowedPageFlag || isAdm) { 
+                sessionStorage.setItem('internalAccess', 'true'); 
+            }
+
             get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {
                 const reqStatus = reqSnap.val() || 'none';
                 updateDynamicURL(user.uid, role, reqStatus);
             });
         });
     } else {
-        if(!window.isKickedOut) {
-            window.location.replace("index");
+        if (!isIndexPagePath && !window.isKickedOut) {
+            showAccessDeniedModal();
         }
     }
 });
-
-// --- SECURITY LOGIC ---
-const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', 'hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection'];
-const isAdminFlag = sessionStorage.getItem('isAdmin') === 'true';
-const currentPagePath = window.location.pathname;
-let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true';
-const referer = document.referrer;
-const refererPath = referer ? new URL(referer, location.origin).pathname : null;
-
-const cameFromAllowedPageFlag = refererPath && allowedPaths.includes(refererPath);
-if (cameFromAllowedPageFlag || isAdminFlag) { 
-    sessionStorage.setItem('internalAccess', 'true'); 
-    hasInternalAccessFlag = true; 
-}
-const isIndexPagePath = currentPagePath.endsWith('index') || currentPagePath === '/';
-
-if (!hasInternalAccessFlag && !isIndexPagePath && !isAdminFlag && !window.isKickedOut) { 
-    showAccessDeniedModal(); 
-}
-
-function showAccessDeniedModal() {
-    window.isKickedOut = true;
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.replace('index')">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-    setTimeout(() => { window.location.replace("index"); }, 3000);
-}

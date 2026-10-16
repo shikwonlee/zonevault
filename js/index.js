@@ -8,8 +8,27 @@ import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 cleanStaleCaches();
 
 const currentPath = window.location.pathname.toLowerCase();
+const loadingScreen = document.getElementById("auth-loading-screen");
+const mainContent = document.getElementById("main-app-content");
 
-// --- 1. INSTANT CACHE CHECK (0ms Redirect) ---
+/**
+ * Safely hides the loader and displays the landing page to guest visitors
+ */
+function revealLandingPage() {
+  if (loadingScreen) {
+    loadingScreen.style.opacity = "0";
+    loadingScreen.style.visibility = "hidden";
+    setTimeout(() => {
+      loadingScreen.style.display = "none";
+    }, 400);
+  }
+  if (mainContent) {
+    mainContent.style.visibility = "visible";
+    mainContent.style.opacity = "1";
+  }
+}
+
+// --- 1. INSTANT CACHE CHECK (0ms Instant Redirect) ---
 const cached = getCachedUser();
 if (cached && cached.status === "approved" && cached.uid) {
   const accessID = cached.accessID || cached.uid;
@@ -46,7 +65,11 @@ onAuthStateChanged(auth, async (user) => {
             window.location.replace(`home?access=${userAccessID}`);
           }
         } else {
-          if (!currentPath.includes("login")) window.location.replace("login");
+          if (!currentPath.includes("login")) {
+            window.location.replace("login");
+          } else {
+            revealLandingPage();
+          }
         }
       } else {
         await set(userRef, {
@@ -68,15 +91,15 @@ onAuthStateChanged(auth, async (user) => {
       }
     } catch (error) {
       console.error("Database check failed:", error);
-      if (!currentPath.includes("login")) window.location.replace("login");
+      if (!currentPath.includes("login")) {
+        window.location.replace("login");
+      } else {
+        revealLandingPage();
+      }
     }
   } else {
-    // Visitor has no session — reveal landing page smoothly
-    const mainContent = document.getElementById("main-app-content");
-    if (mainContent) {
-      mainContent.style.visibility = "visible";
-      mainContent.style.opacity = "1";
-    }
+    // Visitor has no active session — smooth transition to landing page UI
+    revealLandingPage();
   }
 });
 

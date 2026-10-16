@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>WARNING SEOUL SPECIAL GIFTS | Zone Vault</title>
-   
+    
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-
     :root {
         /* SOLID DARK THEME (MATTE) */
         --bg-color: #09090b; 
@@ -60,6 +59,7 @@
         transition: background-color 0.3s ease, color 0.3s ease;
         overflow-x: hidden;
         position: relative;
+        padding-top: 60px; /* Safe space for top-left back button */
     }
     
     body.no-scroll { overflow: hidden; }
@@ -68,7 +68,33 @@
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       3. MODERN BUTTONS & MODAL (NO BLUR)
+       1. FIXED TOP-LEFT BACK BUTTON (PLAIN TEXT, NO BOX)
+       ========================================= */
+    .back-to-cat-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        position: fixed;
+        top: 25px;
+        left: 25px;
+        z-index: 1500;
+        background: transparent;
+        color: var(--text-main);
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        padding: 0;
+        box-shadow: none;
+        transition: opacity 0.2s ease;
+    }
+    .back-to-cat-btn:hover {
+        opacity: 0.7;
+    }
+
+    /* =========================================
+       2. MODERN BUTTONS & MODAL
        ========================================= */
     .hero-notif-btn, .header-btn {
         background: var(--card-bg);
@@ -96,46 +122,45 @@
     }
     .notif-modal.active { display: flex; animation: dropDown 0.2s ease; }
     @keyframes dropDown { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
-    
-    .notif-header { padding: 16px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
-    .notif-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 14px; align-items: flex-start; transition: 0.2s; }
-    .notif-item:hover { background: var(--hover-bg); }
-    .notif-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--input-bg); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-main); flex-shrink: 0; }
-    .notif-content h5 { font-size: 14px; color: var(--text-main); margin-bottom: 4px; }
-    .notif-content p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
-    .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
     /* =========================================
-       5. COLLECTION LAYOUT (SOLID STYLES)
+       3. COLLECTION LAYOUT & ADAPTIVE GRID
        ========================================= */
-    .main-wrapper { max-width: 1600px; margin: 0 auto; width: 100%; padding-bottom: 100px; padding-top: 40px;}
+    .main-wrapper { 
+        max-width: 1600px; 
+        margin: 0 auto; 
+        width: 100%; 
+        padding-bottom: 60px; 
+        padding-top: 10px;
+    }
     
     .page-title {
-        font-size: 28px; font-weight: 800; margin-bottom: 20px; padding: 0 40px;
-        text-transform: uppercase; letter-spacing: 1px; color: var(--text-main);
+        font-size: clamp(16px, 2.5vw, 28px);
+        font-weight: 800; 
+        margin-bottom: 20px; 
+        padding: 0 clamp(16px, 4vw, 40px);
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        color: var(--text-main);
         line-height: 1.3;
+        word-break: break-word;
     }
 
     .header-row {
-        display: flex; justify-content: flex-start; align-items: center;
-        margin-bottom: 20px; padding: 0 40px;
+        display: flex; 
+        justify-content: flex-start; 
+        align-items: center;
+        margin-bottom: 20px; 
+        padding: 0 clamp(16px, 4vw, 40px);
     }
-
-    /* Fixed bottom-left back button, plain text, no box */
-    .back-to-cat-btn {
-        display: inline-flex; align-items: center; gap: 8px;
-        position: fixed; bottom: 25px; left: 25px; z-index: 1500;
-        background: transparent; color: var(--text-main); border: none;
-        font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
-        padding: 0; box-shadow: none;
-        transition: opacity 0.2s ease;
-    }
-    .back-to-cat-btn:hover { opacity: 0.7; }
 
     /* CATEGORY GRID */
     .category-menu-grid {
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px; padding: 0 40px; animation: fadeIn 0.4s ease;
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 20px; 
+        padding: 0 clamp(16px, 4vw, 40px); 
+        animation: fadeIn 0.4s ease;
     }
 
     .cat-card {
@@ -154,23 +179,35 @@
     }
     .cat-title-overlay h3 { margin: 0; font-size: 16px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    /* IMAGE GALLERIES - sized per each image's own aspect ratio (no forced square crop) */
-    .collection-section { animation: fadeIn 0.4s ease; padding: 0 40px; }
+    /* IMAGE GALLERIES - Dynamic screen size adaptive */
+    .collection-section { 
+        animation: fadeIn 0.4s ease; 
+        padding: 0 clamp(16px, 4vw, 40px); 
+    }
     .gallery-grid {
-        display: flex; flex-wrap: wrap; gap: 15px;
-        justify-content: center; /* centers each row, and centers a lone image */
+        display: flex; 
+        flex-wrap: wrap; 
+        gap: clamp(10px, 1.5vw, 18px);
+        justify-content: center;
     }
 
     .gallery-item {
-        position: relative; border-radius: 12px; height: 260px;
-        overflow: hidden; cursor: pointer; border: 1px solid var(--border-color);
-        background: var(--card-bg); transition: transform 0.2s ease, border-color 0.2s ease;
-        display: flex; align-items: center; justify-content: center;
+        position: relative; 
+        border-radius: 12px; 
+        height: clamp(140px, 22vw, 280px);
+        overflow: hidden; 
+        cursor: pointer; 
+        border: 1px solid var(--border-color);
+        background: var(--card-bg); 
+        transition: transform 0.2s ease, border-color 0.2s ease;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
     }
     .gallery-item:hover { transform: scale(1.03); border-color: var(--text-main); z-index: 2; box-shadow: var(--shadow-subtle); }
     .gallery-item img { height: 100%; width: auto; max-width: 100%; object-fit: contain; display: block; transition: opacity 0.3s; }
 
-    /* LIGHTBOX (SOLID / DARK) */
+    /* LIGHTBOX */
     .lightbox-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0, 0, 0, 0.95);
@@ -203,35 +240,20 @@
     .lightbox-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 16px; box-shadow: var(--shadow-subtle); }
     .lightbox-btn:hover { background: var(--hover-bg); transform: scale(1.1); }
 
-    /* Toasts & Modals */
-    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-float); color: var(--text-main); padding: 14px 28px; border-radius: 50px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.4s ease; }
-    .toast.show { bottom: 50px; opacity: 1; transform: translateX(-50%) translateY(0); }
-    
-    .access-denied-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 10000; }
-    .access-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 50px; border-radius: 16px; text-align: center; color: var(--text-main); max-width: 420px; width: 90%; box-shadow: var(--shadow-float); }
-    .access-icon-box { width: 70px; height: 70px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 28px; border-top: 1px solid rgba(239, 68, 68, 0.2); }
-    .access-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
-    .access-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
-    .access-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .access-btn:hover { transform: translateY(-2px); opacity: 0.9; }
-
     /* =========================================
-       6. MOBILE RESPONSIVENESS
+       4. MOBILE RESPONSIVENESS
        ========================================= */
     @media (max-width: 900px) {
+        body { padding-top: 50px; }
         .hero-notif-btn { display: none !important; }
-        .main-wrapper { padding-top: 30px; padding-bottom: 110px; }
+        .main-wrapper { padding-top: 10px; padding-bottom: 60px; }
 
-        .notif-modal { 
-            position: fixed !important; top: 75px !important; right: 15px !important; 
-            width: 320px; max-width: calc(100vw - 30px); z-index: 9999; left: auto; transform: none; 
+        .back-to-cat-btn {
+            top: 16px;
+            left: 16px;
+            font-size: 13px;
         }
-        
-        .category-menu-grid, .collection-section { padding: 0 20px; }
 
-        .header-row { padding: 0 20px; }
-
-        /* Title: much smaller + wraps nicely on phones */
         .page-title {
             font-size: 15px;
             letter-spacing: 0.3px;
@@ -240,26 +262,16 @@
             word-break: break-word;
         }
 
-        .back-to-cat-btn {
-            bottom: 16px; left: 16px;
-            font-size: 13px;
-        }
-
-        .gallery-grid { gap: 10px; }
-        .gallery-item { height: 160px; }
         .cat-card { aspect-ratio: 4/3; }
     }
-
   </style>
 </head>
 <body>
 
-
-<div id="toast" class="toast">
-    <i class="fas fa-check-circle" style="color:var(--status-online);"></i>
-    <span>Welcome to Collections</span>
-</div>
-
+<!-- FIXED PLAIN-TEXT TOP-LEFT BACK BUTTON -->
+<a href="/collection" class="back-to-cat-btn">
+    <i class="fas fa-arrow-left"></i> Back to Collections
+</a>
 
 <div class="main-wrapper fade-in">
     <div class="header-row">
@@ -270,10 +282,6 @@
         <div class="gallery-grid" id="grid-category"></div>
     </div>
 </div>
-
-<a href="/collection" class="back-to-cat-btn">
-    <i class="fas fa-arrow-left"></i> Back to Collections
-</a>
 
 <div id="lightbox" class="lightbox-overlay">
     <div class="lightbox-controls">

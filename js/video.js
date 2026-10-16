@@ -85,13 +85,22 @@ const data = [
 // ==========================================
 // 4. UI INITIALIZATION & THEMES
 // ==========================================
-window.addEventListener('load', () => {
+// Pinalitan ang Window Load logic para SIGURADONG LALABAS ANG INFOMODAL
+function showInfoModal() {
     if (!sessionStorage.getItem('infoModalShown')) {
         const infoModal = document.getElementById('infoModal');
-        if (infoModal) infoModal.classList.add('active');
-        document.body.classList.add('no-scroll');
+        if (infoModal) {
+            infoModal.classList.add('active');
+            document.body.classList.add('no-scroll');
+        }
     }
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", showInfoModal);
+} else {
+    showInfoModal();
+}
 
 function initTheme() {
     const savedTheme = localStorage.getItem('zoneTheme') || 'dark';

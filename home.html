@@ -85,66 +85,6 @@
     @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       HALLOWEEN DECORATIONS (PERFORMANCE OPTIMIZED)
-       ========================================= */
-    .halloween-web-topright {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 140px;
-        height: 140px;
-        pointer-events: none;
-        z-index: 998;
-        opacity: 0.35;
-        mix-blend-mode: screen;
-    }
-
-    .halloween-ghost {
-        position: fixed;
-        top: 80px;
-        right: 30px;
-        width: 65px;
-        height: 85px;
-        pointer-events: none;
-        z-index: 998;
-        opacity: 0.85;
-        filter: drop-shadow(0 0 10px rgba(255, 107, 0, 0.4));
-        will-change: transform;
-        animation: ghostFloat 5s ease-in-out infinite;
-    }
-
-    @keyframes ghostFloat {
-        0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-        50% { transform: translate3d(-10px, -15px, 0) rotate(-4deg); }
-    }
-
-    .hero-pumpkin {
-        position: absolute;
-        bottom: 12px;
-        right: 18px;
-        width: 60px;
-        height: 60px;
-        z-index: 3;
-        pointer-events: none;
-        filter: drop-shadow(0 4px 10px rgba(255, 117, 24, 0.5));
-    }
-
-    .pumpkin-glow {
-        animation: flickerGlow 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes flickerGlow {
-        0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 6px #ff7300); }
-        50% { opacity: 1; filter: drop-shadow(0 0 14px #ffaa00); }
-    }
-
-    @media (max-width: 900px) {
-        .halloween-web-topright { width: 90px; height: 90px; }
-        .halloween-ghost { top: 65px; right: 15px; width: 45px; height: 60px; }
-        .hero-pumpkin { width: 45px; height: 45px; bottom: 10px; right: 10px; }
-    }
-
-    /* =========================================
        SKELETON LOADING ANIMATION STYLES
        ========================================= */
     .skeleton {
@@ -514,20 +454,6 @@
 </head>
 <body>
 
-  <!-- HALLOWEEN DECORATIONS (NON-OBSTRUCTIVE SVG GRAPHICS) -->
-  <svg class="halloween-web-topright" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.8" style="color: var(--text-muted);">
-      <path d="M0,0 Q100,0 100,100 M0,0 Q70,0 100,70 M0,0 Q0,70 70,100 M0,0 L100,100 M0,0 L40,100 M0,0 L100,40" stroke-dasharray="2,2"/>
-      <path d="M20,0 Q20,20 0,20 M40,0 Q40,40 0,40 M60,0 Q60,60 0,60 M80,0 Q80,80 0,80" stroke="currentColor"/>
-  </svg>
-
-  <svg class="halloween-ghost" viewBox="0 0 100 120" fill="none">
-      <path d="M50 10 C25 10 15 35 15 65 C15 85 10 95 20 105 C28 113 35 100 42 105 C50 110 55 110 60 105 C67 100 73 113 82 105 C90 95 85 85 85 65 C85 35 75 10 50 10 Z" fill="rgba(255, 255, 255, 0.82)" />
-      <!-- Ghost Eyes & Mouth -->
-      <ellipse cx="38" cy="45" rx="5" ry="7" fill="#09090b" />
-      <ellipse cx="62" cy="45" rx="5" ry="7" fill="#09090b" />
-      <ellipse cx="50" cy="62" rx="6" ry="9" fill="#09090b" />
-  </svg>
-
   <div id="notifModal" class="notif-modal">
     <div class="notif-header">
         <span>Notifications</span>
@@ -599,21 +525,6 @@
 
 <div class="main-wrapper fade-in">
     <div class="hero-container skeleton" id="hero-box">
-        <!-- Halloween Glowing Pumpkin Badge -->
-        <svg class="hero-pumpkin" viewBox="0 0 100 100">
-            <ellipse cx="50" cy="55" rx="42" ry="34" fill="#e65100" />
-            <ellipse cx="32" cy="55" rx="24" ry="32" fill="#f57c00" />
-            <ellipse cx="68" cy="55" rx="24" ry="32" fill="#f57c00" />
-            <ellipse cx="50" cy="55" rx="20" ry="34" fill="#ff9800" />
-            <!-- Stem -->
-            <path d="M46 24 C48 15 56 12 58 8 C54 18 52 20 52 24 Z" fill="#2e7d32" />
-            <!-- Glowing Eyes & Mouth -->
-            <polygon points="32,46 42,46 37,38" class="pumpkin-glow" fill="#ffe082" />
-            <polygon points="58,46 68,46 63,38" class="pumpkin-glow" fill="#ffe082" />
-            <polygon points="48,50 52,50 50,47" class="pumpkin-glow" fill="#ffe082" />
-            <path d="M 28,62 Q 50,78 72,62 Q 65,70 50,70 Q 35,70 28,62 Z" class="pumpkin-glow" fill="#ffe082" />
-        </svg>
-
         <div class="hero-bg-image">
              <img id="mainDisplay" src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Main" loading="eager">
         </div>

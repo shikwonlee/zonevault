@@ -1,86 +1,58 @@
-# Implementation Plan: Centralize ArtPlayer CSS and JavaScript into a Single Folder (`/player/`)
+# Implementation Plan: Domain Lock (`zonevault.live`) & Ephemeral Stream Token Protection
 
-Centralize all ArtPlayer styles and player functions from all files in folders `2021`, `2024`, `2025`, and `2026` into a single dedicated folder `/player/` containing both `video_player.css` and `video_player.js`, connected seamlessly to all video pages.
-
----
-
-## 1. Unified Player Folder (`/player/`)
-
-Both player assets will be placed together in the dedicated `/player/` directory:
-
-1. **`/player/video_player.css`**:
-   - Subtitle styles (`.art-subtitle`) with high-contrast drop-shadows and responsive mobile margins.
-   - Sizing and responsive rules (`.art-video-player`, full viewport height in landscape orientation).
-   - Double-tap feedback animation overlay (`.custom-gesture-anim`, `@keyframes popFade`).
-   - Custom player button layers: Skip Intro (`.skip-intro-btn`, `.art-layer-skipIntroLayer`) and Next Episode (`.next-ep-btn`, `.art-layer-nextEpLayer`) with responsive positioning and `@keyframes fadeInBtn`.
-
-2. **`/player/video_player.js`**:
-   - **`cleanupPlayer()`**: Cleanly destroys HLS and Artplayer instances and revokes temporary subtitle blob URLs.
-   - **`formatPlayerTime(seconds)`**: Converts seconds into standard timestamp strings (`H:MM:SS` or `MM:SS`) for notifications.
-   - **`triggerCustomAnimation(type, side)`**: Renders overlay gesture feedback icons (-10s rewind, +10s forward, play, pause).
-   - **`initZoneVideoPlayer(config)`**:
-     - Creates the `Artplayer` instance with all standard Zone Vault settings: theme `#a1a1aa`, volume, muted, autoplay, settings menu, fullscreen, mini-progress bar, auto-orientation, lock, airplay, inline playback, and iOS/Android video attributes.
-     - HLS multi-bitrate resolution switcher with options `Auto`, `1080P`, `720P`, `480P`, `270P`, `120P`.
-     - Mobile touch and desktop click handlers on `ready`: suppresses accidental sliding/scrubbing gestures, enables double-tap left (-10s), right (+10s), center (play/pause toggle), and single-tap controls toggle, while preserving clicks inside settings and controls.
-     - Layers: `nextEpLayer` (appears when ≤60 seconds remain if there is a next episode) and `skipIntroLayer` (appears until `introEndTime`).
-     - Subtitle settings menu selector for single or multiple language tracks.
-     - Playlist synchronization: toggles `.is-paused` on the active playlist card when audio/video plays or pauses.
-     - Firebase `watchHistory` background synchronization every 5 seconds.
-     - Resume position notification (`Resumed from ...`) on metadata load.
-   - **Global Shortcuts**: Keyboard event listener for Arrow Left (-10s), Arrow Right (+10s), `F` (toggle fullscreen), and `M` (toggle mute).
-   - **Global Exports**: Sets `window.art`, `window.cleanupPlayer`, `window.triggerCustomAnimation`, and `window.initZoneVideoPlayer` so all external functions and playlist controllers continue to work seamlessly.
+Secure Zone Vault streaming with strict Origin/Referer verification locked to `zonevault.live` (with dev/preview fallbacks), an ephemeral session handshake token system, and zero disruption to member or admin permissions.
 
 ---
 
-## 2. Connecting `/player/` to All Files in `2021`–`2026`
+## 1. Security Architecture & Threat Prevention
 
-Each file in the year directories will reference the unified player folder:
-```html
-<link rel="stylesheet" href="../player/video_player.css">
-<script src="../player/video_player.js"></script>
-```
-
-And will replace the inline Artplayer CSS and duplicate initialization code with `initZoneVideoPlayer(...)`.
-
-### Target Inventory (23 Files):
-- **`2021/`**:
-  - `inthesoop2-N12X5R25-74K2.html`
-- **`2024/`**:
-  - `8th_caratland.html`
-  - `magichour.html`
-  - `rightheregoyang.html`
-- **`2025/`**:
-  - `9th_caratland.html`
-  - `fukuokanewtour.html`
-  - `hxwfanconcert.html`
-  - `hxwingwangju.html`
-  - `japannewtour.html`
-  - `nanabnb.html`
-  - `newtour.html`
-  - `ourchapterS17N-111025-6B4.html`
-  - `svtholiday.html`
-  - `svtreaming1.html`
-  - `the-shadows-edge.html`
-- **`2026/`**:
-  - `cxm_in_incheon.html`
-  - `cxminjapan.html`
-  - `dinoxpicheolin.html`
-  - `dxs_on_stage.html`
-  - `new_encore.html`
-  - `svt_2026_fanmeeting_yakusoku.html`
-  - `svt_in_carat_land_2026.html`
-  - `svtreaming_2026.html`
-  - `vernon_the8_v8.html`
+### Objectives
+1. **Zero-Second External Blocking**: Requests from VLC, external media players, or unauthorized websites are instantly blocked with `403 Forbidden`.
+2. **Domain Origin Lock**: The backend enforces that stream requests originate from `zonevault.live` (or trusted AI Studio preview domains during development).
+3. **Short-Lived Handshake Tokens**: Ephemeral signed session tokens (HMAC SHA-256) validate stream initiation; once active, playback continues uninterrupted for the viewer.
+4. **100% Role & Account Preservation**: Admins, members, and specific page permissions (`free_access`, `members_access`, `page_access`) remain completely intact.
 
 ---
 
-## 3. Verification & Quality Guardrails
+## 2. Server Implementation (`server.js`)
 
-1. **Path Resolution**: Verify `../player/video_player.css` and `../player/video_player.js` resolve correctly from all subfolders.
-2. **Behavioral Parity**:
-   - Double-tap seek gestures (-10s / +10s) and center play/pause overlay.
-   - Next Episode and Skip Intro button layers and click triggers.
-   - Quality selection menu (`Auto`, `1080P`, etc.) via HLS.js.
-   - Watch history saving and resuming via Firebase Realtime Database.
-   - Keyboard shortcuts (`ArrowLeft`, `ArrowRight`, `F`, `M`).
-3. **Build Validation**: Verify project execution and compile status.
+1. **Token Generation Endpoint (`/api/stream-token`)**:
+   - Validates client `Origin` / `Referer`:
+     - Production: `zonevault.live` (and `*.zonevault.live`).
+     - Development: `localhost`, `127.0.0.1`, `*.run.app`, `*.ai.studio`.
+   - Requires Firebase ID token or authenticated session header.
+   - Signs an ephemeral payload containing:
+     - Episode ID & stream target.
+     - User UID and IP address fingerprint.
+     - Handshake timestamp and expiration (60-second initiation window).
+   - Returns the signed session token to the player.
+
+2. **Stream Gateway / Referral Validator (`/api/verify-stream`)**:
+   - Verifies the incoming HMAC signature, timestamp, and domain referer.
+   - Blocks any attempt to access the stream outside the allowed browser context.
+
+---
+
+## 3. Client Video Player Integration (`/player/video_player.js`)
+
+1. **Transparent Handshake**:
+   - Before mounting `Artplayer`, `initZoneVideoPlayer` requests a signed stream ticket from `/api/stream-token`.
+   - Attaches the session credential so HLS.js establishes the media pipeline smoothly.
+2. **Session Persistence**:
+   - Viewer experiences continuous playback for the entire duration of the concert or episode without interruptions.
+3. **Anti-Leak Watermarking**:
+   - Displays a subtle, low-opacity drifting watermark containing the authenticated user's ID or email inside the video container, deterring screen-recording re-uploads.
+
+---
+
+## 4. Verification & Safety Guardrails
+
+1. **Account Parity**:
+   - Verify `admin` role bypass continues to work across all pages.
+   - Verify `member` and `page_access` permissions function without changes.
+2. **External Request Blocking Test**:
+   - Simulate a direct curl or VLC request without a `zonevault.live` Referer; verify it receives an instant `403 Forbidden`.
+3. **Playback Continuity**:
+   - Verify uninterrupted HLS playback, quality resolution switching, seek gestures, and watch history synchronization.
+4. **Build & Dev Server Check**:
+   - Run `compile_applet` and restart dev server to confirm stability.

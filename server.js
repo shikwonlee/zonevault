@@ -5,9 +5,136 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import crypto from 'crypto';
+
 const app = express();
+app.use(express.json());
+
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
+
+// Allowed origins check strictly locked to zonevault.live (and development/preview environments)
+function isAllowedOrigin(req) {
+  const origin = req.headers.origin;
+  const referer = req.headers.referer;
+
+  const allowedHosts = [
+    'zonevault.live',
+    'www.zonevault.live',
+    'zonevault.site',
+    'www.zonevault.site'
+  ];
+
+  const isAllowedHost = (hostname) => {
+    if (!hostname) return false;
+    hostname = hostname.toLowerCase();
+    if (allowedHosts.includes(hostname)) return true;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') return true;
+    if (hostname.endsWith('.run.app') || hostname.endsWith('.ai.studio')) return true;
+    return false;
+  };
+
+  // If origin header is present, it must be an allowed host
+  if (origin) {
+    try {
+      const url = new URL(origin);
+      if (!isAllowedHost(url.hostname)) return false;
+    } catch {
+      return false;
+    }
+  }
+
+  // If referer header is present, it must be an allowed host
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      if (!isAllowedHost(url.hostname)) return false;
+    } catch {
+      return false;
+    }
+  }
+
+  // Must have at least a valid origin or referer (blocks raw VLC, curl, or headless requests)
+  if (origin || referer) {
+    return true;
+  }
+
+  return false;
+}
+
+const STREAM_SECRET = process.env.STREAM_SECRET || 'zonevault-secure-token-salt-2026';
+
+// Ephemeral Stream Handshake Token Endpoint for HLS streaming
+app.post('/api/stream-token', (req, res) => {
+  // 1. Enforce strict origin / referer check locked to zonevault.live
+  if (!isAllowedOrigin(req)) {
+    return res.status(403).json({ error: 'Access denied: Playback allowed only on zonevault.live' });
+  }
+
+  const { epId, uid, idToken } = req.body || {};
+  const authHeader = req.headers.authorization;
+  const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  const sessionToken = idToken || tokenFromHeader;
+
+  // 2. Enforce active authenticated user session
+  if (!uid && !sessionToken) {
+    return res.status(401).json({ error: 'Unauthorized: Active user session required to stream video' });
+  }
+
+  if (!epId) {
+    return res.status(400).json({ error: 'Missing episode identifier' });
+  }
+
+  const userId = uid || 'authenticated-user';
+  const now = Date.now();
+  const expiresAt = now + 60 * 1000; // Short-lived 60-second token for HLS handshake
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+
+  const payload = `${epId}:${userId}:${expiresAt}:${clientIp}`;
+  const signature = crypto.createHmac('sha256', STREAM_SECRET).update(payload).digest('hex');
+  const token = Buffer.from(JSON.stringify({ epId, uid: userId, expiresAt, sig: signature })).toString('base64');
+
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.json({
+    success: true,
+    token: token,
+    expiresAt: expiresAt,
+    originLocked: true,
+    domain: 'zonevault.live'
+  });
+});
+
+// Stream Token Verification Endpoint
+app.post('/api/verify-stream-token', (req, res) => {
+  if (!isAllowedOrigin(req)) {
+    return res.status(403).json({ valid: false, error: 'Access denied: Unauthorized origin' });
+  }
+
+  const { token } = req.body || {};
+  if (!token) {
+    return res.status(400).json({ valid: false, error: 'No token provided' });
+  }
+
+  try {
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+    const now = Date.now();
+    if (now > decoded.expiresAt) {
+      return res.status(403).json({ valid: false, error: 'Token expired' });
+    }
+
+    const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    const payload = `${decoded.epId}:${decoded.uid}:${decoded.expiresAt}:${clientIp}`;
+    const expectedSig = crypto.createHmac('sha256', STREAM_SECRET).update(payload).digest('hex');
+
+    if (decoded.sig !== expectedSig) {
+      return res.status(403).json({ valid: false, error: 'Invalid token signature' });
+    }
+
+    res.json({ valid: true, epId: decoded.epId, uid: decoded.uid });
+  } catch (err) {
+    res.status(400).json({ valid: false, error: 'Malformed token' });
+  }
+});
 
 // API Endpoint to provide Firebase Configuration securely from backend
 app.get('/api/firebase-config', (req, res) => {

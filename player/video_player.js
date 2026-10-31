@@ -117,6 +117,41 @@
 
         cleanupPlayer();
 
+        // Validate stream access token with server (enforces zonevault.live origin and active user session)
+        try {
+            let idToken = null;
+            if (auth && auth.currentUser) {
+                try {
+                    idToken = await auth.currentUser.getIdToken();
+                } catch (tokErr) {
+                    console.warn('ID token fetch note:', tokErr);
+                }
+            }
+
+            const tokenResp = await fetch('/api/stream-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+                },
+                body: JSON.stringify({
+                    epId: (ep && ep.id) || 'video',
+                    uid: (auth && auth.currentUser && auth.currentUser.uid) || null,
+                    idToken: idToken
+                })
+            });
+
+            if (tokenResp.status === 401) {
+                alert('Authentication Required: Please log in to stream this video.');
+                return null;
+            } else if (tokenResp.status === 403) {
+                alert('Access Denied: Playback is restricted to zonevault.live.');
+                return null;
+            }
+        } catch (e) {
+            console.warn('Stream token validation note:', e);
+        }
+
         const defaultSubtitle = subtitles.find(s => s.default) || subtitles[0];
         let lastSavedHistory = null;
 

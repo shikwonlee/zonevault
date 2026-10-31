@@ -1,0 +1,126 @@
+/* =========================================
+   ZONE VAULT — Centralized Artplayer Stylesheet
+   Location: /player/video_player.css
+   ========================================= */
+
+/* Artplayer sizing */
+.art-video-player {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Custom Subtitle Styling */
+.art-subtitle {
+    color: #ffffff !important;
+    background: transparent !important;
+    text-shadow: 
+        2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 
+        1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000, 
+        0 5px 10px rgba(0,0,0,1) !important;
+    font-weight: 700 !important;
+    line-height: 1.5 !important;
+    font-size: clamp(14px, 2vw, 22px) !important;
+    transition: font-size 0.2s ease;
+}
+
+@media (max-width: 900px) {
+    .art-subtitle {
+        margin-bottom: 20px !important;
+    }
+}
+
+/* Animation Overlay for Double-Tap Gesture Feedback */
+.custom-gesture-anim {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 99999 !important;
+    animation: popFade 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.custom-gesture-anim svg {
+    width: 26px;
+    height: 26px;
+    fill: #fff;
+    margin-bottom: 2px;
+}
+
+@keyframes popFade {
+    0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+    30% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+/* Responsive Button Layers (Next Episode & Skip Intro) */
+.art-layer-nextEpLayer {
+    position: absolute !important;
+    bottom: 70px !important; 
+    right: 20px !important;
+    z-index: 99 !important;
+}
+
+.art-layer-skipIntroLayer {
+    position: absolute !important;
+    bottom: 70px !important;
+    right: 170px !important;
+    z-index: 98 !important;
+}
+
+.next-ep-btn, .skip-intro-btn {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeInBtn 0.5s ease forwards;
+    pointer-events: auto;
+}
+
+.next-ep-btn:hover, .skip-intro-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+    color: black;
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .art-layer-nextEpLayer {
+        bottom: 50px !important;
+        right: 15px !important;
+    }
+    .art-layer-skipIntroLayer {
+        bottom: 50px !important;
+        right: 130px !important;
+    }
+    .next-ep-btn, .skip-intro-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}
+
+@keyframes fadeInBtn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

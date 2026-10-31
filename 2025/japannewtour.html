@@ -11,6 +11,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <link rel="stylesheet" href="/player/video_player.css">
+  <script src="/player/video_player.js"></script>
 
   <link rel="icon" href="favicon-new.png" type="image/png" />
   <link rel="manifest" href="manifest.json">
@@ -121,25 +123,6 @@
         .art-video-player { width: 100% !important; height: 100% !important; }
     }
 
-    .art-subtitle {
-        color: #ffffff !important;
-        background: transparent !important;
-        text-shadow: 
-            2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 
-            1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000, 
-            0 5px 10px rgba(0,0,0,1) !important;
-        font-weight: 700 !important;
-        line-height: 1.5 !important;
-        font-size: clamp(14px, 2vw, 22px) !important;
-        transition: font-size 0.2s ease;
-    }
-
-    @media (max-width: 900px) {
-        .art-subtitle {
-            margin-bottom: 20px !important;
-        }
-    }
-
     /* =========================================
        2. CONTAINER & LAYOUT
        ========================================= */
@@ -233,34 +216,6 @@
     }
     .art-video-player { width: 100%; height: 100%; }
 
-    /* ANIMATION OVERLAY FOR DOUBLE TAP FEEDBACK */
-    .custom-gesture-anim {
-        position: absolute;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.75);
-        border-radius: 50%;
-        width: 70px;
-        height: 70px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-weight: 700;
-        font-size: 11px;
-        pointer-events: none;
-        z-index: 99999 !important;
-        animation: popFade 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-    .custom-gesture-anim svg { width: 26px; height: 26px; fill: #fff; margin-bottom: 2px; }
-
-    @keyframes popFade {
-        0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
-        30% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
-        100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-    }
-
     /* TITLE BOX DIRECTLY BELOW VIDEO */
     .title-box {
         width: 100%; 
@@ -289,28 +244,6 @@
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.4; transform: scale(1.5); }
     }
-
-    /* =========================================
-       3. RESPONSIVE BUTTON LAYERS (NEXT EP & SKIP)
-       ========================================= */
-    .art-layer-nextEpLayer { position: absolute !important; bottom: 70px !important; right: 20px !important; z-index: 99 !important; }
-    .art-layer-skipIntroLayer { position: absolute !important; bottom: 70px !important; right: 170px !important; z-index: 98 !important; }
-
-    .next-ep-btn, .skip-intro-btn {
-        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px 24px; border-radius: 8px;
-        font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer;
-        transition: all 0.3s ease; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        display: flex; align-items: center; gap: 8px; animation: fadeInBtn 0.5s ease forwards; pointer-events: auto;
-    }
-    .next-ep-btn:hover, .skip-intro-btn:hover { background: rgba(255, 255, 255, 0.95); color: black; transform: scale(1.05); }
-
-    @media (max-width: 768px) {
-        .art-layer-nextEpLayer { bottom: 50px !important; right: 15px !important; }
-        .art-layer-skipIntroLayer { bottom: 50px !important; right: 130px !important; }
-        .next-ep-btn, .skip-intro-btn { padding: 8px 16px; font-size: 13px; }
-    }
-    @keyframes fadeInBtn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
        4. PLAYLIST SECTION
@@ -526,55 +459,7 @@ function isAllowedMediaUrl(value) {
     }
 }
 
-function cleanupPlayer() {
-    if (art && art.hls) {
-        art.hls.destroy();
-        art.hls = null;
-    }
-    if (art) {
-        art.destroy(false);
-        art = null;
-    }
-    currentSubtitleUrls.forEach(url => URL.revokeObjectURL(url));
-    currentSubtitleUrls = [];
-}
 
-function formatTime(seconds) {
-    seconds = Math.max(0, Math.floor(Number(seconds) || 0));
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    if (hours > 0) {
-        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-    return `${minutes}:${String(secs).padStart(2, '0')}`;
-}
-
-function triggerCustomAnimation(type, side) {
-    if (!art || !art.template || !art.template.$player) return;
-    const oldIcon = art.template.$player.querySelector('.custom-gesture-anim');
-    if (oldIcon) oldIcon.remove();
-
-    const animEl = document.createElement('div');
-    animEl.className = 'custom-gesture-anim';
-
-    if (side === 'left') animEl.style.left = '22%';
-    else if (side === 'right') animEl.style.left = '78%';
-    else animEl.style.left = '50%';
-
-    if (type === 'rewind') {
-        animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg><span>-10s</span>`;
-    } else if (type === 'forward') {
-        animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg><span>+10s</span>`;
-    } else if (type === 'play') {
-        animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg><span>PLAY</span>`;
-    } else if (type === 'pause') {
-        animEl.innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg><span>PAUSE</span>`;
-    }
-
-    art.template.$player.appendChild(animEl);
-    setTimeout(() => animEl.remove(), 600);
-}
 
 // --- 2. FIREBASE & ACCESS CONTROL ---
 const firebaseConfig = {
@@ -742,284 +627,23 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
 
     mainTitle.textContent = data.title || ep.title;
 
-    cleanupPlayer();
-
-    const defaultSubtitle = subtitles.find(s => s.default) || subtitles[0];
-
-    art = new Artplayer({
-        container: '#artplayer',
-        url: data.url,
-        title: data.title || ep.title,
-        poster: ep.image,
-        volume: 0.5,
-        isLive: false,
-        muted: false,
-        autoplay: true,
-        setting: true,
-        fullscreen: true,
-        fullscreenWeb: false,
-        miniProgressBar: true,
-        autoOrientation: true,
-        lock: true,
-        fastForward: false, // DISABLE BUILT-IN FAST FORWARD SLIDE
-        gesture: false,     // DISABLE BUILT-IN GESTURES
-        touch: false,       // DISABLE BUILT-IN TOUCH DRAGGING
-        mutex: true,
-        backdrop: false,
-        playsInline: true,
-        autoPlayback: true,
-        airplay: true,
-        theme: '#a1a1aa',
-        subtitle: {
-            url: defaultSubtitle ? defaultSubtitle.url : '',
-            type: 'vtt',
-            encoding: 'utf-8'
-        },
-        moreVideoAttr: {
-            playsInline: true,
-            'webkit-playsinline': true,
-            'x5-video-player-type': 'h5',
-            'x5-video-player-fullscreen': 'true',
-            'x5-video-orientation': 'landscape'
-        },
-        customType: {
-            m3u8(video, url, artInstance) {
-                if (artInstance && artInstance.hls) artInstance.hls.destroy();
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(url);
-                    hls.attachMedia(video);
-                    if (artInstance) artInstance.hls = hls;
-
-                    hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                        const availableLevels = hls.levels || [];
-                        const targetResolutions = [1080, 720, 480, 270, 120];
-                        const qualityList = [];
-
-                        qualityList.push({ html: 'Auto', index: -1, default: true });
-
-                        targetResolutions.forEach(res => {
-                            let matchIndex = availableLevels.findIndex(lvl => lvl.height === res);
-                            if (matchIndex === -1 && availableLevels.length > 0) {
-                                matchIndex = availableLevels.reduce((prev, curr, idx) => 
-                                    Math.abs(curr.height - res) < Math.abs(availableLevels[prev].height - res) ? idx : prev, 0);
-                            }
-                            qualityList.push({
-                                html: `${res}P`,
-                                index: matchIndex !== -1 ? matchIndex : -1
-                            });
-                        });
-
-                        artInstance.setting.update({
-                            name: 'quality', width: 150, html: 'Quality', tooltip: 'Auto',
-                            selector: qualityList.map(item => ({ html: item.html, default: item.default, url: '#', $index: item.index })),
-                            onSelect: function (item) { 
-                                hls.currentLevel = item.$index; 
-                                return item.html; 
-                            },
-                        });
-                    });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = url;
-                }
-            }
-        }
+    art = await initZoneVideoPlayer({
+        container: "#artplayer",
+        data: data,
+        ep: ep,
+        subtitles: subtitles,
+        playlistData: playlistData,
+        auth: auth,
+        db: db,
+        pageIdentifier: pageIdentifier,
+        historyKey: historyKey,
+        loadToken: loadToken,
+        getCurrentLoadToken: () => episodeLoadToken,
+        onNextEpisode: () => window.playNextEpisodeGlobal(),
+        onSkipIntro: () => window.skipIntroGlobal()
     });
-
-    /* BLOCK ALL SWIPES AND HANDLE CUSTOM TAP LOGIC */
-    art.on('ready', () => {
-        const playerEl = art.template.$player;
-        
-        // Prevent screen touch-sliding gestures completely
-        playerEl.addEventListener('touchmove', (e) => {
-            if (!e.target.closest('.art-control-progress')) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        }, { passive: false });
-
-        let lastTapTime = 0;
-        let singleTapTimer = null;
-
-        const processTapLogic = (clientX, e) => {
-            const rect = playerEl.getBoundingClientRect();
-            const x = clientX - rect.left;
-            const width = rect.width;
-            const now = Date.now();
-            const timeSinceLastTap = now - lastTapTime;
-
-            if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-                // DOUBLE TAP DETECTED
-                clearTimeout(singleTapTimer);
-
-                if (x < width * 0.35) {
-                    art.currentTime = Math.max(0, art.currentTime - 10);
-                    triggerCustomAnimation('rewind', 'left');
-                } else if (x > width * 0.65) {
-                    art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
-                    triggerCustomAnimation('forward', 'right');
-                } else {
-                    art.toggle();
-                    triggerCustomAnimation(art.playing ? 'play' : 'pause', 'center');
-                }
-            } else {
-                // SINGLE TAP DETECTED
-                singleTapTimer = setTimeout(() => {
-                    art.controls.toggle();
-                }, 300);
-            }
-            lastTapTime = now;
-        };
-
-        playerEl.addEventListener('touchend', (e) => {
-            if (e.target.closest('.art-controls') || e.target.closest('.art-setting') || e.target.closest('.art-setting-panel')) {
-                return;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            if (e.changedTouches && e.changedTouches.length > 0) {
-                processTapLogic(e.changedTouches[0].clientX, e);
-            }
-        });
-
-        playerEl.addEventListener('click', (e) => {
-            if (e.target.closest('.art-controls') || e.target.closest('.art-setting') || e.target.closest('.art-setting-panel')) {
-                return;
-            }
-            if ('ontouchstart' in window) return;
-            e.preventDefault();
-            e.stopPropagation();
-            processTapLogic(e.clientX, e);
-        });
-    });
-
-    art.layers.add({
-        name: 'nextEpLayer',
-        html: '<button type="button" class="next-ep-btn">Next Episode ⏭</button>',
-        style: { display: 'none' }
-    });
-    const nextButton = art.layers.nextEpLayer && art.layers.nextEpLayer.querySelector('.next-ep-btn');
-    if (nextButton) {
-        nextButton.addEventListener('click', event => {
-            event.stopPropagation();
-            window.playNextEpisodeGlobal();
-        });
-    }
-
-    art.layers.add({
-        name: 'skipIntroLayer',
-        html: '<button type="button" class="skip-intro-btn">Skip Intro</button>',
-        style: { display: 'none' }
-    });
-    const skipIntroButton = art.layers.skipIntroLayer && art.layers.skipIntroLayer.querySelector('.skip-intro-btn');
-    if (skipIntroButton) {
-        skipIntroButton.addEventListener('click', event => {
-            event.stopPropagation();
-            window.skipIntroGlobal();
-        });
-    }
-
-    if (subtitles.length) {
-        art.setting.add({
-            html: 'Subtitles', width: 200,
-            selector: subtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
-            onSelect(item) {
-                art.subtitle.switch(item.url, { name: item.html });
-                return item.html;
-            }
-        });
-    }
-
-    art.on('play', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.remove('is-paused')));
-    art.on('pause', () => document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.add('is-paused')));
-
-    art.on('video:timeupdate', () => {
-        if (!art || !window.currentEpData || !currentHistoryKey) return;
-        const now = Date.now();
-
-        if (art.duration > 0 && art.layers.nextEpLayer) {
-            const currentIndex = playlistData.findIndex(item => item.id === window.currentEpData.id);
-            const hasNext = currentIndex >= 0 && currentIndex < playlistData.length - 1;
-            art.layers.nextEpLayer.style.display = (art.duration - art.currentTime <= 60 && hasNext) ? 'block' : 'none';
-        }
-
-        if (window.introEndTime > 0 && art.layers.skipIntroLayer) {
-            if (!window.hasSkippedIntro && art.currentTime > 0 && art.currentTime < window.introEndTime) {
-                art.layers.skipIntroLayer.style.display = 'block';
-            } else {
-                art.layers.skipIntroLayer.style.display = 'none';
-            }
-        }
-
-        if (auth.currentUser && !art.video.paused && (!lastSavedHistory || now - lastSavedHistory > 5000)) {
-            const historyData = {
-                id: window.currentEpData.id,
-                title: window.currentEpData.title,
-                image: window.currentEpData.image,
-                currentTime: Number(art.currentTime) || 0,
-                duration: Number(art.duration) || 0,
-                timestamp: now,
-                page: pageIdentifier
-            };
-            db.ref(`watchHistory/${auth.currentUser.uid}/${currentHistoryKey}`).update(historyData)
-                .catch(error => console.error('Watch history save failed:', error));
-            lastSavedHistory = now;
-        }
-    });
-
-    let saved = null;
-    if (auth.currentUser) {
-        try {
-            saved = (await db.ref(`watchHistory/${auth.currentUser.uid}/${historyKey}`).once('value')).val();
-        } catch (error) {
-            console.error('Watch history read failed:', error);
-        }
-    }
-    if (loadToken !== episodeLoadToken || !art) return;
-
-    const resume = () => {
-        if (loadToken !== episodeLoadToken || !art) return;
-        if (saved && Number(saved.currentTime) > 0 && Number(saved.currentTime) < (art.duration || Infinity)) {
-            art.currentTime = Number(saved.currentTime);
-            if (saved.currentTime > window.introEndTime) { window.hasSkippedIntro = true; }
-            art.notice.show = `Resumed from ${formatTime(saved.currentTime)}`;
-        }
-        art.play().catch(() => {});
-    };
-    if (art.video && art.video.readyState >= 1) resume();
-    else art.once('video:loadedmetadata', resume);
 }
 
-/* GLOBAL KEYBOARD SHORTCUTS */
-document.addEventListener('keydown', (e) => {
-    if (!art) return;
-    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-    if (activeTag === 'input' || activeTag === 'textarea') return;
-
-    switch (e.key) {
-        case 'ArrowLeft':
-            e.preventDefault();
-            art.currentTime = Math.max(0, art.currentTime - 10);
-            triggerCustomAnimation('rewind', 'left');
-            break;
-        case 'ArrowRight':
-            e.preventDefault();
-            art.currentTime = Math.min(art.duration || Infinity, art.currentTime + 10);
-            triggerCustomAnimation('forward', 'right');
-            break;
-        case 'f':
-        case 'F':
-            e.preventDefault();
-            art.fullscreen = !art.fullscreen;
-            break;
-        case 'm':
-        case 'M':
-            e.preventDefault();
-            art.muted = !art.muted;
-            art.notice.show = art.muted ? 'Muted' : 'Unmuted';
-            break;
-    }
-});
 
 window.addEventListener('popstate', (event) => {
     if (event.state && event.state.id) loadAndPlayEpisode(event.state.id, false);

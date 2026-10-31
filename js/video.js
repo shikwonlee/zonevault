@@ -53,7 +53,7 @@ if (savedVideosCategory) activeCategory = savedVideosCategory;
 if (!isNaN(savedVideosPage) && savedVideosPage > 0) currentPaginationPage = savedVideosPage;
 
 const data = [
-  {id:"v18", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png", category:"CONCERT", title:" JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON ", hashtags:"", link:"jxj_into_dreaming"},
+  {id:"v18", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png", category:"CONCERT", title:" JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON ", hashtags:"", link:"2026/jxj_into_dreaming"},
   {id:"v17", thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg", category:"SPECIAL", title:" SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day] ", hashtags:"", link:"2026/svtreaming_2026"},
   {id:"v16", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", category:"CONCERT", title:"2026 DINO X PICHEOLIN 吉BOARD SHOW ", hashtags:"c: uvvul", link:"2026/dinoxpicheolin"},   
   {id:"v15", thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp", category:"CONCERT", title:"2026 VERNON THE 8 [V8] LIVE - GOYANG", hashtags:"c: uvvul", link:"2026/vernon_the8_v8"},

@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import crypto from 'crypto';
+import https from 'https';
 
 const app = express();
 app.use(express.json());
@@ -71,7 +72,7 @@ app.post('/api/stream-token', (req, res) => {
     return res.status(403).json({ error: 'Access denied: Playback allowed only on zonevault.live' });
   }
 
-  const { epId, uid, idToken } = req.body || {};
+  const { epId, uid, idToken, targetUrl } = req.body || {};
   const authHeader = req.headers.authorization;
   const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
   const sessionToken = idToken || tokenFromHeader;
@@ -92,16 +93,66 @@ app.post('/api/stream-token', (req, res) => {
 
   const payload = `${epId}:${userId}:${expiresAt}:${clientIp}`;
   const signature = crypto.createHmac('sha256', STREAM_SECRET).update(payload).digest('hex');
-  const token = Buffer.from(JSON.stringify({ epId, uid: userId, expiresAt, sig: signature })).toString('base64');
+  const token = Buffer.from(JSON.stringify({
+    epId,
+    uid: userId,
+    targetUrl: targetUrl || '',
+    expiresAt,
+    sig: signature
+  })).toString('base64');
+
+  const proxyUrl = targetUrl ? `/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}` : null;
 
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({
     success: true,
     token: token,
+    proxyUrl: proxyUrl,
     expiresAt: expiresAt,
     originLocked: true,
     domain: 'zonevault.live'
   });
+});
+
+// Protected Stream Gateway Proxy (hides raw Mux URL, blocks external players)
+app.get('/api/stream-proxy.m3u8', (req, res) => {
+  // Enforce zonevault.live Referer / Origin (rejects livepush.io, VLC, external sites)
+  if (!isAllowedOrigin(req)) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(403).json({ error: 'Access denied: Stream playback allowed only on zonevault.live' });
+  }
+
+  const { token } = req.query || {};
+  if (!token) {
+    return res.status(400).send('Missing stream token');
+  }
+
+  try {
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+    const targetUrl = decoded.targetUrl;
+    if (!targetUrl || !targetUrl.startsWith('https://')) {
+      return res.status(400).send('Invalid target media stream');
+    }
+
+    https.get(targetUrl, (upstreamRes) => {
+      let data = '';
+      upstreamRes.on('data', chunk => data += chunk);
+      upstreamRes.on('end', () => {
+        const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
+        const rewritten = data.replace(/^(?!#)(?!https?:\/\/)(.+)$/gm, `${baseUrl}$1`);
+
+        res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.send(rewritten);
+      });
+    }).on('error', (err) => {
+      console.error('Stream proxy upstream error:', err);
+      res.status(502).send('Error connecting to upstream media stream');
+    });
+  } catch (err) {
+    res.status(400).send('Malformed stream token');
+  }
 });
 
 // Stream Token Verification Endpoint

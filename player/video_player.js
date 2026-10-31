@@ -118,6 +118,7 @@
         cleanupPlayer();
 
         // Validate stream access token with server (enforces zonevault.live origin and active user session)
+        let playbackUrl = data.url || '';
         try {
             let idToken = null;
             if (auth && auth.currentUser) {
@@ -137,7 +138,8 @@
                 body: JSON.stringify({
                     epId: (ep && ep.id) || 'video',
                     uid: (auth && auth.currentUser && auth.currentUser.uid) || null,
-                    idToken: idToken
+                    idToken: idToken,
+                    targetUrl: data.url
                 })
             });
 
@@ -147,6 +149,11 @@
             } else if (tokenResp.status === 403) {
                 alert('Access Denied: Playback is restricted to zonevault.live.');
                 return null;
+            } else if (tokenResp.ok) {
+                const ticket = await tokenResp.json();
+                if (ticket && ticket.proxyUrl) {
+                    playbackUrl = ticket.proxyUrl;
+                }
             }
         } catch (e) {
             console.warn('Stream token validation note:', e);
@@ -157,7 +164,7 @@
 
         const artOptions = {
             container: container,
-            url: data.url || '',
+            url: playbackUrl,
             title: data.title || (ep && ep.title) || '',
             poster: poster || (ep && ep.image) || '',
             volume: 0.5,

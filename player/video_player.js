@@ -266,26 +266,68 @@
             }
         }
 
+        // Resolve Firebase user asynchronously during page refresh / cold start
+        async function resolveAuthenticatedUser(authInst) {
+            if (!authInst) return null;
+            if (authInst.currentUser) return authInst.currentUser;
+            return new Promise((resolve) => {
+                let unsub = null;
+                const timer = setTimeout(() => {
+                    if (unsub) unsub();
+                    resolve(authInst.currentUser || null);
+                }, 3500);
+
+                try {
+                    unsub = authInst.onAuthStateChanged((u) => {
+                        clearTimeout(timer);
+                        if (unsub) unsub();
+                        resolve(u);
+                    });
+                } catch (_) {
+                    clearTimeout(timer);
+                    resolve(authInst.currentUser || null);
+                }
+            });
+        }
+
         // Validate stream access token with server (enforces zonevault.live origin and active user session)
         let playbackUrl = data.url || '';
         try {
-            let idToken = null;
-            let userRole = options.userRole || window.currentUserRole || 'member';
-            let userName = options.userName || (auth && auth.currentUser && (auth.currentUser.displayName || (auth.currentUser.email ? auth.currentUser.email.split('@')[0] : null))) || 'Zone Vault Member';
-            const userUid = (auth && auth.currentUser && auth.currentUser.uid) || null;
+            const currentAuth = auth || (typeof window !== 'undefined' && window.firebase && window.firebase.auth ? window.firebase.auth() : null);
+            
+            // 1. Wait for Firebase to finish restoring user from IndexedDB/localStorage on page refresh
+            let currentUser = currentAuth ? currentAuth.currentUser : null;
+            if (currentAuth && !currentUser) {
+                currentUser = await resolveAuthenticatedUser(currentAuth);
+            }
 
-            if (auth && auth.currentUser) {
+            // 2. Read fallback cache if available
+            let cachedUser = null;
+            try {
+                const raw = sessionStorage.getItem('zv_user_cache') || localStorage.getItem('zv_user_cache');
+                if (raw) cachedUser = JSON.parse(raw);
+            } catch (_) {}
+
+            let idToken = null;
+            let userUid = (currentUser && currentUser.uid) || (cachedUser && cachedUser.uid) || (auth && auth.currentUser && auth.currentUser.uid) || null;
+            let userName = options.userName || (currentUser && (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : null))) || (cachedUser && (cachedUser.username || cachedUser.name || cachedUser.displayName)) || 'Zone Vault Member';
+            let userRole = options.userRole || window.currentUserRole || (cachedUser && cachedUser.role) || (sessionStorage.getItem('isAdmin') === 'true' ? 'admin' : 'member');
+
+            if (currentUser) {
                 try {
-                    idToken = await auth.currentUser.getIdToken();
+                    idToken = await currentUser.getIdToken();
                 } catch (tokErr) {
                     console.warn('ID token fetch note:', tokErr);
                 }
 
                 if (db && !options.userRole && !window.currentUserRole) {
                     try {
-                        const snap = await db.ref(`users/${auth.currentUser.uid}`).once('value');
+                        const snap = await db.ref(`users/${currentUser.uid}`).once('value');
                         const uData = snap.val() || {};
-                        if (uData.role) userRole = String(uData.role).toLowerCase();
+                        if (uData.role) {
+                            userRole = String(uData.role).toLowerCase();
+                            if (userRole === 'admin') window.currentUserRole = 'admin';
+                        }
                         if (uData.username || uData.name) userName = uData.username || uData.name;
                     } catch (_) {}
                 }
@@ -301,6 +343,17 @@
             });
 
             if (ticketResult && ticketResult.status === 401) {
+                // If auth is still pending or restoring, hook onAuthStateChanged so it auto-recovers
+                if (currentAuth) {
+                    const recoverUnsub = currentAuth.onAuthStateChanged((recoveredUser) => {
+                        if (recoveredUser) {
+                            if (recoverUnsub) recoverUnsub();
+                            const existing = document.querySelector('.access-denied-modal');
+                            if (existing) existing.remove();
+                            initZoneVideoPlayer(options);
+                        }
+                    });
+                }
                 showAccessRestrictedModal(userName, userUid, 'Authentication Required: Please log in to stream this video.');
                 return null;
             } else if (ticketResult && ticketResult.status === 403) {

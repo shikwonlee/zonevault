@@ -25,6 +25,14 @@ function checkOriginAllowed(request) {
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
 
+  // Immediately reject extension URLs (e.g. moz-extension://, chrome-extension://)
+  if (origin && (origin.startsWith('moz-extension:') || origin.startsWith('chrome-extension:') || origin.startsWith('safari-extension:'))) {
+    return false;
+  }
+  if (referer && (referer.startsWith('moz-extension:') || referer.startsWith('chrome-extension:') || referer.startsWith('safari-extension:'))) {
+    return false;
+  }
+
   if (origin) {
     try {
       const u = new URL(origin);
@@ -49,8 +57,23 @@ function checkOriginAllowed(request) {
   return false;
 }
 
-// Download Prevention Helpers: Block download accelerators, stream dumpers, and browser Save-As attempts
-function isDownloadOrExternalTool(request) {
+// Download & Extension Prevention Helpers:
+// Blocks browser download extensions (Live Stream Downloader, Video DownloadHelper, etc.),
+// download tools (IDM, yt-dlp, curl, ffmpeg), and direct browser Save-As navigation.
+function isDownloadToolOrExtension(request) {
+  const origin = (request.headers.get('origin') || '').toLowerCase();
+  const referer = (request.headers.get('referer') || '').toLowerCase();
+  if (origin.startsWith('moz-extension:') || origin.startsWith('chrome-extension:') || origin.startsWith('safari-extension:') ||
+      referer.startsWith('moz-extension:') || referer.startsWith('chrome-extension:')) {
+    return true;
+  }
+
+  const dest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
+  const mode = (request.headers.get('sec-fetch-mode') || '').toLowerCase();
+  if (dest === 'document' || mode === 'navigate') {
+    return true;
+  }
+
   const ua = (request.headers.get('user-agent') || '').toLowerCase();
   const blockedUAs = [
     'idm',
@@ -68,7 +91,24 @@ function isDownloadOrExternalTool(request) {
     'libmpv',
     'quicktime'
   ];
-  return blockedUAs.some(tool => ua.includes(tool));
+  if (blockedUAs.some(tool => ua.includes(tool))) {
+    return true;
+  }
+
+  // Desktop browser extension check:
+  // Legitimate player instances in desktop browsers (Chrome, Firefox, Edge, Safari desktop)
+  // always send custom header 'X-ZV-Player: web-artplayer' or 'X-Requested-With: ZoneVaultPlayer'.
+  // Extensions (like Live Stream Downloader) sniffing URLs from DevTools/webRequest execute standard fetch() without player headers.
+  const isDesktop = ua.includes('windows') || ua.includes('macintosh') || (ua.includes('linux') && !ua.includes('android'));
+  const zvPlayer = request.headers.get('x-zv-player');
+  const reqWith = request.headers.get('x-requested-with');
+  const isPlayerAuthenticated = zvPlayer === 'web-artplayer' || reqWith === 'ZoneVaultPlayer';
+
+  if (isDesktop && !isPlayerAuthenticated) {
+    return true; // Extension ripper or unauthenticated fetch outside player
+  }
+
+  return false;
 }
 
 function isDirectDownloadAttempt(request) {
@@ -177,7 +217,7 @@ function corsHeaders(request) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Stream-Token, Range',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Stream-Token, Range, X-ZV-Player, X-Requested-With',
     'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
   };
 }
@@ -323,9 +363,9 @@ async function handleApiRequest(request, env) {
 
   // 2. /api/stream-proxy.m3u8 or /api/stream/manifest.m3u8 or /api/stream/live.m3u8
   if (pathname === '/api/stream-proxy.m3u8' || pathname === '/api/stream/manifest.m3u8' || pathname === '/api/stream/live.m3u8') {
-    // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
-    if (isDownloadOrExternalTool(request)) {
-      return new Response(JSON.stringify({ error: 'Access denied: Download tools and external video rippers are prohibited.' }), {
+    // 1. Block external download tools and browser extensions (IDM, Live Stream Downloader, curl, etc.)
+    if (isDownloadToolOrExtension(request)) {
+      return new Response(JSON.stringify({ error: 'Access denied: Download tools and browser extensions are prohibited.' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
       });
@@ -406,9 +446,9 @@ async function handleApiRequest(request, env) {
 
   // 3. /api/stream/chunk
   if (pathname === '/api/stream/chunk') {
-    // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
-    if (isDownloadOrExternalTool(request)) {
-      return new Response('Access denied: Media rippers and download tools are prohibited.', {
+    // 1. Block external download tools and browser extensions (IDM, Live Stream Downloader, curl, etc.)
+    if (isDownloadToolOrExtension(request)) {
+      return new Response('Access denied: Browser download extensions and media rippers are prohibited.', {
         status: 403,
         headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
       });

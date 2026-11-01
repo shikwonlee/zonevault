@@ -457,6 +457,10 @@
                                         xhr.setRequestHeader('X-Stream-Token', currentTok);
                                     } catch (_) {}
                                 }
+                                try {
+                                    xhr.setRequestHeader('X-ZV-Player', 'web-artplayer');
+                                    xhr.setRequestHeader('X-Requested-With', 'ZoneVaultPlayer');
+                                } catch (_) {}
                             }
                         };
 

@@ -109,6 +109,10 @@
                     if (self.activeToken) {
                         try { xhr.setRequestHeader('X-Stream-Token', self.activeToken); } catch (_) {}
                     }
+                    try {
+                        xhr.setRequestHeader('X-ZV-Player', 'web-artplayer');
+                        xhr.setRequestHeader('X-Requested-With', 'ZoneVaultPlayer');
+                    } catch (_) {}
                 }
             };
             if (window.Hls && Hls.DefaultConfig && Hls.DefaultConfig.loader) {

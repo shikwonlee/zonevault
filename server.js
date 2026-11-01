@@ -36,6 +36,14 @@ function isAllowedOrigin(req) {
     return false;
   };
 
+  // Immediately reject extension URLs (e.g. moz-extension://, chrome-extension://)
+  if (origin && (origin.startsWith('moz-extension:') || origin.startsWith('chrome-extension:') || origin.startsWith('safari-extension:'))) {
+    return false;
+  }
+  if (referer && (referer.startsWith('moz-extension:') || referer.startsWith('chrome-extension:') || referer.startsWith('safari-extension:'))) {
+    return false;
+  }
+
   // If origin header is present, it must be an allowed host
   if (origin) {
     try {
@@ -64,8 +72,23 @@ function isAllowedOrigin(req) {
   return false;
 }
 
-// Download Prevention Helpers: Block download accelerators, stream dumpers, and browser Save-As attempts
-function isDownloadOrExternalTool(req) {
+// Download & Extension Prevention Helpers:
+// Blocks browser download extensions (Live Stream Downloader, Video DownloadHelper, etc.),
+// download tools (IDM, yt-dlp, curl, ffmpeg), and direct browser Save-As navigation.
+function isDownloadToolOrExtension(req) {
+  const origin = (req.headers['origin'] || '').toLowerCase();
+  const referer = (req.headers['referer'] || '').toLowerCase();
+  if (origin.startsWith('moz-extension:') || origin.startsWith('chrome-extension:') || origin.startsWith('safari-extension:') ||
+      referer.startsWith('moz-extension:') || referer.startsWith('chrome-extension:')) {
+    return true;
+  }
+
+  const dest = (req.headers['sec-fetch-dest'] || '').toLowerCase();
+  const mode = (req.headers['sec-fetch-mode'] || '').toLowerCase();
+  if (dest === 'document' || mode === 'navigate') {
+    return true;
+  }
+
   const ua = (req.headers['user-agent'] || '').toLowerCase();
   const blockedUAs = [
     'idm',
@@ -83,7 +106,24 @@ function isDownloadOrExternalTool(req) {
     'libmpv',
     'quicktime'
   ];
-  return blockedUAs.some(tool => ua.includes(tool));
+  if (blockedUAs.some(tool => ua.includes(tool))) {
+    return true;
+  }
+
+  // Desktop browser extension check:
+  // Legitimate player instances in desktop browsers (Chrome, Firefox, Edge, Safari desktop)
+  // always send custom header 'X-ZV-Player: web-artplayer' or 'X-Requested-With: ZoneVaultPlayer'.
+  // Extensions (like Live Stream Downloader) sniffing URLs from DevTools/webRequest execute standard fetch() without player headers.
+  const isDesktop = ua.includes('windows') || ua.includes('macintosh') || (ua.includes('linux') && !ua.includes('android'));
+  const zvPlayer = req.headers['x-zv-player'];
+  const reqWith = req.headers['x-requested-with'];
+  const isPlayerAuthenticated = zvPlayer === 'web-artplayer' || reqWith === 'ZoneVaultPlayer';
+
+  if (isDesktop && !isPlayerAuthenticated) {
+    return true; // Extension ripper or unauthenticated fetch outside player
+  }
+
+  return false;
 }
 
 function isDirectDownloadAttempt(req) {
@@ -91,6 +131,31 @@ function isDirectDownloadAttempt(req) {
   const mode = (req.headers['sec-fetch-mode'] || '').toLowerCase();
   return dest === 'document' || mode === 'navigate';
 }
+
+// Chunk Leech Rate Limiter: prevents batch dumpers / extensions from scraping all segments
+const chunkRateLimitMap = new Map();
+
+function isChunkLeechExceeded(tokenOrIp) {
+  if (!tokenOrIp) return false;
+  const now = Date.now();
+  let history = chunkRateLimitMap.get(tokenOrIp) || [];
+  history = history.filter(t => now - t < 4000);
+  if (history.length >= 8) {
+    return true; // Ripping detected: more than 8 segments in 4 seconds
+  }
+  history.push(now);
+  chunkRateLimitMap.set(tokenOrIp, history);
+  return false;
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamps] of chunkRateLimitMap.entries()) {
+    if (timestamps.length === 0 || now - timestamps[timestamps.length - 1] > 10000) {
+      chunkRateLimitMap.delete(key);
+    }
+  }
+}, 120000);
 
 const STREAM_SECRET = process.env.STREAM_SECRET || 'zonevault-secure-token-salt-2026';
 
@@ -172,7 +237,7 @@ app.use((req, res, next) => {
   const origin = req.headers.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Stream-Token, Range');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Stream-Token, Range, X-ZV-Player, X-Requested-With');
   res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
@@ -312,10 +377,10 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
 
 // Protected Stream Gateway Proxy (verifies JWT, uid, displayName, and origin; rewrites all internal chunks)
 const handleStreamProxyManifest = async (req, res) => {
-  // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
-  if (isDownloadOrExternalTool(req)) {
+  // 1. Block external download tools and browser extensions (IDM, Live Stream Downloader, curl, etc.)
+  if (isDownloadToolOrExtension(req)) {
     res.setHeader('Content-Type', 'application/json');
-    return res.status(403).json({ error: 'Access denied: Download tools and external video rippers are prohibited.' });
+    return res.status(403).json({ error: 'Access denied: Download tools and browser extensions are prohibited.' });
   }
 
   // 2. Block direct browser navigation / Save As download attempts
@@ -386,7 +451,7 @@ const handleStreamProxyManifest = async (req, res) => {
     res.setHeader('X-Download-Options', 'noopen');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token, X-ZV-Player');
     res.send(rewritten);
   } catch (err) {
     console.error('Stream proxy upstream error:', err);
@@ -403,10 +468,10 @@ app.get('/stream/live.m3u8', handleStreamProxyManifest);
 
 // Media Chunk Proxy Endpoint: Streams .m4s, .ts, .mp4, and .aac chunks securely without exposing CDN domains
 const handleStreamChunk = async (req, res) => {
-  // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
-  if (isDownloadOrExternalTool(req)) {
+  // 1. Block external download tools and browser extensions (IDM, Live Stream Downloader, curl, etc.)
+  if (isDownloadToolOrExtension(req)) {
     res.setHeader('Content-Type', 'application/json');
-    return res.status(403).json({ error: 'Access denied: Media rippers and download tools are prohibited.' });
+    return res.status(403).json({ error: 'Access denied: Browser download extensions and media rippers are prohibited.' });
   }
 
   // 2. Block direct browser navigation / Save As download attempts
@@ -426,6 +491,12 @@ const handleStreamChunk = async (req, res) => {
 
   if (!token) {
     return res.status(400).send('Missing stream token');
+  }
+
+  // 4. Chunk Leech Rate Limiter: blocks bulk dumping
+  if (isChunkLeechExceeded(token)) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(429).json({ error: 'Playback rate limit exceeded: Bulk media scraping is prohibited. Video can only be watched in real time.' });
   }
 
   const verified = verifyStreamJwt(token, STREAM_SECRET);

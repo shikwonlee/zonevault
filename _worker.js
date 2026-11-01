@@ -49,6 +49,34 @@ function checkOriginAllowed(request) {
   return false;
 }
 
+// Download Prevention Helpers: Block download accelerators, stream dumpers, and browser Save-As attempts
+function isDownloadOrExternalTool(request) {
+  const ua = (request.headers.get('user-agent') || '').toLowerCase();
+  const blockedUAs = [
+    'idm',
+    'internet download manager',
+    'curl',
+    'wget',
+    'aria2',
+    'yt-dlp',
+    'youtube-dl',
+    'ffmpeg',
+    'python-requests',
+    'go-http-client',
+    'vlc',
+    'mpv',
+    'libmpv',
+    'quicktime'
+  ];
+  return blockedUAs.some(tool => ua.includes(tool));
+}
+
+function isDirectDownloadAttempt(request) {
+  const dest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
+  const mode = (request.headers.get('sec-fetch-mode') || '').toLowerCase();
+  return dest === 'document' || mode === 'navigate';
+}
+
 function base64UrlEncode(str) {
   const bytes = new TextEncoder().encode(str);
   return base64UrlEncodeBytes(bytes);
@@ -247,8 +275,8 @@ async function handleApiRequest(request, env) {
     const targetUrl = params.targetUrl || params.u || '';
     const nowMs = Date.now();
     const nowSec = Math.floor(nowMs / 1000);
-    const expiresAtSec = nowSec + 60; // 60-second initiation window
-    const expiresAtMs = nowMs + 60 * 1000;
+    const expiresAtSec = nowSec + 180; // 3-minute initiation window (180 seconds)
+    const expiresAtMs = nowMs + 180 * 1000;
     const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
 
     const jwtPayload = {
@@ -295,6 +323,23 @@ async function handleApiRequest(request, env) {
 
   // 2. /api/stream-proxy.m3u8 or /api/stream/manifest.m3u8 or /api/stream/live.m3u8
   if (pathname === '/api/stream-proxy.m3u8' || pathname === '/api/stream/manifest.m3u8' || pathname === '/api/stream/live.m3u8') {
+    // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
+    if (isDownloadOrExternalTool(request)) {
+      return new Response(JSON.stringify({ error: 'Access denied: Download tools and external video rippers are prohibited.' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+
+    // 2. Block direct browser navigation / Save As download attempts
+    if (isDirectDownloadAttempt(request)) {
+      return new Response('Access denied: Direct download of stream manifest is prohibited. Streaming permitted only inside the Zone Vault player.', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
+      });
+    }
+
+    // 3. Enforce zonevault.live Referer / Origin (rejects unauthorized third-party sites)
     if (!checkOriginAllowed(request)) {
       return new Response('Access denied: Stream playback allowed only on zonevault.live', {
         status: 403,
@@ -347,7 +392,10 @@ async function handleApiRequest(request, env) {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Content-Disposition': 'inline',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Download-Options': 'noopen',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
           ...corsHeaders(request)
         }
       });
@@ -358,6 +406,23 @@ async function handleApiRequest(request, env) {
 
   // 3. /api/stream/chunk
   if (pathname === '/api/stream/chunk') {
+    // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
+    if (isDownloadOrExternalTool(request)) {
+      return new Response('Access denied: Media rippers and download tools are prohibited.', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
+      });
+    }
+
+    // 2. Block direct browser navigation / Save As download attempts
+    if (isDirectDownloadAttempt(request)) {
+      return new Response('Access denied: Direct download of stream segments is prohibited.', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
+      });
+    }
+
+    // 3. Enforce zonevault.live Referer / Origin (rejects unauthorized third-party sites)
     if (!checkOriginAllowed(request)) {
       return new Response('Access denied: Media playback allowed only on zonevault.live', {
         status: 403,
@@ -409,6 +474,9 @@ async function handleApiRequest(request, env) {
       for (const [k, v] of Object.entries(cors)) {
         responseHeaders.set(k, v);
       }
+      responseHeaders.set('Content-Disposition', 'inline');
+      responseHeaders.set('X-Content-Type-Options', 'nosniff');
+      responseHeaders.set('X-Download-Options', 'noopen');
       responseHeaders.set('Cache-Control', 'private, no-transform, max-age=3600');
 
       return new Response(upstreamRes.body, {

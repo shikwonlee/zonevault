@@ -64,6 +64,34 @@ function isAllowedOrigin(req) {
   return false;
 }
 
+// Download Prevention Helpers: Block download accelerators, stream dumpers, and browser Save-As attempts
+function isDownloadOrExternalTool(req) {
+  const ua = (req.headers['user-agent'] || '').toLowerCase();
+  const blockedUAs = [
+    'idm',
+    'internet download manager',
+    'curl',
+    'wget',
+    'aria2',
+    'yt-dlp',
+    'youtube-dl',
+    'ffmpeg',
+    'python-requests',
+    'go-http-client',
+    'vlc',
+    'mpv',
+    'libmpv',
+    'quicktime'
+  ];
+  return blockedUAs.some(tool => ua.includes(tool));
+}
+
+function isDirectDownloadAttempt(req) {
+  const dest = (req.headers['sec-fetch-dest'] || '').toLowerCase();
+  const mode = (req.headers['sec-fetch-mode'] || '').toLowerCase();
+  return dest === 'document' || mode === 'navigate';
+}
+
 const STREAM_SECRET = process.env.STREAM_SECRET || 'zonevault-secure-token-salt-2026';
 
 // Base64URL and JWT Helper Functions
@@ -185,8 +213,8 @@ const handleStreamToken = (req, res) => {
   const userRole = (role === 'admin') ? 'admin' : 'member';
   const nowMs = Date.now();
   const nowSec = Math.floor(nowMs / 1000);
-  const expiresAtSec = nowSec + 60; // 60-second initiation window
-  const expiresAtMs = nowMs + 60 * 1000;
+  const expiresAtSec = nowSec + 180; // 3-minute initiation window (180 seconds)
+  const expiresAtMs = nowMs + 180 * 1000;
   const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
 
   // Signed JWT payload containing authenticated user's displayName and uid
@@ -284,7 +312,19 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
 
 // Protected Stream Gateway Proxy (verifies JWT, uid, displayName, and origin; rewrites all internal chunks)
 const handleStreamProxyManifest = async (req, res) => {
-  // Enforce zonevault.live Referer / Origin (rejects VLC, curl, external websites)
+  // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
+  if (isDownloadOrExternalTool(req)) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(403).json({ error: 'Access denied: Download tools and external video rippers are prohibited.' });
+  }
+
+  // 2. Block direct browser navigation / Save As download attempts
+  if (isDirectDownloadAttempt(req)) {
+    res.setHeader('Content-Type', 'text/plain');
+    return res.status(403).send('Access denied: Direct download of stream manifest is prohibited. Streaming permitted only inside the Zone Vault player.');
+  }
+
+  // 3. Enforce zonevault.live Referer / Origin (rejects unauthorized third-party sites)
   if (!isAllowedOrigin(req)) {
     res.setHeader('Content-Type', 'application/json');
     return res.status(403).json({ error: 'Access denied: Stream playback allowed only on zonevault.live' });
@@ -339,8 +379,12 @@ const handleStreamProxyManifest = async (req, res) => {
     const manifestText = await upstreamRes.text();
     const rewritten = rewriteHlsManifest(manifestText, targetUrl, token);
 
+    // Anti-download headers: strictly inline, nosniff, noopen, no cache
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Download-Options', 'noopen');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token');
     res.send(rewritten);
@@ -359,7 +403,19 @@ app.get('/stream/live.m3u8', handleStreamProxyManifest);
 
 // Media Chunk Proxy Endpoint: Streams .m4s, .ts, .mp4, and .aac chunks securely without exposing CDN domains
 const handleStreamChunk = async (req, res) => {
-  // Enforce zonevault.live Referer / Origin (rejects external scrapers, VLC, unauthorized players)
+  // 1. Block external download tools (IDM, curl, wget, yt-dlp, ffmpeg, etc.)
+  if (isDownloadOrExternalTool(req)) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(403).json({ error: 'Access denied: Media rippers and download tools are prohibited.' });
+  }
+
+  // 2. Block direct browser navigation / Save As download attempts
+  if (isDirectDownloadAttempt(req)) {
+    res.setHeader('Content-Type', 'text/plain');
+    return res.status(403).send('Access denied: Direct download of stream segments is prohibited.');
+  }
+
+  // 3. Enforce zonevault.live Referer / Origin (rejects external scrapers, VLC, unauthorized players)
   if (!isAllowedOrigin(req)) {
     res.setHeader('Content-Type', 'application/json');
     return res.status(403).json({ error: 'Access denied: Media playback allowed only on zonevault.live' });
@@ -416,6 +472,9 @@ const handleStreamChunk = async (req, res) => {
        chunkUrl.includes('.aac') ? 'audio/aac' : 'application/octet-stream');
 
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Download-Options', 'noopen');
     if (upstreamRes.headers.get('content-length')) {
       res.setHeader('Content-Length', upstreamRes.headers.get('content-length'));
     }

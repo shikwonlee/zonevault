@@ -244,8 +244,8 @@
                     epId: epId,
                     targetUrl: targetUrl,
                     iat: nowSec,
-                    exp: nowSec + 60,
-                    expiresAt: Date.now() + 60000
+                    exp: nowSec + 180,
+                    expiresAt: Date.now() + 180000
                 };
                 const tokenStr = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
                     .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -257,7 +257,7 @@
                     data: {
                         token: tokenStr,
                         proxyUrl: targetUrl ? `/api/stream-proxy.m3u8?token=${encodeURIComponent(tokenStr)}&u=${encodeURIComponent(b64Target)}` : null,
-                        expiresAt: Date.now() + 60000,
+                        expiresAt: Date.now() + 180000,
                         user: { uid, displayName, role }
                     }
                 };
@@ -373,7 +373,7 @@
                     role: userRole
                 };
 
-                // Silent background rolling token refresher (every 40 seconds)
+                // Silent background rolling token refresher (every 2 minutes / 120 seconds, TTL is 3 minutes)
                 if (window.zoneVaultRollingTimer) clearInterval(window.zoneVaultRollingTimer);
                 window.zoneVaultRollingTimer = setInterval(async () => {
                     try {
@@ -397,7 +397,7 @@
                     } catch (err) {
                         console.warn('Rolling token refresh note:', err);
                     }
-                }, 40000);
+                }, 120000);
             }
         } catch (e) {
             console.warn('Stream token validation note:', e);

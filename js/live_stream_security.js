@@ -74,7 +74,7 @@
                 if (ticket && (ticket.token || ticket.proxyUrl)) {
                     this.activeToken = ticket.token;
 
-                    // Rolling token refresh every 40 seconds (TTL is 60s)
+                    // Rolling token refresh every 2 minutes / 120 seconds (TTL is 3 minutes / 180s)
                     this.timer = setInterval(async () => {
                         try {
                             let freshId = null;
@@ -93,7 +93,7 @@
                                 this.activeToken = refreshed.token;
                             }
                         } catch (_) {}
-                    }, 40000);
+                    }, 120000);
 
                     return ticket.proxyUrl || streamUrl;
                 }

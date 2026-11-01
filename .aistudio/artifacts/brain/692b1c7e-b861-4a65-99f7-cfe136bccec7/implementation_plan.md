@@ -1,137 +1,126 @@
-# Ephemeral Stream Token Protection & Domain Lock (2021–2026 Video Pages)
+# Full-Pipeline Stream Protection: Expiring 60s Rolling Tokens & Full Proxy Gateway
 
-Implement secure backend stream tokenization and strict domain-locked proxying for all Zone Vault concert and episode video pages from 2021 through 2026, with user identity embedding in stream tokens and an improved manual-dismiss access modal.
+Deliver end-to-end stream protection for all 2021–2026 concert pages and live broadcast streams, fully shielding upstream CDN URLs by proxying playlists and media segments through a secure server gateway locked to `zonevault.live`.
 
 ---
 
-### User Review & Critical Decisions
+### User Review & Confirmed Decisions
 
 > [!IMPORTANT]
-> The following revisions have been incorporated based on your direct feedback:
-> - **Token Identity Enrichment**: In `/api/stream-token`, signed tokens now explicitly include the user's `role` (`admin` or `member`), `uid`, and `name` (display name/username).
-> - **Unapproved Member Modal with User Info**: The access denied modal displayed to unapproved members now prominently shows their **Username** and **UID**, allowing them to verify their account identity or share their UID with admins for approval.
-> - **Removal of Auto-Redirect Countdown**: The 3-second automatic redirect timer is removed. The modal remains on screen until the user manually clicks the **"Back to Videos"** button, preventing unwanted auto-navigation and allowing users to copy their UID or review instructions.
-> - **Token Protection Mode**: Full stream proxy (`/api/stream-proxy.m3u8`) with signed ephemeral tokens (`/api/stream-token`) and strict domain validation (`zonevault.live`).
-> - **Visual Playback**: No visual watermark on the video canvas; stream security is enforced cryptographically at the server gateway.
-> - **Target Scope**: Universal coverage across all concert, documentary, and tour episode pages in `2021`, `2024`, `2025`, and `2026`.
+> The following parameters and scope requirements have been confirmed for this implementation:
+
+- **Confirmed Decision 1 (Token TTL & Invalidation)**: 60-second Time-To-Live (TTL) for stream tokens with cryptographic HMAC-SHA256 signatures. Stolen or extracted links die within 60 seconds outside the website.
+- **Confirmed Decision 2 (Full Proxy Architecture)**: Both `.m3u8` playlists and all video/audio segments (`.m4s`, `.ts`, `init.mp4`, `.aac`) are proxied through the Express server (`/api/stream/...`). No upstream CDN URLs are ever exposed in DevTools Network tab or client traffic.
+- **Confirmed Decision 3 (Seamless Rolling Token Refresh)**: The client video player (`/player/video_player.js` and live stream modules) runs an in-browser rolling token manager (every 40s) and intercepts Hls.js segment/playlist loading to keep active website viewers on continuous, uninterrupted playback.
+- **Confirmed Decision 4 (Domain Lock & Multi-layer Blocking)**: Requests lacking the authorized Origin/Referer (`zonevault.live` or local/preview dev environments), or requests from external players (VLC, MPV, curl), are instantly rejected with HTTP `403 Forbidden`.
+- **Confirmed Decision 5 (Comprehensive Scope)**: Covers all 2021–2026 concert and episode video pages and all live stream broadcast pages (`live_stream/*.html`).
 
 ---
 
 ### 1. Overview & Core Concept
 
-Zone Vault hosts exclusive, private concerts and episodic VOD content for authorized community members. This upgrade secures playback against unauthorized ripping, direct stream URL sharing in external players (such as VLC), and domain spoofing:
+Currently, when a viewer plays a concert or live stream, the playlist rewriting formerly allowed the browser to resolve media chunks directly to the external CDN (e.g. `chunk.../87.m4s?skid=default&signature=...`), exposing the raw stream source in the browser Network tab and allowing third parties to extract direct links.
 
-1. **Domain Lock (`zonevault.live`)**: The backend streaming proxy enforces trusted browser `Origin` and `Referer` headers, immediately returning `403 Forbidden` to external media players, scraper tools, and third-party embeds.
-2. **Identity-Enriched Stream Handshake**: Before playback begins, the player contacts `/api/stream-token` providing the user's authentication credentials. The server creates an HMAC-SHA256 signed ticket containing the episode ID, user UID, user display name, role (`admin` vs `member`), client IP fingerprint, and a 60-second initiation expiry window.
-3. **Manual Access Modal**: When an unauthenticated visitor or unapproved member visits a restricted page, they see their **Username**, **UID**, and permission status in a dark glass modal with a manual **"Back to Videos"** button instead of an automatic redirect.
-
----
-
-### 2. User Experience & Interaction Flow
-
-- **Authorized Member Playback**:
-  - The viewer selects an episode or concert.
-  - The client obtains a signed token with the user's UID, name, and role, mounting the stream via `/api/stream-proxy.m3u8?token=...`.
-  - Playback starts immediately with adaptive bitrate switching (1080P, 720P, 480P), chapter markers, and watch history tracking.
-- **Unapproved or Restricted Member Flow**:
-  - When an account does not have permission for a specific page, a clean, styled modal appears:
-    ```
-    🚫 Access Restricted
-    This content requires approved access.
-
-    Account Details:
-    • Username: [User Display Name]
-    • UID: [User UID]
-    • Status: Pending Approval / Member
-
-    [ Back to Videos ]
-    ```
-  - **No Auto-Redirect**: The page does **not** count down or navigate away automatically; the user can freely read the message, copy their UID, or click "Back to Videos" when ready.
-- **External / Unauthorized Attempt**:
-  - Direct links opened in VLC, curl, or external websites receive an immediate `403 Forbidden` from the server.
+With this full-pipeline architecture:
+1. **Server Stream Gateway**:
+   - `/api/stream/manifest.m3u8` (and `/api/stream-proxy.m3u8`): Proxies upstream m3u8 manifests and rewrites all segment URIs and `#EXT-X-MAP` initialization segments to point to our internal chunk proxy endpoint.
+   - `/api/stream/chunk`: Proxies all media chunks (`.m4s`, `.ts`, `.mp4`), validates the 60s signed token and domain origin on every chunk request, and streams binary media buffers with correct MIME headers.
+2. **In-Browser Rolling Token Handshake**:
+   - Client fetches a signed token containing `uid`, `displayName`, `role`, `epId`, client IP, and a 60-second timestamp.
+   - A background rolling refresher acquires a fresh token every 40 seconds (20s safety margin).
+   - Hls.js loader attaches the active token to each manifest and segment fetch so that active web viewers never experience buffering drops, audio cuts, or video pauses.
+3. **Zero Direct CDN Exposure**:
+   - All network traffic in browser DevTools displays domain `zonevault.live` and path `/api/stream/...`.
+   - External downloaders and players without valid session tokens or valid origins receive HTTP 403 Forbidden.
 
 ---
 
-### 3. Key Technical Decisions & Trade-Offs
+### 2. User Experience & Visual Design
 
-- **Token Payload Structure**:
-  - *Chosen Approach*: Include `epId`, `uid`, `name`, `role`, `expiresAt`, `clientIp`, and `targetUrl` in the signed base64 payload.
-  - *Why*: Allows the backend to verify the exact user identity and role directly from the token signature without database bottlenecks during media streaming.
-- **Client Access Control Architecture**:
-  - *Chosen Approach*: Unify modal rendering in video pages and `/player/video_player.js` with structured user info and manual navigation handler `goBackSafe()`.
-  - *Why*: Replaces legacy 3-second auto-redirect timers with a persistent, informative modal while maintaining standard styling across all 2021–2026 pages.
+- **Legitimate Website Viewers**:
+  - Open any concert page (2021–2026) or live broadcast page.
+  - Video starts promptly; quality switcher (1080p, 720p, 480p, Auto), audio controls, full-screen orientation lock, and gestures work flawlessly.
+  - Rolling token renewals happen silently in the background without frame drops or buffering circles.
+- **External Sniffers / Re-streamers**:
+  - Copying the stream link into VLC, MPV, or external sites fails immediately with `403 Forbidden` due to missing Origin/Referer headers and/or 60-second token expiration.
+- **Visual Design & Layout**:
+  - Preserves the existing dark mode aesthetic, typography, and controls.
+  - Retains access control modals displaying Username & UID with the manual "Back to Videos" button.
 
 ---
 
-### 4. Technical Architecture & Component Flow
+### 3. Key Product Decisions & Trade-Offs
+
+- **Decision 1: Full Chunk Streaming Proxy vs. Direct Redirect**
+  - *Chosen Approach*: Stream the binary media chunks directly through Express back to the client (`res.write(chunk)`).
+  - *Why*: Direct redirects (`302`) would expose the upstream CDN URL in the client's network tab, defeating the purpose. Streaming the chunks preserves complete link privacy and enforces 100% domain isolation.
+  - *Alternatives Considered*: URL rewriting with direct CDN redirect (rejected because network inspectors easily catch the 302 location header).
+- **Decision 2: Hls.js Dynamic Request Interceptor (`xhrSetup`)**
+  - *Chosen Approach*: Configure Hls.js `xhrSetup` to automatically append the latest rolling token query parameter to all manifest re-fetches and segment downloads.
+  - *Why*: Allows Hls.js to continuously stream for hours without ever re-mounting Artplayer or causing audio/video glitches.
+  - *Alternatives Considered*: Destroying and re-creating the player every minute (causes jarring black screens and halts playback; rejected).
+
+---
+
+### 4. Technical Architecture & Data Strategy
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        ZONE VAULT VIDEO PAGE                           │
-│               (/2021/..., /2024/..., /2025/..., /2026/...)             │
+│                          Zone Vault Client                             │
+│                  (2021–2026 Pages & Live Stream)                       │
 │                                                                        │
-│   [Permission Check]                                                   │
-│   ├── If Unauthorized ──► Show Persistent Modal                        │
-│   │                       - Displays: Username & UID                   │
-│   │                       - Action: Manual "Back to Videos" click      │
-│   └── If Authorized   ──► Proceed to Token Handshake                   │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-              1. Request Handshake │ Headers: Origin: zonevault.live
-                 Bearer ID Token   │ Payload: { epId, uid, name, role }
-                                   ▼
+│   ┌────────────────────┐            ┌──────────────────────────────┐   │
+│   │  Artplayer + HLS   │◀───────────│ Token Manager (Rolling 40s)  │   │
+│   │  (video_player.js) │            │   - auto-fetches fresh token │   │
+│   └─────────┬──────────┘            └──────────────┬───────────────┘   │
+└─────────────┼──────────────────────────────────────┼───────────────────┘
+              │ Request Manifest & Chunks            │ Refresh Token
+              │ (Origin / Referer: zonevault.live)   │
+              ▼                                      ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                    EXPRESS BACKEND (/server.js)                        │
+│                         Express Server (server.js)                     │
 │                                                                        │
-│   [POST /api/stream-token]                                             │
-│   ├── Check Origin/Referer (zonevault.live or dev runtime)             │
-│   ├── Validate user UID, name, role                                    │
-│   └── Sign HMAC-SHA256 token { epId, uid, name, role, expiresAt }      │
-│                                                                        │
-│   [GET /api/stream-proxy.m3u8?token=...]                               │
-│   ├── Verify signature, timestamp, and domain origin                   │
-│   ├── Fetch upstream master manifest (Mux / Cloudflare)                │
-│   └── Rewrite relative child playlists & return HLS manifest           │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-              2. Mount Player with │ Proxied M3U8 URL
-                 Clean Handshake   │
-                                   ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                      ARTPLAYER + HLS.JS ENGINE                         │
-│   - Uninterrupted adaptive bitrate streaming (Auto / 1080P / 720P)     │
-│   - Watch history persisted to Firebase Realtime Database              │
-│   - Full gesture controls, auto-resume, and skip intro capabilities    │
-└────────────────────────────────────────────────────────────────────────┘
+│   ┌───────────────────────────┐      ┌─────────────────────────────┐   │
+│   │ /api/stream-token         │      │ /api/stream/chunk           │   │
+│   │ - Generates HMAC-256 JWT  │      │ - Validates 60s JWT token   │   │
+│   │ - 60s TTL, uid, name, ip  │      │ - Validates zonevault origin│   │
+│   └───────────────────────────┘      │ - Streams upstream bytes    │   │
+│   ┌───────────────────────────┐      └─────────────────────────────┘   │
+│   │ /api/stream-proxy.m3u8    │                                        │
+│   │ - Fetches upstream m3u8   │                                        │
+│   │ - Rewrites all chunks to  │                                        │
+│   │   /api/stream/chunk?t=... │                                        │
+│   └───────────────────────────┘                                        │
+└──────────────────────────────────────────────────────┬─────────────────┘
+                                                       │ Proxies Chunks
+                                                       ▼
+                                         ┌──────────────────────────┐
+                                         │ Upstream HLS Content     │
+                                         │ (VOD CDN / Live Streams) │
+                                         └──────────────────────────┘
 ```
 
----
+#### Step-by-Step Implementation Plan
+1. **Server Stream Proxy & Chunk Gateway (`server.js`)**:
+   - Add `/api/stream/chunk`: Accepts encrypted/encoded upstream target URL and validates the 60s signed token and allowed Origin/Referer. Proxies binary response with streaming pipe and appropriate media headers (`video/iso.segment`, `video/mp2t`, etc.).
+   - Update `/api/stream-proxy.m3u8` and `/api/stream/manifest.m3u8`:
+     - Rewrites relative and absolute segment URLs (`.m4s`, `.ts`, `.mp4`, `.aac`) to `/api/stream/chunk?token=${token}&u=${encodedChunkUrl}`.
+     - Rewrites `#EXT-X-MAP:URI="..."` to route initialization segments through `/api/stream/chunk`.
+   - Ensure `/api/stream-token` and `/api/verify-stream` continue to sign and parse `uid` and `displayName`.
 
-### 5. Implementation & Scope Checklist
+2. **Client Token Refresh & Hls.js Interceptor (`/player/video_player.js`)**:
+   - Implement `ZoneVaultTokenManager`:
+     - Holds active token and schedules background renewal every 40 seconds.
+     - Provides `getActiveToken()` for media requests.
+   - In `customType.m3u8`:
+     - Configure Hls.js with `xhrSetup` to intercept manifest and segment HTTP requests and attach the latest fresh token to `/api/stream/chunk` and manifest requests.
+     - Handle live and VOD stream continuity seamlessly.
 
-1. **Backend Server (`/server.js`)**:
-   - Update `/api/stream-token` to accept and embed `name` and `role` (`admin` or `member`) alongside `uid` and `epId` in the signed payload.
-   - Update `/api/verify-stream-token` to return verified `uid`, `name`, and `role`.
-   - Maintain strict `Origin` and `Referer` checks locked to `zonevault.live` (with dev/preview environment support).
-   - Ensure `/api/stream-proxy.m3u8` rewrites playlists smoothly with CORS headers.
+3. **Live Stream Broadcast Integration (`live_stream/*.html`)**:
+   - Update live stream players in `live_stream/` to route through the secure proxy gateway and token refresher instead of direct URLs.
 
-2. **Video Player Module (`/player/video_player.js`)**:
-   - Update `initZoneVideoPlayer` to pass the user's `displayName` / username and `role` to `/api/stream-token`.
-   - Ensure clean error handling if tokens expire or verification fails.
-
-3. **2021–2026 Video Pages (`showAccessDeniedModal`)**:
-   - Update the access denied modal across video pages:
-     - Display the authenticated user's username/email and UID.
-     - Remove the `redirectTimer` interval and automatic 3-second redirect.
-     - Add a prominent **"Back to Videos"** button with a direct link to `https://zonevault.live/videos` (or local fallback `/videos`).
-   - Covered folders and files:
-     - **2021**: `inthesoop2-N12X5R25-74K2.html`
-     - **2024**: `8th_caratland.html`, `magichour.html`, `rightheregoyang.html`
-     - **2025**: `9th_caratland.html`, `fukuokanewtour.html`, `hxwfanconcert.html`, `hxwingwangju.html`, `japannewtour.html`, `nanabnb.html`, `newtour.html`, `ourchapterS17N-111025-6B4.html`, `svtholiday.html`, `svtreaming1.html`, `the-shadows-edge.html`
-     - **2026**: `cxm_in_incheon.html`, `cxminjapan.html`, `dinoxpicheolin.html`, `dxs_on_stage.html`, `jxj_into_dreaming.html`, `new_encore.html`, `svt_2026_fanmeeting_yakusoku.html`, `svt_in_carat_land_2026.html`, `svtreaming_2026.html`, `vernon_the8_v8.html`
-
-4. **Verification & Testing**:
-   - Verify server compilation (`compile_applet`).
-   - Verify external curl / VLC requests without `zonevault.live` origin are blocked with `403`.
-   - Verify that unapproved accounts display the non-auto-redirecting modal with accurate UID and username.
-   - Verify that approved members and admins stream smoothly.
+4. **Testing & Verification**:
+   - Verify DevTools Network tab: No direct CDN URLs appear; all requests route to `/api/stream/...`.
+   - Verify playback continuity (>3 minutes continuous playback without interruptions).
+   - Test external curl / VLC request without `zonevault.live` Referer or after 60s TTL: verify immediate `403 Forbidden`.
+   - Verify all 2021-2026 concert pages and live broadcast pages function without error.

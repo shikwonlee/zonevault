@@ -1,6 +1,6 @@
 {
-  "summary":  "Revised implementation plan incorporating user name and role in stream tokens, displaying user details in the access denied modal, and removing auto-redirect timer in favor of manual navigation.",
-  "updatedAt":  "2026-11-01T16:11:10.993198208Z",
+  "summary":  "Implementation plan for Full-Pipeline Stream Protection: Expiring 60-second Rolling Tokens and Full Proxy Gateway for m3u8 Playlists and Media Segments across 2021-2026 Concert Pages and Live Streams.",
+  "updatedAt":  "2026-11-01T16:37:46.591967924Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

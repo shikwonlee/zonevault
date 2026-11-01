@@ -110,19 +110,6 @@ function isDownloadToolOrExtension(req) {
     return true;
   }
 
-  // Desktop browser extension check:
-  // Legitimate player instances in desktop browsers (Chrome, Firefox, Edge, Safari desktop)
-  // always send custom header 'X-ZV-Player: web-artplayer' or 'X-Requested-With: ZoneVaultPlayer'.
-  // Extensions (like Live Stream Downloader) sniffing URLs from DevTools/webRequest execute standard fetch() without player headers.
-  const isDesktop = ua.includes('windows') || ua.includes('macintosh') || (ua.includes('linux') && !ua.includes('android'));
-  const zvPlayer = req.headers['x-zv-player'];
-  const reqWith = req.headers['x-requested-with'];
-  const isPlayerAuthenticated = zvPlayer === 'web-artplayer' || reqWith === 'ZoneVaultPlayer';
-
-  if (isDesktop && !isPlayerAuthenticated) {
-    return true; // Extension ripper or unauthenticated fetch outside player
-  }
-
   return false;
 }
 

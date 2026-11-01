@@ -409,6 +409,7 @@
         const artOptions = {
             container: container,
             url: playbackUrl,
+            type: 'm3u8',
             title: data.title || (ep && ep.title) || '',
             poster: poster || (ep && ep.image) || '',
             volume: 0.5,

@@ -686,32 +686,45 @@ window.addEventListener('DOMContentLoaded', () => {
     showAccessDeniedModal();
   }
 
-  function showAccessDeniedModal() {
+  function showAccessDeniedModal(msg) {
+    let existingModal = document.querySelector('.access-denied-modal');
+    if (existingModal) existingModal.remove();
+
+    const currentUser = (typeof auth !== 'undefined' && auth && auth.currentUser) || null;
+    const username = (currentUser && (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : ''))) || 'Guest / Unknown';
+    const uid = (currentUser && currentUser.uid) || 'Not logged in';
+
     const modal = document.createElement('div');
     modal.className = 'access-denied-modal';
     modal.innerHTML = `
-      <strong>🚫 Access Denied</strong>
-      <div>You cannot access this page directly.<br>
-      Please go through the homepage or allowed sections.</div>
-      <div id="redirectTimer" style="margin-top:10px; opacity: 0.7;">Redirecting in 3 seconds...</div>
-      <button onclick="goBack()">Go Back</button>
+      <strong style="color:#FF4444; font-size:28px; margin-bottom:15px; display:block;">Access Restricted</strong>
+      <div style="font-size:15px; margin-bottom:20px; line-height:1.5; max-width:480px; color:#eaeaea;">${msg || "You cannot access this page directly.<br>Please go through the homepage or allowed sections."}</div>
+      
+      <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:16px 20px; margin-bottom:24px; text-align:left; max-width:440px; width:100%; box-sizing:border-box;">
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#8e8e99; margin-bottom:10px; font-weight:700;">Account Details</div>
+        <div style="font-size:13px; color:#fcfcfc; margin-bottom:8px; display:flex; justify-content:space-between; gap:12px;">
+          <span style="color:#a1a1aa;">Username:</span>
+          <span style="font-weight:600; text-align:right;">${username}</span>
+        </div>
+        <div style="font-size:13px; color:#fcfcfc; display:flex; justify-content:space-between; gap:12px; word-break:break-all;">
+          <span style="color:#a1a1aa; flex-shrink:0;">UID:</span>
+          <code style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#d4d4d8; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px; user-select:all;">${uid}</code>
+        </div>
+      </div>
+
+      <button onclick="goBackSafe()" style="padding:14px 36px; border-radius:50px; background:#ffffff; color:#0a0a0c; border:none; cursor:pointer; font-weight:700; font-size:14px; letter-spacing:1px; text-transform:uppercase; transition:all 0.2s; box-shadow:0 8px 24px rgba(255,255,255,0.2);">
+        <i class="fas fa-arrow-left" style="margin-right:8px;"></i> Back to Videos
+      </button>
     `;
     document.body.appendChild(modal);
+  }
 
-    let countdown = 3;
-    const timer = document.getElementById('redirectTimer');
-    const interval = setInterval(() => {
-      countdown--;
-      timer.textContent = `Redirecting in ${countdown} seconds...`;
-      if (countdown <= 0) {
-        clearInterval(interval);
-        window.location.href = "index.html";
-      }
-    }, 1000);
+  function goBackSafe() {
+    window.location.href = '/videos';
   }
 
   function goBack() {
-    window.history.back();
+    goBackSafe();
   }
 </script>
 

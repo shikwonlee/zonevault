@@ -121,11 +121,23 @@
         let playbackUrl = data.url || '';
         try {
             let idToken = null;
+            let userRole = options.userRole || window.currentUserRole || 'member';
+            let userName = options.userName || (auth && auth.currentUser && (auth.currentUser.displayName || (auth.currentUser.email ? auth.currentUser.email.split('@')[0] : null))) || 'Zone Vault Member';
+
             if (auth && auth.currentUser) {
                 try {
                     idToken = await auth.currentUser.getIdToken();
                 } catch (tokErr) {
                     console.warn('ID token fetch note:', tokErr);
+                }
+
+                if (db && !options.userRole && !window.currentUserRole) {
+                    try {
+                        const snap = await db.ref(`users/${auth.currentUser.uid}`).once('value');
+                        const uData = snap.val() || {};
+                        if (uData.role) userRole = String(uData.role).toLowerCase();
+                        if (uData.username || uData.name) userName = uData.username || uData.name;
+                    } catch (_) {}
                 }
             }
 
@@ -138,6 +150,9 @@
                 body: JSON.stringify({
                     epId: (ep && ep.id) || 'video',
                     uid: (auth && auth.currentUser && auth.currentUser.uid) || null,
+                    displayName: userName,
+                    name: userName,
+                    role: userRole,
                     idToken: idToken,
                     targetUrl: data.url
                 })

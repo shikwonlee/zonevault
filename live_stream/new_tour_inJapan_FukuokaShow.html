@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="/js/live_stream_security.js"></script>
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
@@ -1301,7 +1302,7 @@ function updatePlayerLiveBadge(status) {
 }
 
 // --- 2. CORE FUNCTION: PLAY EPISODE ---
-function loadAndPlayEpisode(epId, updateUrl = true) {
+async function loadAndPlayEpisode(epId, updateUrl = true) {
     const ep = playlistData.find(item => item.id === epId);
     
     if (!ep) {
@@ -1433,8 +1434,14 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
         if(hls) {
             hls.destroy();
         }
-        hls = new Hls();
-        hls.loadSource(data.url);
+        if(window.ZoneVaultLive) window.ZoneVaultLive.destroy();
+        let streamSrc = data.url;
+        if(window.ZoneVaultLive) {
+            streamSrc = await window.ZoneVaultLive.acquireProxyUrl(data.url, epId, isAdminUser ? 'admin' : 'member');
+        }
+        const hlsConfig = window.ZoneVaultLive ? window.ZoneVaultLive.createHlsConfig() : {};
+        hls = new Hls(hlsConfig);
+        hls.loadSource(streamSrc);
         hls.attachMedia(video);
         
         hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {

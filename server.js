@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 
 import crypto from 'crypto';
 import https from 'https';
+import { Readable } from 'stream';
 
 const app = express();
 app.use(express.json());
@@ -140,7 +141,7 @@ function verifyStreamJwt(token, secret) {
 }
 
 // Ephemeral Stream Handshake Token Endpoint for HLS streaming (Signed JWT with uid and displayName)
-app.post('/api/stream-token', (req, res) => {
+const handleStreamToken = (req, res) => {
   // 1. Enforce strict origin / referer check locked to zonevault.live
   if (!isAllowedOrigin(req)) {
     return res.status(403).json({ error: 'Access denied: Playback allowed only on zonevault.live' });
@@ -204,17 +205,69 @@ app.post('/api/stream-token', (req, res) => {
       role: userRole
     }
   });
-});
+};
 
-// Protected Stream Gateway Proxy (verifies JWT, uid, displayName, and origin)
-app.get('/api/stream-proxy.m3u8', (req, res) => {
-  // Enforce zonevault.live Referer / Origin (rejects livepush.io, VLC, external sites)
+app.post('/api/stream-token', handleStreamToken);
+app.post('/api/stream/token', handleStreamToken);
+
+// Helper function to rewrite HLS manifests: routes all segments, init maps, and sub-playlists through the secure gateway
+function rewriteHlsManifest(manifestText, baseUrl, token) {
+  const lines = manifestText.split(/\r?\n/);
+  const rewrittenLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      rewrittenLines.push(line);
+      continue;
+    }
+
+    // Rewrite tags containing URI="...", e.g. #EXT-X-MAP:URI="init.mp4", #EXT-X-KEY, #EXT-X-MEDIA
+    if (trimmed.startsWith('#')) {
+      line = line.replace(/URI="([^"]+)"/g, (match, uri) => {
+        try {
+          const absUrl = new URL(uri, baseUrl).href;
+          if (absUrl.toLowerCase().includes('.m3u8')) {
+            return `URI="/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
+          }
+          return `URI="/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
+        } catch (_) {
+          return match;
+        }
+      });
+      rewrittenLines.push(line);
+      continue;
+    }
+
+    // Non-tag line: either a sub-playlist (.m3u8) or a media chunk (.m4s, .ts, .mp4, etc.)
+    try {
+      const absUrl = new URL(trimmed, baseUrl).href;
+      if (absUrl.toLowerCase().includes('.m3u8')) {
+        rewrittenLines.push(`/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
+      } else {
+        rewrittenLines.push(`/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
+      }
+    } catch (_) {
+      rewrittenLines.push(line);
+    }
+  }
+
+  return rewrittenLines.join('\n');
+}
+
+// Protected Stream Gateway Proxy (verifies JWT, uid, displayName, and origin; rewrites all internal chunks)
+const handleStreamProxyManifest = async (req, res) => {
+  // Enforce zonevault.live Referer / Origin (rejects VLC, curl, external websites)
   if (!isAllowedOrigin(req)) {
     res.setHeader('Content-Type', 'application/json');
     return res.status(403).json({ error: 'Access denied: Stream playback allowed only on zonevault.live' });
   }
 
-  const { token } = req.query || {};
+  const token = req.query.token || req.query.t || req.headers['x-stream-token'] ||
+    (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
+
   if (!token) {
     return res.status(400).send('Missing stream token');
   }
@@ -227,34 +280,132 @@ app.get('/api/stream-proxy.m3u8', (req, res) => {
     return res.status(403).send('Stream token expired');
   }
 
-  // Ensure authenticated user's uid and displayName are present in JWT payload
   const uid = verified.uid || verified.sub;
   const displayName = verified.displayName || verified.name || verified.username;
   if (!uid || !displayName) {
     return res.status(401).send('Unauthorized: Missing authenticated user identity in JWT');
   }
 
-  const targetUrl = verified.targetUrl;
-  if (!targetUrl || !targetUrl.startsWith('https://')) {
+  let targetUrl = req.query.u || req.query.url || verified.targetUrl;
+  if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    try {
+      const decoded = base64UrlDecode(targetUrl);
+      if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+        targetUrl = decoded;
+      }
+    } catch (_) {}
+  }
+
+  if (!targetUrl || (!targetUrl.startsWith('https://') && !targetUrl.startsWith('http://'))) {
     return res.status(400).send('Invalid target media stream');
   }
 
-  https.get(targetUrl, (upstreamRes) => {
-    let data = '';
-    upstreamRes.on('data', chunk => data += chunk);
-    upstreamRes.on('end', () => {
-      const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
-      const rewritten = data.replace(/^(?!#)(?!https?:\/\/)(.+)$/gm, `${baseUrl}$1`);
-
-      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.send(rewritten);
+  try {
+    const upstreamRes = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+      }
     });
-  }).on('error', (err) => {
+
+    if (!upstreamRes.ok) {
+      return res.status(upstreamRes.status).send('Upstream stream error');
+    }
+
+    const manifestText = await upstreamRes.text();
+    const rewritten = rewriteHlsManifest(manifestText, targetUrl, token);
+
+    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token');
+    res.send(rewritten);
+  } catch (err) {
     console.error('Stream proxy upstream error:', err);
     res.status(502).send('Error connecting to upstream media stream');
-  });
+  }
+};
+
+app.get('/api/stream-proxy.m3u8', handleStreamProxyManifest);
+app.get('/api/stream/manifest.m3u8', handleStreamProxyManifest);
+app.get('/api/stream/live.m3u8', handleStreamProxyManifest);
+
+// Media Chunk Proxy Endpoint: Streams .m4s, .ts, .mp4, and .aac chunks securely without exposing CDN domains
+app.get('/api/stream/chunk', async (req, res) => {
+  // Enforce zonevault.live Referer / Origin (rejects external scrapers, VLC, unauthorized players)
+  if (!isAllowedOrigin(req)) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(403).json({ error: 'Access denied: Media playback allowed only on zonevault.live' });
+  }
+
+  const token = req.query.token || req.query.t || req.headers['x-stream-token'] ||
+    (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
+
+  if (!token) {
+    return res.status(400).send('Missing stream token');
+  }
+
+  const verified = verifyStreamJwt(token, STREAM_SECRET);
+  if (!verified) {
+    return res.status(403).send('Invalid stream token signature');
+  }
+  if (verified.expired) {
+    return res.status(403).send('Stream token expired');
+  }
+
+  let chunkUrl = req.query.u || req.query.url;
+  if (chunkUrl && !chunkUrl.startsWith('http://') && !chunkUrl.startsWith('https://')) {
+    try {
+      const decoded = base64UrlDecode(chunkUrl);
+      if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+        chunkUrl = decoded;
+      }
+    } catch (_) {}
+  }
+
+  if (!chunkUrl || (!chunkUrl.startsWith('https://') && !chunkUrl.startsWith('http://'))) {
+    return res.status(400).send('Invalid chunk target URL');
+  }
+
+  try {
+    const upstreamHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+    };
+    if (req.headers.range) {
+      upstreamHeaders['range'] = req.headers.range;
+    }
+
+    const upstreamRes = await fetch(chunkUrl, { headers: upstreamHeaders });
+
+    if (!upstreamRes.ok && upstreamRes.status !== 206) {
+      return res.status(upstreamRes.status).send('Upstream media chunk error');
+    }
+
+    res.status(upstreamRes.status);
+    const contentType = upstreamRes.headers.get('content-type') ||
+      (chunkUrl.includes('.m4s') ? 'video/iso.segment' :
+       chunkUrl.includes('.ts') ? 'video/mp2t' :
+       chunkUrl.includes('.mp4') ? 'video/mp4' :
+       chunkUrl.includes('.aac') ? 'audio/aac' : 'application/octet-stream');
+
+    res.setHeader('Content-Type', contentType);
+    if (upstreamRes.headers.get('content-length')) {
+      res.setHeader('Content-Length', upstreamRes.headers.get('content-length'));
+    }
+    if (upstreamRes.headers.get('content-range')) {
+      res.setHeader('Content-Range', upstreamRes.headers.get('content-range'));
+    }
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'private, no-transform, max-age=3600');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token, Range');
+
+    Readable.fromWeb(upstreamRes.body).on('error', (err) => {
+      console.warn('Chunk stream transfer note:', err.message);
+    }).pipe(res);
+  } catch (err) {
+    console.error('Chunk proxy error:', err);
+    res.status(502).send('Error streaming media chunk');
+  }
 });
 
 // Stream Token Verification Endpoint: /api/verify-stream and /api/verify-stream-token

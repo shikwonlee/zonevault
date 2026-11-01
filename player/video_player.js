@@ -16,6 +16,10 @@
      * Clean up existing player and HLS streams
      */
     function cleanupPlayer() {
+        if (window.zoneVaultRollingTimer) {
+            clearInterval(window.zoneVaultRollingTimer);
+            window.zoneVaultRollingTimer = null;
+        }
         if (window.art && window.art.hls) {
             try {
                 window.art.hls.destroy();
@@ -41,6 +45,22 @@
         }
     }
     window.cleanupPlayer = cleanupPlayer;
+
+    // Global Zone Vault Stream Manager with Rolling Token Refresh
+    window.ZoneVaultStream = window.ZoneVaultStream || {
+        activeSession: null,
+        getActiveToken: function () {
+            return this.activeSession ? this.activeSession.token : null;
+        },
+        updateTokenInUrl: function (url) {
+            const token = this.getActiveToken();
+            if (!token || !url) return url;
+            if (url.includes('/api/stream/') || url.includes('/api/stream-proxy')) {
+                return url.replace(/([?&](?:token|t)=)[^&]*/, `$1${encodeURIComponent(token)}`);
+            }
+            return url;
+        }
+    };
 
     /**
      * Format seconds into H:MM:SS or MM:SS
@@ -169,6 +189,51 @@
                 if (ticket && ticket.proxyUrl) {
                     playbackUrl = ticket.proxyUrl;
                 }
+                window.ZoneVaultStream.activeSession = {
+                    token: ticket.token,
+                    epId: (ep && ep.id) || 'video',
+                    targetUrl: data.url,
+                    uid: (auth && auth.currentUser && auth.currentUser.uid) || null,
+                    displayName: userName,
+                    role: userRole
+                };
+
+                // Silent background rolling token refresher (every 40 seconds)
+                if (window.zoneVaultRollingTimer) clearInterval(window.zoneVaultRollingTimer);
+                window.zoneVaultRollingTimer = setInterval(async () => {
+                    try {
+                        const session = window.ZoneVaultStream.activeSession;
+                        if (!session || !window.art) return;
+                        let freshIdToken = null;
+                        if (auth && auth.currentUser) {
+                            try { freshIdToken = await auth.currentUser.getIdToken(); } catch (_) {}
+                        }
+                        const r = await fetch('/api/stream-token', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...(freshIdToken ? { 'Authorization': `Bearer ${freshIdToken}` } : {})
+                            },
+                            body: JSON.stringify({
+                                epId: session.epId,
+                                uid: session.uid,
+                                displayName: session.displayName,
+                                name: session.displayName,
+                                role: session.role,
+                                targetUrl: session.targetUrl,
+                                idToken: freshIdToken
+                            })
+                        });
+                        if (r.ok) {
+                            const refreshed = await r.json();
+                            if (refreshed && refreshed.token) {
+                                session.token = refreshed.token;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Rolling token refresh note:', err);
+                    }
+                }, 40000);
             }
         } catch (e) {
             console.warn('Stream token validation note:', e);
@@ -219,9 +284,31 @@
                     if (video) video.preload = 'metadata';
                     if (instance && instance.hls) instance.hls.destroy();
                     if (window.Hls && Hls.isSupported()) {
-                        const hlsConfig = (typeof startPosition === 'number' && startPosition > 0)
-                            ? { startPosition: startPosition }
-                            : {};
+                        const hlsConfig = {
+                            ...(typeof startPosition === 'number' && startPosition > 0 ? { startPosition: startPosition } : {}),
+                            xhrSetup: function (xhr, reqUrl) {
+                                const currentTok = window.ZoneVaultStream.getActiveToken();
+                                if (currentTok) {
+                                    try {
+                                        xhr.setRequestHeader('X-Stream-Token', currentTok);
+                                    } catch (_) {}
+                                }
+                            }
+                        };
+
+                        if (Hls.DefaultConfig && Hls.DefaultConfig.loader) {
+                            class ZoneVaultTokenLoader extends Hls.DefaultConfig.loader {
+                                load(context, config, callbacks) {
+                                    if (context && context.url) {
+                                        context.url = window.ZoneVaultStream.updateTokenInUrl(context.url);
+                                    }
+                                    super.load(context, config, callbacks);
+                                }
+                            }
+                            hlsConfig.fLoader = ZoneVaultTokenLoader;
+                            hlsConfig.pLoader = ZoneVaultTokenLoader;
+                        }
+
                         const hls = new Hls(hlsConfig);
                         hls.loadSource(url);
                         hls.attachMedia(video);

@@ -11,6 +11,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+<script src="/js/live_stream_security.js"></script>
 
 <link rel="icon" href="favicon-new.png" type="image/png" />
 <link rel="manifest" href="manifest.json">
@@ -699,6 +700,7 @@ document.getElementById('guidelines-modal').addEventListener('click', function(e
 // --- RETURN TO MAIN VIEW LOGIC ---
 function returnToMainView() {
     if(art) { art.destroy(false); art = null; }
+    if (window.ZoneVaultLive) window.ZoneVaultLive.destroy();
     
     playerContainer.style.animation = "none"; 
     playerContainer.style.display = "none";
@@ -935,23 +937,29 @@ function loadAndPlayEpisode(epId, updateUrl = true) {
     });
 }
 
-function setupStream(streamUrl, status) {
+async function setupStream(streamUrl, status) {
     if(art) { 
         art.destroy(true); // 'true' deletes the old player HTML completely
         art = null; 
     } 
+    if (window.ZoneVaultLive) window.ZoneVaultLive.destroy();
 
     const isLive = status && status.toUpperCase() === 'LIVE';
+    let playbackUrl = streamUrl;
+    if (window.ZoneVaultLive) {
+        playbackUrl = await window.ZoneVaultLive.acquireProxyUrl(streamUrl, (window.currentEpData && window.currentEpData.id) || 'live', isAdminUser ? 'admin' : 'member');
+    }
 
     art = new Artplayer({
         container: '.artplayer-app',
-        url: streamUrl,
+        url: playbackUrl,
         type: 'm3u8',
         customType: {
             m3u8: function (video, url, art) {
                 if (Hls.isSupported()) {
                     if (art.hls) art.hls.destroy();
-                    const hls = new Hls();
+                    const hlsConfig = window.ZoneVaultLive ? window.ZoneVaultLive.createHlsConfig() : {};
+                    const hls = new Hls(hlsConfig);
                     hls.loadSource(url);
                     hls.attachMedia(video);
                     art.hls = hls;

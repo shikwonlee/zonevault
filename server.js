@@ -140,6 +140,18 @@ function verifyStreamJwt(token, secret) {
   }
 }
 
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Stream-Token, Range');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
 // Ephemeral Stream Handshake Token Endpoint for HLS streaming (Signed JWT with uid and displayName)
 const handleStreamToken = (req, res) => {
   // 1. Enforce strict origin / referer check locked to zonevault.live
@@ -147,7 +159,14 @@ const handleStreamToken = (req, res) => {
     return res.status(403).json({ error: 'Access denied: Playback allowed only on zonevault.live' });
   }
 
-  const { epId, uid, displayName, name, role, idToken, targetUrl } = req.body || {};
+  const params = { ...(req.query || {}), ...(req.body || {}) };
+  const epId = params.epId || params.v;
+  const uid = params.uid || params.u;
+  const displayName = params.displayName || params.name || params.username;
+  const role = params.role;
+  const idToken = params.idToken;
+  const targetUrl = params.targetUrl || params.url;
+
   const authHeader = req.headers.authorization;
   const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
   const sessionToken = idToken || tokenFromHeader;
@@ -162,7 +181,7 @@ const handleStreamToken = (req, res) => {
   }
 
   const userId = uid || 'authenticated-user';
-  const userDisplayName = displayName || name || (req.body && req.body.username) || 'Zone Vault Member';
+  const userDisplayName = displayName || (req.body && req.body.username) || 'Zone Vault Member';
   const userRole = (role === 'admin') ? 'admin' : 'member';
   const nowMs = Date.now();
   const nowSec = Math.floor(nowMs / 1000);
@@ -207,8 +226,14 @@ const handleStreamToken = (req, res) => {
   });
 };
 
+app.get('/api/stream-token', handleStreamToken);
 app.post('/api/stream-token', handleStreamToken);
+app.get('/stream-token', handleStreamToken);
+app.post('/stream-token', handleStreamToken);
+app.get('/api/stream/token', handleStreamToken);
 app.post('/api/stream/token', handleStreamToken);
+app.get('/stream/token', handleStreamToken);
+app.post('/stream/token', handleStreamToken);
 
 // Helper function to rewrite HLS manifests: routes all segments, init maps, and sub-playlists through the secure gateway
 function rewriteHlsManifest(manifestText, baseUrl, token) {
@@ -326,11 +351,14 @@ const handleStreamProxyManifest = async (req, res) => {
 };
 
 app.get('/api/stream-proxy.m3u8', handleStreamProxyManifest);
+app.get('/stream-proxy.m3u8', handleStreamProxyManifest);
 app.get('/api/stream/manifest.m3u8', handleStreamProxyManifest);
+app.get('/stream/manifest.m3u8', handleStreamProxyManifest);
 app.get('/api/stream/live.m3u8', handleStreamProxyManifest);
+app.get('/stream/live.m3u8', handleStreamProxyManifest);
 
 // Media Chunk Proxy Endpoint: Streams .m4s, .ts, .mp4, and .aac chunks securely without exposing CDN domains
-app.get('/api/stream/chunk', async (req, res) => {
+const handleStreamChunk = async (req, res) => {
   // Enforce zonevault.live Referer / Origin (rejects external scrapers, VLC, unauthorized players)
   if (!isAllowedOrigin(req)) {
     res.setHeader('Content-Type', 'application/json');
@@ -406,7 +434,10 @@ app.get('/api/stream/chunk', async (req, res) => {
     console.error('Chunk proxy error:', err);
     res.status(502).send('Error streaming media chunk');
   }
-});
+};
+
+app.get('/api/stream/chunk', handleStreamChunk);
+app.get('/stream/chunk', handleStreamChunk);
 
 // Stream Token Verification Endpoint: /api/verify-stream and /api/verify-stream-token
 // Parses authenticated user's displayName and uid from the signed JWT payload to validate session

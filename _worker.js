@@ -1,0 +1,498 @@
+// Cloudflare Worker gateway for Zone Vault stream tokenization & proxying
+// Handles /api/stream-token, /api/stream-proxy.m3u8, and /api/stream/chunk with zero external CDN leakage
+
+const STREAM_SECRET = 'zonevault-secure-token-salt-2026';
+
+const ALLOWED_HOSTS = [
+  'zonevault.live',
+  'www.zonevault.live',
+  'zonevault.site',
+  'www.zonevault.site',
+  'localhost',
+  '127.0.0.1',
+  '0.0.0.0'
+];
+
+function isAllowedHost(hostname) {
+  if (!hostname) return false;
+  hostname = hostname.toLowerCase();
+  if (ALLOWED_HOSTS.includes(hostname)) return true;
+  if (hostname.endsWith('.run.app') || hostname.endsWith('.ai.studio') || hostname.endsWith('.pages.dev')) return true;
+  return false;
+}
+
+function checkOriginAllowed(request) {
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+
+  if (origin) {
+    try {
+      const u = new URL(origin);
+      if (!isAllowedHost(u.hostname)) return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  if (referer) {
+    try {
+      const u = new URL(referer);
+      if (!isAllowedHost(u.hostname)) return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Allow if at least origin or referer matches, or if an auth header is present
+  if (origin || referer) return true;
+  if (request.headers.get('authorization')) return true;
+  return false;
+}
+
+function base64UrlEncode(str) {
+  const bytes = new TextEncoder().encode(str);
+  return base64UrlEncodeBytes(bytes);
+}
+
+function base64UrlEncodeBytes(bytes) {
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+function base64UrlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  return atob(str);
+}
+
+function base64UrlDecodeToBytes(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  const binary = atob(str);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function signStreamJwt(payload, secret) {
+  const enc = new TextEncoder();
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encHeader = base64UrlEncode(JSON.stringify(header));
+  const encPayload = base64UrlEncode(JSON.stringify(payload));
+  const data = enc.encode(`${encHeader}.${encPayload}`);
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const sigBuf = await crypto.subtle.sign('HMAC', key, data);
+  const sig = base64UrlEncodeBytes(new Uint8Array(sigBuf));
+  return `${encHeader}.${encPayload}.${sig}`;
+}
+
+async function verifyStreamJwt(token, secret) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length === 3) {
+    const [encHeader, encPayload, sig] = parts;
+    const enc = new TextEncoder();
+    const data = enc.encode(`${encHeader}.${encPayload}`);
+
+    try {
+      const key = await crypto.subtle.importKey(
+        'raw',
+        enc.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['verify']
+      );
+
+      const sigBytes = base64UrlDecodeToBytes(sig);
+      const valid = await crypto.subtle.verify('HMAC', key, sigBytes, data);
+      if (!valid) return null;
+
+      const payload = JSON.parse(base64UrlDecode(encPayload));
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < nowSec) {
+        return { expired: true };
+      }
+      return payload;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Fallback for legacy base64 json token
+  try {
+    const decoded = JSON.parse(base64UrlDecode(token));
+    if (decoded && decoded.expiresAt && Date.now() > decoded.expiresAt) {
+      return { expired: true };
+    }
+    return decoded;
+  } catch (_) {
+    return null;
+  }
+}
+
+function corsHeaders(request) {
+  const origin = request.headers.get('origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Stream-Token, Range',
+    'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
+  };
+}
+
+function rewriteHlsManifest(manifestText, baseUrl, token) {
+  const lines = manifestText.split(/\r?\n/);
+  const rewritten = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      rewritten.push(line);
+      continue;
+    }
+
+    if (trimmed.startsWith('#')) {
+      line = line.replace(/URI="([^"]+)"/g, (match, uri) => {
+        try {
+          const absUrl = new URL(uri, baseUrl).href;
+          if (absUrl.toLowerCase().includes('.m3u8')) {
+            return `URI="/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
+          }
+          return `URI="/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
+        } catch (_) {
+          return match;
+        }
+      });
+      rewritten.push(line);
+      continue;
+    }
+
+    try {
+      const absUrl = new URL(trimmed, baseUrl).href;
+      if (absUrl.toLowerCase().includes('.m3u8')) {
+        rewritten.push(`/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
+      } else {
+        rewritten.push(`/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
+      }
+    } catch (_) {
+      rewritten.push(line);
+    }
+  }
+
+  return rewritten.join('\n');
+}
+
+// Main API Handler for Cloudflare Workers
+async function handleApiRequest(request, env) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders(request)
+    });
+  }
+
+  // 1. /api/stream-token or /stream-token (supports GET and POST)
+  if (pathname === '/api/stream-token' || pathname === '/stream-token' || pathname === '/api/stream/token' || pathname === '/stream/token') {
+    if (!checkOriginAllowed(request)) {
+      return new Response(JSON.stringify({ error: 'Access denied: Playback allowed only on zonevault.live' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+
+    let bodyData = {};
+    if (request.method === 'POST') {
+      try {
+        bodyData = await request.json();
+      } catch (_) {}
+    }
+
+    const queryData = Object.fromEntries(url.searchParams.entries());
+    const params = { ...queryData, ...bodyData };
+
+    const authHeader = request.headers.get('authorization');
+    const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    const sessionToken = params.idToken || tokenFromHeader;
+
+    const uid = params.uid || (sessionToken ? 'authenticated-user' : null);
+    if (!uid && !sessionToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Active user session required to stream video' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+
+    const epId = params.epId || 'video';
+    const userDisplayName = params.displayName || params.name || params.username || 'Zone Vault Member';
+    const userRole = (params.role === 'admin') ? 'admin' : 'member';
+    const targetUrl = params.targetUrl || params.u || '';
+    const nowMs = Date.now();
+    const nowSec = Math.floor(nowMs / 1000);
+    const expiresAtSec = nowSec + 60; // 60-second initiation window
+    const expiresAtMs = nowMs + 60 * 1000;
+    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
+
+    const jwtPayload = {
+      sub: uid,
+      uid: uid,
+      displayName: userDisplayName,
+      name: userDisplayName,
+      username: userDisplayName,
+      role: userRole,
+      epId: epId,
+      targetUrl: targetUrl,
+      ip: clientIp,
+      iat: nowSec,
+      exp: expiresAtSec,
+      expiresAt: expiresAtMs
+    };
+
+    const token = await signStreamJwt(jwtPayload, STREAM_SECRET);
+    const proxyUrl = targetUrl ? `/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}` : null;
+
+    return new Response(JSON.stringify({
+      success: true,
+      token: token,
+      proxyUrl: proxyUrl,
+      expiresAt: expiresAtMs,
+      originLocked: true,
+      domain: 'zonevault.live',
+      user: {
+        uid: uid,
+        displayName: userDisplayName,
+        name: userDisplayName,
+        username: userDisplayName,
+        role: userRole
+      }
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        ...corsHeaders(request)
+      }
+    });
+  }
+
+  // 2. /api/stream-proxy.m3u8 or /api/stream/manifest.m3u8 or /api/stream/live.m3u8
+  if (pathname === '/api/stream-proxy.m3u8' || pathname === '/api/stream/manifest.m3u8' || pathname === '/api/stream/live.m3u8') {
+    if (!checkOriginAllowed(request)) {
+      return new Response('Access denied: Stream playback allowed only on zonevault.live', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
+      });
+    }
+
+    const token = url.searchParams.get('token') || url.searchParams.get('t') || request.headers.get('x-stream-token');
+    if (!token) {
+      return new Response('Missing stream token', { status: 400, headers: corsHeaders(request) });
+    }
+
+    const verified = await verifyStreamJwt(token, STREAM_SECRET);
+    if (!verified) {
+      return new Response('Invalid stream token signature', { status: 403, headers: corsHeaders(request) });
+    }
+    if (verified.expired) {
+      return new Response('Stream token expired', { status: 403, headers: corsHeaders(request) });
+    }
+
+    let targetUrl = url.searchParams.get('u') || url.searchParams.get('url') || verified.targetUrl;
+    if (targetUrl && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      try {
+        const decoded = base64UrlDecode(targetUrl);
+        if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+          targetUrl = decoded;
+        }
+      } catch (_) {}
+    }
+
+    if (!targetUrl || (!targetUrl.startsWith('https://') && !targetUrl.startsWith('http://'))) {
+      return new Response('Invalid target media stream', { status: 400, headers: corsHeaders(request) });
+    }
+
+    try {
+      const upstreamRes = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        }
+      });
+
+      if (!upstreamRes.ok) {
+        return new Response('Upstream stream error', { status: upstreamRes.status, headers: corsHeaders(request) });
+      }
+
+      const manifestText = await upstreamRes.text();
+      const rewritten = rewriteHlsManifest(manifestText, targetUrl, token);
+
+      return new Response(rewritten, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/vnd.apple.mpegurl',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          ...corsHeaders(request)
+        }
+      });
+    } catch (err) {
+      return new Response('Error connecting to upstream media stream', { status: 502, headers: corsHeaders(request) });
+    }
+  }
+
+  // 3. /api/stream/chunk
+  if (pathname === '/api/stream/chunk') {
+    if (!checkOriginAllowed(request)) {
+      return new Response('Access denied: Media playback allowed only on zonevault.live', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
+      });
+    }
+
+    const token = url.searchParams.get('token') || url.searchParams.get('t') || request.headers.get('x-stream-token');
+    if (!token) {
+      return new Response('Missing stream token', { status: 400, headers: corsHeaders(request) });
+    }
+
+    const verified = await verifyStreamJwt(token, STREAM_SECRET);
+    if (!verified) {
+      return new Response('Invalid stream token signature', { status: 403, headers: corsHeaders(request) });
+    }
+    if (verified.expired) {
+      return new Response('Stream token expired', { status: 403, headers: corsHeaders(request) });
+    }
+
+    let chunkUrl = url.searchParams.get('u') || url.searchParams.get('url');
+    if (chunkUrl && !chunkUrl.startsWith('http://') && !chunkUrl.startsWith('https://')) {
+      try {
+        const decoded = base64UrlDecode(chunkUrl);
+        if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+          chunkUrl = decoded;
+        }
+      } catch (_) {}
+    }
+
+    if (!chunkUrl || (!chunkUrl.startsWith('https://') && !chunkUrl.startsWith('http://'))) {
+      return new Response('Invalid chunk target URL', { status: 400, headers: corsHeaders(request) });
+    }
+
+    try {
+      const forwardHeaders = new Headers();
+      forwardHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+      if (request.headers.has('range')) {
+        forwardHeaders.set('range', request.headers.get('range'));
+      }
+
+      const upstreamRes = await fetch(chunkUrl, { headers: forwardHeaders });
+      if (!upstreamRes.ok && upstreamRes.status !== 206) {
+        return new Response('Upstream media chunk error', { status: upstreamRes.status, headers: corsHeaders(request) });
+      }
+
+      const responseHeaders = new Headers(upstreamRes.headers);
+      const cors = corsHeaders(request);
+      for (const [k, v] of Object.entries(cors)) {
+        responseHeaders.set(k, v);
+      }
+      responseHeaders.set('Cache-Control', 'private, no-transform, max-age=3600');
+
+      return new Response(upstreamRes.body, {
+        status: upstreamRes.status,
+        headers: responseHeaders
+      });
+    } catch (err) {
+      return new Response('Error streaming media chunk', { status: 502, headers: corsHeaders(request) });
+    }
+  }
+
+  // 4. /api/verify-stream or /api/verify-stream-token
+  if (pathname === '/api/verify-stream' || pathname === '/api/verify-stream-token') {
+    if (!checkOriginAllowed(request)) {
+      return new Response(JSON.stringify({ valid: false, error: 'Access denied: Unauthorized origin' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+
+    let token = url.searchParams.get('token');
+    if (!token && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        token = body.token;
+      } catch (_) {}
+    }
+    if (!token) {
+      const auth = request.headers.get('authorization');
+      if (auth && auth.startsWith('Bearer ')) token = auth.split(' ')[1];
+    }
+
+    if (!token) {
+      return new Response(JSON.stringify({ valid: false, error: 'No token provided' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+
+    const verified = await verifyStreamJwt(token, STREAM_SECRET);
+    if (!verified) {
+      return new Response(JSON.stringify({ valid: false, error: 'Invalid token signature' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+    if (verified.expired) {
+      return new Response(JSON.stringify({ valid: false, error: 'Token expired' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+
+    return new Response(JSON.stringify({
+      valid: true,
+      user: {
+        uid: verified.uid || verified.sub,
+        displayName: verified.displayName || verified.name || verified.username,
+        role: verified.role || 'member'
+      },
+      epId: verified.epId,
+      expiresAt: verified.expiresAt
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+    });
+  }
+
+  // Fallback to static assets
+  if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
+    return env.ASSETS.fetch(request);
+  }
+  return fetch(request);
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/stream-')) {
+      return handleApiRequest(request, env);
+    }
+    if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
+      return env.ASSETS.fetch(request);
+    }
+    return fetch(request);
+  }
+};

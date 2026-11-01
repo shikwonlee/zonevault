@@ -24,60 +24,78 @@
                     try { idToken = await auth.currentUser.getIdToken(); } catch (_) {}
                 }
 
-                const resp = await fetch('/api/stream-token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
-                    },
-                    body: JSON.stringify({
-                        epId: epId || 'live-broadcast',
-                        uid: uid,
-                        displayName: displayName,
-                        role: userRole || 'member',
-                        targetUrl: streamUrl,
-                        idToken: idToken
-                    })
+                async function fetchLiveTicket(p) {
+                    const q = new URLSearchParams({
+                        epId: p.epId,
+                        uid: p.uid || '',
+                        displayName: p.displayName || '',
+                        role: p.role || 'member',
+                        targetUrl: p.targetUrl || ''
+                    });
+                    const endpoints = [
+                        { url: '/api/stream-token', method: 'POST' },
+                        { url: `/api/stream-token?${q.toString()}`, method: 'GET' },
+                        { url: '/stream-token', method: 'POST' },
+                        { url: `/stream-token?${q.toString()}`, method: 'GET' },
+                        { url: '/api/stream/token', method: 'POST' },
+                        { url: `/api/stream/token?${q.toString()}`, method: 'GET' }
+                    ];
+                    for (const item of endpoints) {
+                        try {
+                            const opts = {
+                                method: item.method,
+                                headers: {
+                                    ...(item.method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
+                                    ...(p.idToken ? { 'Authorization': `Bearer ${p.idToken}` } : {})
+                                }
+                            };
+                            if (item.method === 'POST') {
+                                opts.body = JSON.stringify(p);
+                            }
+                            const res = await fetch(item.url, opts);
+                            if (res.ok) {
+                                const d = await res.json();
+                                if (d && (d.token || d.proxyUrl)) return d;
+                            }
+                        } catch (_) {}
+                    }
+                    return null;
+                }
+
+                const ticket = await fetchLiveTicket({
+                    epId: epId || 'live-broadcast',
+                    uid: uid,
+                    displayName: displayName,
+                    role: userRole || 'member',
+                    targetUrl: streamUrl,
+                    idToken: idToken
                 });
 
-                if (resp.ok) {
-                    const ticket = await resp.json();
-                    if (ticket && ticket.proxyUrl) {
-                        this.activeToken = ticket.token;
+                if (ticket && (ticket.token || ticket.proxyUrl)) {
+                    this.activeToken = ticket.token;
 
-                        // Rolling token refresh every 40 seconds (TTL is 60s)
-                        this.timer = setInterval(async () => {
-                            try {
-                                let freshId = null;
-                                if (typeof auth !== 'undefined' && auth.currentUser) {
-                                    try { freshId = await auth.currentUser.getIdToken(); } catch (_) {}
-                                }
-                                const r = await fetch('/api/stream-token', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        ...(freshId ? { 'Authorization': `Bearer ${freshId}` } : {})
-                                    },
-                                    body: JSON.stringify({
-                                        epId: epId || 'live-broadcast',
-                                        uid: uid,
-                                        displayName: displayName,
-                                        role: userRole || 'member',
-                                        targetUrl: streamUrl,
-                                        idToken: freshId
-                                    })
-                                });
-                                if (r.ok) {
-                                    const refreshed = await r.json();
-                                    if (refreshed && refreshed.token) {
-                                        this.activeToken = refreshed.token;
-                                    }
-                                }
-                            } catch (_) {}
-                        }, 40000);
+                    // Rolling token refresh every 40 seconds (TTL is 60s)
+                    this.timer = setInterval(async () => {
+                        try {
+                            let freshId = null;
+                            if (typeof auth !== 'undefined' && auth.currentUser) {
+                                try { freshId = await auth.currentUser.getIdToken(); } catch (_) {}
+                            }
+                            const refreshed = await fetchLiveTicket({
+                                epId: epId || 'live-broadcast',
+                                uid: uid,
+                                displayName: displayName,
+                                role: userRole || 'member',
+                                targetUrl: streamUrl,
+                                idToken: freshId
+                            });
+                            if (refreshed && refreshed.token) {
+                                this.activeToken = refreshed.token;
+                            }
+                        } catch (_) {}
+                    }, 40000);
 
-                        return ticket.proxyUrl;
-                    }
+                    return ticket.proxyUrl || streamUrl;
                 }
             } catch (e) {
                 console.warn('Live stream token handshake note:', e);

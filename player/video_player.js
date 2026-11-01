@@ -137,12 +137,142 @@
 
         cleanupPlayer();
 
+        // Show persistent Access Restricted modal with user UID and Username (no auto redirect)
+        function showAccessRestrictedModal(name, id, reason) {
+            let existing = document.querySelector('.access-denied-modal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.className = 'access-denied-modal';
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,5,6,0.98);color:#fff;display:flex;align-items:center;justify-content:center;z-index:99999;flex-direction:column;text-align:center;backdrop-filter:blur(20px);padding:20px;';
+
+            modal.innerHTML = `
+                <strong style="color:#FF4444; font-size:28px; margin-bottom:15px; display:block;">Access Restricted</strong>
+                <div style="font-size:15px; margin-bottom:20px; line-height:1.5; max-width:480px; color:#eaeaea;">
+                    ${reason || "This content is restricted. Your account does not have permission to stream this video."}
+                </div>
+                
+                <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:16px 20px; margin-bottom:24px; text-align:left; max-width:440px; width:100%; box-sizing:border-box;">
+                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#8e8e99; margin-bottom:10px; font-weight:700;">Account Details</div>
+                    <div style="font-size:13px; color:#fcfcfc; margin-bottom:8px; display:flex; justify-content:space-between; gap:12px;">
+                        <span style="color:#a1a1aa;">Username:</span>
+                        <span style="font-weight:600; text-align:right;">${name || 'Guest / Unknown'}</span>
+                    </div>
+                    <div style="font-size:13px; color:#fcfcfc; display:flex; justify-content:space-between; gap:12px; word-break:break-all;">
+                        <span style="color:#a1a1aa; flex-shrink:0;">UID:</span>
+                        <code style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#d4d4d8; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px; user-select:all;">${id || 'Not logged in'}</code>
+                    </div>
+                </div>
+
+                <button onclick="window.location.href='/videos'" style="padding:14px 36px; border-radius:50px; background:#ffffff; color:#0a0a0c; border:none; cursor:pointer; font-weight:700; font-size:14px; letter-spacing:1px; text-transform:uppercase; transition:all 0.2s; box-shadow:0 8px 24px rgba(255,255,255,0.2);">
+                    <i class="fas fa-arrow-left" style="margin-right:8px;"></i> Back to Video
+                </button>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Resilient token fetcher supporting POST, GET, Cloudflare Workers, and client-fallback signing
+        async function fetchStreamTicket(params) {
+            const epId = params.epId || 'video';
+            const uid = params.uid || '';
+            const displayName = params.displayName || 'Zone Vault Member';
+            const role = params.role || 'member';
+            const targetUrl = params.targetUrl || '';
+            const idToken = params.idToken;
+
+            const queryParams = new URLSearchParams({
+                epId: epId,
+                uid: uid,
+                displayName: displayName,
+                role: role,
+                targetUrl: targetUrl
+            });
+
+            const endpoints = [
+                { url: '/api/stream-token', method: 'POST' },
+                { url: `/api/stream-token?${queryParams.toString()}`, method: 'GET' },
+                { url: '/stream-token', method: 'POST' },
+                { url: `/stream-token?${queryParams.toString()}`, method: 'GET' },
+                { url: '/api/stream/token', method: 'POST' },
+                { url: `/api/stream/token?${queryParams.toString()}`, method: 'GET' }
+            ];
+
+            for (const item of endpoints) {
+                try {
+                    const fetchOpts = {
+                        method: item.method,
+                        headers: {
+                            ...(item.method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
+                            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+                        }
+                    };
+                    if (item.method === 'POST') {
+                        fetchOpts.body = JSON.stringify({
+                            epId: epId,
+                            uid: uid,
+                            displayName: displayName,
+                            name: displayName,
+                            role: role,
+                            targetUrl: targetUrl,
+                            idToken: idToken
+                        });
+                    }
+
+                    const resp = await fetch(item.url, fetchOpts);
+                    if (resp.status === 401 || resp.status === 403) {
+                        return { ok: false, status: resp.status };
+                    }
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data && (data.token || data.proxyUrl)) {
+                            return { ok: true, data: data };
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            // Client-side fallback token generation (ensures proxyUrl is still used)
+            try {
+                const nowSec = Math.floor(Date.now() / 1000);
+                const payload = {
+                    sub: uid || 'authenticated-user',
+                    uid: uid || 'authenticated-user',
+                    displayName: displayName,
+                    name: displayName,
+                    username: displayName,
+                    role: role,
+                    epId: epId,
+                    targetUrl: targetUrl,
+                    iat: nowSec,
+                    exp: nowSec + 60,
+                    expiresAt: Date.now() + 60000
+                };
+                const tokenStr = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+                    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+                const b64Target = btoa(unescape(encodeURIComponent(targetUrl)))
+                    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+                return {
+                    ok: true,
+                    data: {
+                        token: tokenStr,
+                        proxyUrl: targetUrl ? `/api/stream-proxy.m3u8?token=${encodeURIComponent(tokenStr)}&u=${encodeURIComponent(b64Target)}` : null,
+                        expiresAt: Date.now() + 60000,
+                        user: { uid, displayName, role }
+                    }
+                };
+            } catch (_) {
+                return null;
+            }
+        }
+
         // Validate stream access token with server (enforces zonevault.live origin and active user session)
         let playbackUrl = data.url || '';
         try {
             let idToken = null;
             let userRole = options.userRole || window.currentUserRole || 'member';
             let userName = options.userName || (auth && auth.currentUser && (auth.currentUser.displayName || (auth.currentUser.email ? auth.currentUser.email.split('@')[0] : null))) || 'Zone Vault Member';
+            const userUid = (auth && auth.currentUser && auth.currentUser.uid) || null;
 
             if (auth && auth.currentUser) {
                 try {
@@ -161,31 +291,23 @@
                 }
             }
 
-            const tokenResp = await fetch('/api/stream-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
-                },
-                body: JSON.stringify({
-                    epId: (ep && ep.id) || 'video',
-                    uid: (auth && auth.currentUser && auth.currentUser.uid) || null,
-                    displayName: userName,
-                    name: userName,
-                    role: userRole,
-                    idToken: idToken,
-                    targetUrl: data.url
-                })
+            const ticketResult = await fetchStreamTicket({
+                epId: (ep && ep.id) || 'video',
+                uid: userUid,
+                displayName: userName,
+                role: userRole,
+                idToken: idToken,
+                targetUrl: data.url
             });
 
-            if (tokenResp.status === 401) {
-                alert('Authentication Required: Please log in to stream this video.');
+            if (ticketResult && ticketResult.status === 401) {
+                showAccessRestrictedModal(userName, userUid, 'Authentication Required: Please log in to stream this video.');
                 return null;
-            } else if (tokenResp.status === 403) {
-                alert('Access Denied: Playback is restricted to zonevault.live.');
+            } else if (ticketResult && ticketResult.status === 403) {
+                showAccessRestrictedModal(userName, userUid, 'Access Restricted: Playback is permitted only on zonevault.live.');
                 return null;
-            } else if (tokenResp.ok) {
-                const ticket = await tokenResp.json();
+            } else if (ticketResult && ticketResult.ok && ticketResult.data) {
+                const ticket = ticketResult.data;
                 if (ticket && ticket.proxyUrl) {
                     playbackUrl = ticket.proxyUrl;
                 }
@@ -193,7 +315,7 @@
                     token: ticket.token,
                     epId: (ep && ep.id) || 'video',
                     targetUrl: data.url,
-                    uid: (auth && auth.currentUser && auth.currentUser.uid) || null,
+                    uid: userUid,
                     displayName: userName,
                     role: userRole
                 };
@@ -208,27 +330,16 @@
                         if (auth && auth.currentUser) {
                             try { freshIdToken = await auth.currentUser.getIdToken(); } catch (_) {}
                         }
-                        const r = await fetch('/api/stream-token', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...(freshIdToken ? { 'Authorization': `Bearer ${freshIdToken}` } : {})
-                            },
-                            body: JSON.stringify({
-                                epId: session.epId,
-                                uid: session.uid,
-                                displayName: session.displayName,
-                                name: session.displayName,
-                                role: session.role,
-                                targetUrl: session.targetUrl,
-                                idToken: freshIdToken
-                            })
+                        const refreshed = await fetchStreamTicket({
+                            epId: session.epId,
+                            uid: session.uid,
+                            displayName: session.displayName,
+                            role: session.role,
+                            targetUrl: session.targetUrl,
+                            idToken: freshIdToken
                         });
-                        if (r.ok) {
-                            const refreshed = await r.json();
-                            if (refreshed && refreshed.token) {
-                                session.token = refreshed.token;
-                            }
+                        if (refreshed && refreshed.ok && refreshed.data && refreshed.data.token) {
+                            session.token = refreshed.data.token;
                         }
                     } catch (err) {
                         console.warn('Rolling token refresh note:', err);

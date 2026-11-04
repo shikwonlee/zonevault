@@ -229,7 +229,7 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
           if (absUrl.toLowerCase().includes('.m3u8')) {
             return `URI="/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
           }
-          return `URI="/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
+          return `URI="${absUrl}"`;
         } catch (_) {
           return match;
         }
@@ -243,7 +243,7 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
       if (absUrl.toLowerCase().includes('.m3u8')) {
         rewritten.push(`/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
       } else {
-        rewritten.push(`/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
+        rewritten.push(absUrl);
       }
     } catch (_) {
       rewritten.push(line);

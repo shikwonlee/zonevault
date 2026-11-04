@@ -449,9 +449,21 @@
                     if (video) video.preload = 'metadata';
                     if (instance && instance.hls) instance.hls.destroy();
                     if (window.Hls && Hls.isSupported()) {
+                        const isProxyEndpoint = function (targetUrl) {
+                            if (!targetUrl || typeof targetUrl !== 'string') return false;
+                            if (targetUrl.startsWith('/api/') || targetUrl.startsWith('/stream-') || targetUrl.startsWith('/stream/')) return true;
+                            try {
+                                const parsed = new URL(targetUrl, window.location.origin);
+                                return parsed.origin === window.location.origin && (parsed.pathname.startsWith('/api/') || parsed.pathname.startsWith('/stream-') || parsed.pathname.startsWith('/stream/'));
+                            } catch (_) {
+                                return false;
+                            }
+                        };
+
                         const hlsConfig = {
                             ...(typeof startPosition === 'number' && startPosition > 0 ? { startPosition: startPosition } : {}),
                             xhrSetup: function (xhr, reqUrl) {
+                                if (!isProxyEndpoint(reqUrl)) return;
                                 const currentTok = window.ZoneVaultStream.getActiveToken();
                                 if (currentTok) {
                                     try {

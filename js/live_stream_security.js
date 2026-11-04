@@ -104,8 +104,19 @@
         },
         createHlsConfig: function () {
             const self = this;
+            const isProxyEndpoint = function (targetUrl) {
+                if (!targetUrl || typeof targetUrl !== 'string') return false;
+                if (targetUrl.startsWith('/api/') || targetUrl.startsWith('/stream-') || targetUrl.startsWith('/stream/')) return true;
+                try {
+                    const parsed = new URL(targetUrl, window.location.origin);
+                    return parsed.origin === window.location.origin && (parsed.pathname.startsWith('/api/') || parsed.pathname.startsWith('/stream-') || parsed.pathname.startsWith('/stream/'));
+                } catch (_) {
+                    return false;
+                }
+            };
             const config = {
                 xhrSetup: function (xhr, url) {
+                    if (!isProxyEndpoint(url)) return;
                     if (self.activeToken) {
                         try { xhr.setRequestHeader('X-Stream-Token', self.activeToken); } catch (_) {}
                     }

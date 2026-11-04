@@ -315,7 +315,8 @@ app.post('/api/stream/token', handleStreamToken);
 app.get('/stream/token', handleStreamToken);
 app.post('/stream/token', handleStreamToken);
 
-// Helper function to rewrite HLS manifests: routes all segments, init maps, and sub-playlists through the secure gateway
+// Helper function to rewrite HLS manifests: routes all master & sub-playlists (.m3u8) through the secure gateway
+// while resolving media chunks (.ts, .m4s, .mp4, .aac) directly to the upstream CDN to save 99% of Worker requests
 function rewriteHlsManifest(manifestText, baseUrl, token) {
   const lines = manifestText.split(/\r?\n/);
   const rewrittenLines = [];
@@ -329,7 +330,7 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
       continue;
     }
 
-    // Rewrite tags containing URI="...", e.g. #EXT-X-MAP:URI="init.mp4", #EXT-X-KEY, #EXT-X-MEDIA
+    // Rewrite tags containing URI="...", e.g. #EXT-X-MEDIA, #EXT-X-MAP:URI="init.mp4", #EXT-X-KEY
     if (trimmed.startsWith('#')) {
       line = line.replace(/URI="([^"]+)"/g, (match, uri) => {
         try {
@@ -337,7 +338,7 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
           if (absUrl.toLowerCase().includes('.m3u8')) {
             return `URI="/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
           }
-          return `URI="/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
+          return `URI="${absUrl}"`;
         } catch (_) {
           return match;
         }
@@ -352,7 +353,7 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
       if (absUrl.toLowerCase().includes('.m3u8')) {
         rewrittenLines.push(`/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
       } else {
-        rewrittenLines.push(`/api/stream/chunk?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
+        rewrittenLines.push(absUrl);
       }
     } catch (_) {
       rewrittenLines.push(line);

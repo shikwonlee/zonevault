@@ -1,0 +1,6 @@
+{
+  "summary": "Implementation plan for switching Zone Vault to Light / Manifest-Only Proxy Mode (proxying all m3u8 master and sub-playlists with signed rolling tokens while direct-streaming video chunks to save 99% of Cloudflare Worker Free Tier requests, keeping /api/stream/chunk as a fallback and preserving all player functionality).",
+  "updatedAt": "2026-11-04T02:32:35.813921230Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

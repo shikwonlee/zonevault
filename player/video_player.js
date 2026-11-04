@@ -440,6 +440,8 @@
                 preload: 'metadata',
                 playsInline: true,
                 'webkit-playsinline': true,
+                disablePictureInPicture: true,
+                controlsList: 'nodownload noplaybackrate',
                 'x5-video-player-type': 'h5',
                 'x5-video-player-fullscreen': 'true',
                 'x5-video-orientation': 'landscape'
@@ -541,13 +543,20 @@
         const artInstance = new Artplayer(artOptions);
         window.art = artInstance;
 
-        // Custom touch gestures & click handling
+        // Custom touch gestures, anti-capture shield & click handling
         artInstance.on('ready', () => {
             if (artInstance.video) {
                 artInstance.video.setAttribute('preload', 'metadata');
+                artInstance.video.setAttribute('disablePictureInPicture', 'true');
+                artInstance.video.setAttribute('controlsList', 'nodownload noplaybackrate');
+                try { artInstance.video.disablePictureInPicture = true; } catch (_) {}
             }
             const playerEl = artInstance.template.$player;
             if (!playerEl) return;
+
+            if (window.ZoneVaultCaptureShield) {
+                window.ZoneVaultCaptureShield.protectPlayerContainer(playerEl, artInstance.video);
+            }
 
             // Prevent screen touch-sliding gestures completely
             playerEl.addEventListener('touchmove', (e) => {
@@ -760,6 +769,288 @@
     }
     window.initZoneVideoPlayer = initZoneVideoPlayer;
 
+    // =========================================
+    // PLAYER-ONLY INSTANT BLACK-FLASH SHIELD
+    // (Blackouts ONLY the video player on capture;
+    //  audio & video keep playing continuously)
+    // =========================================
+    if (!window.ZoneVaultCaptureShield) {
+        const shieldModule = {
+            isShieldActive: false,
+            isDisplayMediaActive: false,
+            restoreTimer: null,
+            chordHeld: false,
+
+            ensureStyleInjected: function () {
+                if (document.getElementById('zv-capture-shield-inline-style')) return;
+                const style = document.createElement('style');
+                style.id = 'zv-capture-shield-inline-style';
+                style.textContent = `
+                    .zv-player-blackout-shield {
+                        position: absolute !important;
+                        inset: 0 !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        background-color: #000000 !important;
+                        z-index: 99998 !important;
+                        pointer-events: none !important;
+                        opacity: 0;
+                        visibility: hidden;
+                        transition: opacity 0.16s ease-out, visibility 0.16s ease-out;
+                    }
+                    .zv-player-blackout-active .zv-player-blackout-shield,
+                    .zv-player-blackout-shield.is-active {
+                        opacity: 1 !important;
+                        visibility: visible !important;
+                        transition: none !important;
+                    }
+                    .zv-player-blackout-active video,
+                    video.zv-video-frame-blackout {
+                        filter: brightness(0) contrast(0) !important;
+                        -webkit-filter: brightness(0) contrast(0) !important;
+                        transition: none !important;
+                    }
+                    .zv-player-blackout-active .art-subtitle,
+                    .zv-player-blackout-active .art-danmuku,
+                    .zv-player-blackout-active .art-layers {
+                        opacity: 0 !important;
+                        transition: none !important;
+                    }
+                `;
+                (document.head || document.documentElement).appendChild(style);
+            },
+
+            getPlayerTargets: function () {
+                const containers = new Set();
+                const videos = new Set();
+
+                document.querySelectorAll('.art-video-player, #artplayer, #player-container, #tvPlayer, .player-wrapper').forEach(el => {
+                    containers.add(el);
+                });
+                document.querySelectorAll('video').forEach(v => {
+                    videos.add(v);
+                    if (v.parentElement) containers.add(v.parentElement);
+                });
+
+                return {
+                    containers: Array.from(containers),
+                    videos: Array.from(videos)
+                };
+            },
+
+            protectPlayerContainer: function (containerEl, videoEl) {
+                this.ensureStyleInjected();
+                if (containerEl) {
+                    const computed = window.getComputedStyle(containerEl);
+                    if (computed.position === 'static') {
+                        containerEl.style.position = 'relative';
+                    }
+                    if (!containerEl.querySelector('.zv-player-blackout-shield')) {
+                        const shield = document.createElement('div');
+                        shield.className = 'zv-player-blackout-shield';
+                        shield.setAttribute('aria-hidden', 'true');
+                        containerEl.appendChild(shield);
+                    }
+                    containerEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                    });
+                }
+                if (videoEl) {
+                    videoEl.setAttribute('disablePictureInPicture', 'true');
+                    videoEl.setAttribute('controlsList', 'nodownload noplaybackrate');
+                    try { videoEl.disablePictureInPicture = true; } catch (_) {}
+                    videoEl.addEventListener('enterpictureinpicture', () => {
+                        if (document.exitPictureInPicture) {
+                            document.exitPictureInPicture().catch(() => {});
+                        }
+                    });
+                }
+            },
+
+            engageBlackout: function (durationMs) {
+                this.ensureStyleInjected();
+                if (this.restoreTimer) {
+                    clearTimeout(this.restoreTimer);
+                    this.restoreTimer = null;
+                }
+
+                this.isShieldActive = true;
+                const { containers, videos } = this.getPlayerTargets();
+
+                containers.forEach(c => {
+                    this.protectPlayerContainer(c, null);
+                    c.classList.add('zv-player-blackout-active');
+                    const shield = c.querySelector('.zv-player-blackout-shield');
+                    if (shield) shield.classList.add('is-active');
+                });
+
+                videos.forEach(v => {
+                    v.classList.add('zv-video-frame-blackout');
+                });
+
+                if (typeof durationMs === 'number' && durationMs > 0 && !this.isDisplayMediaActive) {
+                    this.restoreTimer = setTimeout(() => {
+                        if (!this.chordHeld && !this.isDisplayMediaActive && document.hasFocus()) {
+                            this.releaseBlackout();
+                        }
+                    }, durationMs);
+                }
+            },
+
+            releaseBlackout: function () {
+                if (this.isDisplayMediaActive) return;
+                if (this.restoreTimer) {
+                    clearTimeout(this.restoreTimer);
+                    this.restoreTimer = null;
+                }
+                this.isShieldActive = false;
+                document.querySelectorAll('.zv-player-blackout-active').forEach(el => {
+                    el.classList.remove('zv-player-blackout-active');
+                });
+                document.querySelectorAll('.zv-player-blackout-shield.is-active').forEach(el => {
+                    el.classList.remove('is-active');
+                });
+                document.querySelectorAll('video.zv-video-frame-blackout').forEach(v => {
+                    v.classList.remove('zv-video-frame-blackout');
+                });
+            },
+
+            clearClipboardIfPossible: function () {
+                try {
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                        navigator.clipboard.writeText('').catch(() => {});
+                    }
+                } catch (_) {}
+            },
+
+            initGlobalHooks: function () {
+                const self = this;
+                this.ensureStyleInjected();
+
+                // 1. Lock HTMLVideoElement.captureStream so browser extensions cannot record video frames
+                if (typeof HTMLVideoElement !== 'undefined' && HTMLVideoElement.prototype) {
+                    const blockCaptureStream = function () {
+                        self.engageBlackout(900);
+                        throw new DOMException('Video stream capture is disabled on Zone Vault.', 'NotAllowedError');
+                    };
+                    try {
+                        HTMLVideoElement.prototype.captureStream = blockCaptureStream;
+                        HTMLVideoElement.prototype.mozCaptureStream = blockCaptureStream;
+                    } catch (_) {}
+                }
+
+                // 2. Lock Canvas drawImage when source is a <video> element (returns solid black frame in canvas screenshots)
+                if (typeof CanvasRenderingContext2D !== 'undefined' && CanvasRenderingContext2D.prototype.drawImage) {
+                    const origDrawImage = CanvasRenderingContext2D.prototype.drawImage;
+                    CanvasRenderingContext2D.prototype.drawImage = function (img, ...rest) {
+                        if (img && typeof HTMLVideoElement !== 'undefined' && img instanceof HTMLVideoElement) {
+                            self.engageBlackout(750);
+                            try {
+                                this.save();
+                                this.fillStyle = '#000000';
+                                this.fillRect(0, 0, this.canvas ? this.canvas.width : 1920, this.canvas ? this.canvas.height : 1080);
+                                this.restore();
+                            } catch (_) {}
+                            return;
+                        }
+                        return origDrawImage.call(this, img, ...rest);
+                    };
+                }
+
+                // 3. Intercept browser tab/screen sharing (getDisplayMedia)
+                if (navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function') {
+                    const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+                    navigator.mediaDevices.getDisplayMedia = async function (...args) {
+                        self.isDisplayMediaActive = true;
+                        self.engageBlackout(0);
+                        try {
+                            const stream = await origGetDisplayMedia(...args);
+                            stream.getTracks().forEach(track => {
+                                track.addEventListener('ended', () => {
+                                    self.isDisplayMediaActive = false;
+                                    self.releaseBlackout();
+                                });
+                            });
+                            return stream;
+                        } catch (err) {
+                            self.isDisplayMediaActive = false;
+                            self.releaseBlackout();
+                            throw err;
+                        }
+                    };
+                }
+
+                // 4. Instant keydown / keyup screenshot & pre-chord detection (0ms activation)
+                const isScreenshotKey = (e) => {
+                    const key = (e.key || '').toLowerCase();
+                    const code = (e.code || '').toLowerCase();
+                    if (key === 'printscreen' || code === 'printscreen' || e.keyCode === 44) return true;
+                    // macOS Cmd+Shift+3 / 4 / 5 / 6 or Windows Win+Shift+S
+                    if ((e.metaKey || e.ctrlKey) && e.shiftKey && ['3', '4', '5', '6', 's', 'p'].includes(key)) return true;
+                    if (e.metaKey && e.shiftKey) return true;
+                    return false;
+                };
+
+                window.addEventListener('keydown', (e) => {
+                    if (isScreenshotKey(e)) {
+                        self.chordHeld = true;
+                        self.engageBlackout(850);
+                        if ((e.key || '').toLowerCase() === 'printscreen' || e.keyCode === 44) {
+                            self.clearClipboardIfPossible();
+                        }
+                    }
+                }, true);
+
+                window.addEventListener('keyup', (e) => {
+                    const key = (e.key || '').toLowerCase();
+                    const code = (e.code || '').toLowerCase();
+                    if (key === 'printscreen' || code === 'printscreen' || e.keyCode === 44) {
+                        self.chordHeld = false;
+                        self.engageBlackout(850);
+                        self.clearClipboardIfPossible();
+                        return;
+                    }
+                    if (!e.metaKey && !e.shiftKey) {
+                        self.chordHeld = false;
+                        if (self.isShieldActive && document.hasFocus()) {
+                            self.engageBlackout(450);
+                        }
+                    }
+                }, true);
+
+                // 5. Snipping Tool / OS Capture Overlay window blur (video & audio keep playing continuously!)
+                window.addEventListener('blur', () => {
+                    self.engageBlackout(0);
+                });
+
+                window.addEventListener('focus', () => {
+                    self.chordHeld = false;
+                    self.releaseBlackout();
+                });
+
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden') {
+                        self.engageBlackout(0);
+                    } else if (document.hasFocus()) {
+                        self.releaseBlackout();
+                    }
+                });
+
+                // Restore immediately if user interacts with the page after snipping tool closes
+                ['pointerdown', 'mousedown', 'touchstart'].forEach(evt => {
+                    window.addEventListener(evt, () => {
+                        if (!self.chordHeld && !self.isDisplayMediaActive) {
+                            self.releaseBlackout();
+                        }
+                    }, { passive: true });
+                });
+            }
+        };
+
+        shieldModule.initGlobalHooks();
+        window.ZoneVaultCaptureShield = shieldModule;
+    }
+
     // Global keyboard shortcuts (once per page)
     if (!window.__zonePlayerShortcutsAttached) {
         window.__zonePlayerShortcutsAttached = true;
@@ -797,3 +1088,4 @@
     }
 
 })();
+

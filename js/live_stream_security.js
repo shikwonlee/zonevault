@@ -6,8 +6,46 @@
     'use strict';
 
     window.ZoneVaultLive = {
+        ZV_PAYLOAD_KEY: 'zv-shield-2026-payload-cipher-key',
         activeToken: null,
         timer: null,
+
+        base64UrlDecodeToBytes: function (str) {
+            let s = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+            while (s.length % 4) s += '=';
+            const binary = atob(s);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        },
+
+        decryptPayload: function (payloadStr) {
+            if (!payloadStr || typeof payloadStr !== 'string') return payloadStr;
+            const trimmed = payloadStr.trim();
+            if (!trimmed.startsWith('ZV1.')) return payloadStr;
+            try {
+                const firstDot = trimmed.indexOf('.');
+                const secondDot = trimmed.indexOf('.', firstDot + 1);
+                if (firstDot === -1 || secondDot === -1) return payloadStr;
+
+                const saltHex = trimmed.substring(firstDot + 1, secondDot);
+                const b64Cipher = trimmed.substring(secondDot + 1);
+                const cipherBytes = this.base64UrlDecodeToBytes(b64Cipher);
+                const keyBytes = new TextEncoder().encode(`${this.ZV_PAYLOAD_KEY}:${saltHex}`);
+                const plainBytes = new Uint8Array(cipherBytes.length);
+
+                for (let i = 0; i < cipherBytes.length; i++) {
+                    plainBytes[i] = cipherBytes[i] ^ keyBytes[i % keyBytes.length] ^ ((i * 31 + 17) & 0xff);
+                }
+
+                return new TextDecoder('utf-8').decode(plainBytes);
+            } catch (_) {
+                return payloadStr;
+            }
+        },
+
         acquireProxyUrl: async function (streamUrl, epId, userRole) {
             if (this.timer) {
                 clearInterval(this.timer);
@@ -73,28 +111,6 @@
 
                 if (ticket && (ticket.token || ticket.proxyUrl)) {
                     this.activeToken = ticket.token;
-
-                    // Rolling token refresh every 2 minutes / 120 seconds (TTL is 3 minutes / 180s)
-                    this.timer = setInterval(async () => {
-                        try {
-                            let freshId = null;
-                            if (typeof auth !== 'undefined' && auth.currentUser) {
-                                try { freshId = await auth.currentUser.getIdToken(); } catch (_) {}
-                            }
-                            const refreshed = await fetchLiveTicket({
-                                epId: epId || 'live-broadcast',
-                                uid: uid,
-                                displayName: displayName,
-                                role: userRole || 'member',
-                                targetUrl: streamUrl,
-                                idToken: freshId
-                            });
-                            if (refreshed && refreshed.token) {
-                                this.activeToken = refreshed.token;
-                            }
-                        } catch (_) {}
-                    }, 120000);
-
                     return ticket.proxyUrl || streamUrl;
                 }
             } catch (e) {
@@ -106,10 +122,20 @@
             const self = this;
             const isProxyEndpoint = function (targetUrl) {
                 if (!targetUrl || typeof targetUrl !== 'string') return false;
-                if (targetUrl.startsWith('/api/') || targetUrl.startsWith('/stream-') || targetUrl.startsWith('/stream/')) return true;
+                if (
+                    targetUrl.startsWith('/api/') ||
+                    targetUrl.startsWith('/zv-') ||
+                    targetUrl.startsWith('/stream-') ||
+                    targetUrl.startsWith('/stream/')
+                ) return true;
                 try {
                     const parsed = new URL(targetUrl, window.location.origin);
-                    return parsed.origin === window.location.origin && (parsed.pathname.startsWith('/api/') || parsed.pathname.startsWith('/stream-') || parsed.pathname.startsWith('/stream/'));
+                    return parsed.origin === window.location.origin && (
+                        parsed.pathname.startsWith('/api/') ||
+                        parsed.pathname.startsWith('/zv-') ||
+                        parsed.pathname.startsWith('/stream-') ||
+                        parsed.pathname.startsWith('/stream/')
+                    );
                 } catch (_) {
                     return false;
                 }
@@ -129,8 +155,27 @@
             if (window.Hls && Hls.DefaultConfig && Hls.DefaultConfig.loader) {
                 class LiveTokenLoader extends Hls.DefaultConfig.loader {
                     load(context, conf, callbacks) {
-                        if (context && context.url && self.activeToken && (context.url.includes('/api/stream/') || context.url.includes('/api/stream-proxy'))) {
+                        if (
+                            context &&
+                            context.url &&
+                            self.activeToken &&
+                            (
+                                context.url.includes('/api/zv-media-sync') ||
+                                context.url.includes('/zv-media-sync') ||
+                                context.url.includes('/api/stream/') ||
+                                context.url.includes('/api/stream-proxy')
+                            )
+                        ) {
                             context.url = context.url.replace(/([?&](?:token|t)=)[^&]*/, `$1${encodeURIComponent(self.activeToken)}`);
+                        }
+                        if (callbacks && typeof callbacks.onSuccess === 'function') {
+                            const origOnSuccess = callbacks.onSuccess;
+                            callbacks.onSuccess = function (response, stats, ctx, networkDetails) {
+                                if (response && typeof response.data === 'string' && response.data.trim().startsWith('ZV1.')) {
+                                    response.data = self.decryptPayload(response.data);
+                                }
+                                return origOnSuccess.call(this, response, stats, ctx, networkDetails);
+                            };
                         }
                         super.load(context, conf, callbacks);
                     }

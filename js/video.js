@@ -42,6 +42,14 @@ function updateDynamicURL(uid, role, status) {
 // ==========================================
 let favorites = [];
 let userId = null;
+let currentUserUsername = null;
+let isAdminUser = sessionStorage.getItem('isAdmin') === 'true';
+let pageAccessMap = {};
+try {
+    const cachedAccess = sessionStorage.getItem('zv_page_access_cache');
+    if (cachedAccess) pageAccessMap = JSON.parse(cachedAccess) || {};
+} catch (_) {}
+
 let currentPaginationPage = 1;
 let cardsPerPage = window.innerWidth <= 900 ? 6 : 8;
 let activeCategory = "ALL";
@@ -53,35 +61,123 @@ if (savedVideosCategory) activeCategory = savedVideosCategory;
 if (!isNaN(savedVideosPage) && savedVideosPage > 0) currentPaginationPage = savedVideosPage;
 
 const data = [
-  {id:"v18", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png", category:"CONCERT", title:" JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON ", hashtags:"", link:"2026/jxj_into_dreaming"},
-  {id:"v17", thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg", category:"SPECIAL", title:" SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day] ", hashtags:"", link:"2026/svtreaming_2026"},
-  {id:"v16", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", category:"CONCERT", title:"2026 DINO X PICHEOLIN 吉BOARD SHOW ", hashtags:"c: uvvul", link:"2026/dinoxpicheolin"},   
-  {id:"v15", thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp", category:"CONCERT", title:"2026 VERNON THE 8 [V8] LIVE - GOYANG", hashtags:"c: uvvul", link:"2026/vernon_the8_v8"},
-  {id:"v14", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", category:"FAN MEET", title:"2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", hashtags:"c: uvvul", link:"2026/svt_in_carat_land_2026"},
-  {id:"v13", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png", category:"FAN MEET", title:"SEVENTEEN 2026 JAPAN FANMEETING'YAKUSOKU' Osaka", hashtags:"c: uvvul", link:"2026/svt_2026_fanmeeting_yakusoku"},
-  {id:"v12", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", category:"CONCERT", title:"DxS [Serenade] ON STAGE - INCHEON", hashtags:"c: uvvul", link:"2026/dxs_on_stage"},
-  {id:"v11", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] ENCORE", hashtags:"c: uvvul", link:"2026/new_encore"},
-  {id:"v10", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg", category:"CONCERT", title:"CxM [DOUBLE UP] LIVE PARTY in JAPAN", hashtags:"c: sylveon.click", link:"2026/cxminjapan"},
-  {id:"v0.9", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg", category:"DOCU", title:"Magic Hour, The Seventeen", hashtags:"c: uvvul", link:"2024/magichour"},
-  {id:"v0.8", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png", category:"FAN MEET", title:"SEVENTEEN IN CARAT LAND 2025 SVT 9TH FAN MEETING", hashtags:"c: uvvul", link:"2025/9th_caratland"},
-  {id:"v0.7", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png", category:"FAN MEET", title:"SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING", hashtags:"c: uvvul", link:"2024/8th_caratland"},
-  {id:"v0.6", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png", category:"CONCERT", title:"CxM [DOUBLE UP] LIVE PARTY in INCHEON", hashtags:"c: uvvul", link:"2026/cxm_in_incheon"},
-  {id:"v0.5", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show", hashtags:"c: uvvul", link:"2025/fukuokanewtour"},
-  {id:"v0.4", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Osaka Show", hashtags:"c: uvvul", link:"2025/japannewtour"},
-  {id:"v0.3", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/the-shadow's-edge.jpg", category:"MOVIE", title:"The Shadow's Edge", hashtags:"c: uvvul", link:"2025/the-shadows-edge"},
-  {id:"v0.1", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/svt_ourchapter.jpg", category:"DOCU", title:"SEVENTEEN: OUR CHAPTER", hashtags:"c:uvvul", link:"2025/ourchapterS17N-111025-6B4"},
-  {id:"v0.2", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", category:"VARIETY", title:"IN THE SOOP SEVENTEEN ver. Season2", hashtags:"", link:"2021/inthesoop2-N12X5R25-74K2"},
-  {id:"v1.1", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/svtreaming.png", category:"SPECIAL", title:"[Let's SVTreaming Day]", hashtags:"", link:"2025/svtreaming1"},
-  {id:"v1", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] IN INCHEON", hashtags:"c: uvvul", link:"2025/newtour"},
-  {id:"v2", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/warning_gwangju.png", category:"CONCERT", title:"HOSHIXWOOZI FAN CONCERT 'WARNING' IN GWANGJU", hashtags:"c: uvvul", link:"2025/hxwingwangju"},
-  {id:"v3", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/warning_seoul.png", category:"CONCERT", title:"HOSHIXWOOZI FAN CONCERT 'WARNING' IN SEOUL", hashtags:"c: uvvul", link:"2025/hxwfanconcert"},
-  {id:"v4", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/nana_bnb.png", category:"VARIETY", title:"NANA bnb with SEVENTEEN", hashtags:"c: uvvul", link:"2025/nanabnb"},
-  {id:"v5", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/holiday.png", category:"CONCERT", title:"SEVENTEEN 2025 JAPAN FAN MEETING 'HOLIDAY", hashtags:"", link:"2025/svtholiday"},
-  {id:"v6", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/right-here.png", category:"CONCERT", title:"SEVENTEEN 'RIGHT HERE' WORLD TOUR IN GOYANG", hashtags:"", link:"2024/rightheregoyang"},
-  {id:"v7", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/arena-tour.png", category:"CONCERT", title:"SEVENTEEN 2018 JAPAN ARENA TOUR 'SVT'", hashtags:"", link:"random/arenatour"},
-  {id:"v8", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/japan-concert.png", category:"CONCERT", title:"17 JAPAN CONCERT Say the name #SEVENTEEN", hashtags:"", link:"random/svtjapanconcert"},
-  {id:"v9", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/disney.png", category:"DOCU", title:"SEVENTEEN TOUR AGAIN DISNEY+", hashtags:"", link:"random/touragain"}
+  {id:"v18", pageAccessId:"jxj2026", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png", category:"CONCERT", title:" JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON ", hashtags:"", link:"2026/jxj_into_dreaming"},
+  {id:"v17", pageAccessId:null, thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg", category:"SPECIAL", title:" SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day] ", hashtags:"", link:"2026/svtreaming_2026"},
+  {id:"v16", pageAccessId:"dxp2026", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", category:"CONCERT", title:"2026 DINO X PICHEOLIN 吉BOARD SHOW ", hashtags:"c: uvvul", link:"2026/dinoxpicheolin"},   
+  {id:"v15", pageAccessId:"v8_goyang", thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp", category:"CONCERT", title:"2026 VERNON THE 8 [V8] LIVE - GOYANG", hashtags:"c: uvvul", link:"2026/vernon_the8_v8"},
+  {id:"v14", pageAccessId:"svt_cl2026", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", category:"FAN MEET", title:"2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", hashtags:"c: uvvul", link:"2026/svt_in_carat_land_2026"},
+  {id:"v13", pageAccessId:"svt_yakusoku", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png", category:"FAN MEET", title:"SEVENTEEN 2026 JAPAN FANMEETING'YAKUSOKU' Osaka", hashtags:"c: uvvul", link:"2026/svt_2026_fanmeeting_yakusoku"},
+  {id:"v12", pageAccessId:"dxs_serenade", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", category:"CONCERT", title:"DxS [Serenade] ON STAGE - INCHEON", hashtags:"c: uvvul", link:"2026/dxs_on_stage"},
+  {id:"v11", pageAccessId:"svt_new_encore", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] ENCORE", hashtags:"c: uvvul", link:"2026/new_encore"},
+  {id:"v10", pageAccessId:null, thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg", category:"CONCERT", title:"CxM [DOUBLE UP] LIVE PARTY in JAPAN", hashtags:"c: sylveon.click", link:"2026/cxminjapan"},
+  {id:"v0.9", pageAccessId:null, thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg", category:"DOCU", title:"Magic Hour, The Seventeen", hashtags:"c: uvvul", link:"2024/magichour"},
+  {id:"v0.8", pageAccessId:null, thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png", category:"FAN MEET", title:"SEVENTEEN IN CARAT LAND 2025 SVT 9TH FAN MEETING", hashtags:"c: uvvul", link:"2025/9th_caratland"},
+  {id:"v0.7", pageAccessId:null, thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png", category:"FAN MEET", title:"SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING", hashtags:"c: uvvul", link:"2024/8th_caratland"},
+  {id:"v0.6", pageAccessId:"cxmdoubleup", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png", category:"CONCERT", title:"CxM [DOUBLE UP] LIVE PARTY in INCHEON", hashtags:"c: uvvul", link:"2026/cxm_in_incheon"},
+  {id:"v0.5", pageAccessId:"fukuokashow", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show", hashtags:"c: uvvul", link:"2025/fukuokanewtour"},
+  {id:"v0.4", pageAccessId:"jpnnewtour", thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Osaka Show", hashtags:"c: uvvul", link:"2025/japannewtour"},
+  {id:"v0.3", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/the-shadow's-edge.jpg", category:"MOVIE", title:"The Shadow's Edge", hashtags:"c: uvvul", link:"2025/the-shadow's-edge".replace("'", "")},
+  {id:"v0.1", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/svt_ourchapter.jpg", category:"DOCU", title:"SEVENTEEN: OUR CHAPTER", hashtags:"c:uvvul", link:"2025/ourchapterS17N-111025-6B4"},
+  {id:"v0.2", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/inthesoop2.png", category:"VARIETY", title:"IN THE SOOP SEVENTEEN ver. Season2", hashtags:"", link:"2021/inthesoop2-N12X5R25-74K2"},
+  {id:"v1.1", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/svtreaming.png", category:"SPECIAL", title:"[Let's SVTreaming Day]", hashtags:"", link:"2025/svtreaming1"},
+  {id:"v1", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png", category:"CONCERT", title:"SEVENTEEN WORLD TOUR [NEW_] IN INCHEON", hashtags:"c: uvvul", link:"2025/newtour"},
+  {id:"v2", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/warning_gwangju.png", category:"CONCERT", title:"HOSHIXWOOZI FAN CONCERT 'WARNING' IN GWANGJU", hashtags:"c: uvvul", link:"2025/hxwingwangju"},
+  {id:"v3", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/warning_seoul.png", category:"CONCERT", title:"HOSHIXWOOZI FAN CONCERT 'WARNING' IN SEOUL", hashtags:"c: uvvul", link:"2025/hxwfanconcert"},
+  {id:"v4", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/nana_bnb.png", category:"VARIETY", title:"NANA bnb with SEVENTEEN", hashtags:"c: uvvul", link:"2025/nanabnb"},
+  {id:"v5", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/holiday.png", category:"CONCERT", title:"SEVENTEEN 2025 JAPAN FAN MEETING 'HOLIDAY", hashtags:"", link:"2025/svtholiday"},
+  {id:"v6", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/right-here.png", category:"CONCERT", title:"SEVENTEEN 'RIGHT HERE' WORLD TOUR IN GOYANG", hashtags:"", link:"2024/rightheregoyang"},
+  {id:"v7", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/arena-tour.png", category:"CONCERT", title:"SEVENTEEN 2018 JAPAN ARENA TOUR 'SVT'", hashtags:"", link:"random/arenatour"},
+  {id:"v8", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/japan-concert.png", category:"CONCERT", title:"17 JAPAN CONCERT Say the name #SEVENTEEN", hashtags:"", link:"random/svtjapanconcert"},
+  {id:"v9", pageAccessId:null, thumb:"https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/disney.png", category:"DOCU", title:"SEVENTEEN TOUR AGAIN DISNEY+", hashtags:"", link:"random/touragain"}
 ];
+
+// Fix v0.3 link to match existing file /2025/the-shadows-edge
+data.forEach(item => {
+    if (item.id === "v0.3") item.link = "2025/the-shadows-edge";
+});
+
+// Check whether the current user has access to a given video item
+function hasVideoAccess(item) {
+    if (isAdminUser) return true;
+    if (!item.pageAccessId) return true; // Free access videos are unlocked for all logged-in members
+    return pageAccessMap[item.pageAccessId] === true;
+}
+
+window.handleWatchClick = function(itemId) {
+    const item = data.find(d => d.id === itemId);
+    if (!item) return;
+    if (hasVideoAccess(item)) {
+        window.location.href = item.link;
+    } else {
+        openRestrictedVideoModal(item);
+    }
+};
+
+window.openRestrictedVideoModal = function(item) {
+    const modal = document.getElementById('restrictedVideoModal');
+    if (!modal) return;
+
+    const currentUser = auth.currentUser;
+    const cached = getCachedUser();
+    const displayUsername = currentUserUsername
+        || (cached && (cached.username || cached.name))
+        || (currentUser && (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : '')))
+        || 'Member';
+    const displayUid = userId
+        || (currentUser && currentUser.uid)
+        || (cached && cached.uid)
+        || 'Not logged in';
+
+    const unEl = document.getElementById('restrictedModalUsername');
+    const uidEl = document.getElementById('restrictedModalUid');
+    if (unEl) unEl.textContent = displayUsername;
+    if (uidEl) uidEl.textContent = displayUid;
+
+    modal.classList.add('active');
+    document.body.classList.add('no-scroll');
+};
+
+window.closeRestrictedVideoModal = function() {
+    const modal = document.getElementById('restrictedVideoModal');
+    if (modal) modal.classList.remove('active');
+    document.body.classList.remove('no-scroll');
+};
+
+window.copyRestrictedUid = function() {
+    const uidEl = document.getElementById('restrictedModalUid');
+    const iconEl = document.getElementById('copyUidIcon');
+    if (!uidEl) return;
+    const text = uidEl.textContent || '';
+    if (navigator.clipboard && text) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (iconEl) {
+                iconEl.className = 'fas fa-check';
+                setTimeout(() => { iconEl.className = 'far fa-copy'; }, 1500);
+            }
+        }).catch(() => {});
+    }
+};
+
+// Subscribe to page_access/<pageAccessId>/<uid> in Firebase Realtime Database
+let pageAccessListenersAttachedForUid = null;
+function subscribeToPageAccess(uid) {
+    if (!uid || pageAccessListenersAttachedForUid === uid) return;
+    pageAccessListenersAttachedForUid = uid;
+
+    const uniquePageIds = [...new Set(data.map(d => d.pageAccessId).filter(Boolean))];
+    uniquePageIds.forEach(pageId => {
+        onValue(ref(db, `page_access/${pageId}/${uid}`), (snap) => {
+            const allowed = snap.val() === true;
+            if (pageAccessMap[pageId] !== allowed) {
+                pageAccessMap[pageId] = allowed;
+                try {
+                    sessionStorage.setItem('zv_page_access_cache', JSON.stringify(pageAccessMap));
+                } catch (_) {}
+                renderGrid(currentPaginationPage);
+            }
+        });
+    });
+}
 
 // ==========================================
 // 4. UI INITIALIZATION & THEMES
@@ -190,6 +286,9 @@ function renderGrid(page) {
         el.className = "video-card";
         const isFav = favorites.includes(item.id) ? 'active' : '';
         const starIcon = favorites.includes(item.id) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+        const isUnlocked = hasVideoAccess(item);
+        const lockStateClass = isUnlocked ? 'unlocked' : 'locked';
+        const lockIcon = isUnlocked ? '<i class="fas fa-lock-open"></i>' : '<i class="fas fa-lock"></i>';
         
         el.innerHTML = `
           <div class="thumb-wrapper">
@@ -201,7 +300,7 @@ function renderGrid(page) {
             <div class="video-title">${item.title}</div>
             <div class="video-hashtags">${item.hashtags}</div>
             <div class="card-actions">
-                <button class="btn-watch" onclick="window.location.href='${item.link}'">WATCH</button>
+                <button class="btn-watch ${lockStateClass}" onclick="handleWatchClick('${item.id}')">${lockIcon} WATCH</button>
                 <button class="btn-fav ${isFav}" onclick="toggleFavorite('${item.id}')">${starIcon}</button>
             </div>
           </div>
@@ -281,6 +380,9 @@ window.openFavoriteModal = function() {
         favorites.forEach(favId => {
             const item = data.find(d => d.id === favId);
             if (item) {
+                const isUnlocked = hasVideoAccess(item);
+                const lockStateClass = isUnlocked ? 'unlocked' : 'locked';
+                const lockIcon = isUnlocked ? '<i class="fas fa-lock-open"></i>' : '<i class="fas fa-lock"></i>';
                 const el = document.createElement('div');
                 el.className = 'fav-list-item';
                 el.innerHTML = `
@@ -290,7 +392,7 @@ window.openFavoriteModal = function() {
                         <div class="fav-list-cat">${item.category}</div>
                     </div>
                     <div class="fav-actions">
-                        <button class="btn-watch" onclick="window.location.href='${item.link}'" style="padding: 5px 12px; font-size:10px;"><i class="fas fa-play"></i></button>
+                        <button class="btn-watch ${lockStateClass}" onclick="handleWatchClick('${item.id}')" style="padding: 5px 12px; font-size:10px;">${lockIcon} WATCH</button>
                         <button class="fav-btn-remove" onclick="toggleFavorite('${item.id}'); openFavoriteModal();"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `;
@@ -305,6 +407,16 @@ window.openFavoriteModal = function() {
 window.closeFavoriteModal = function() { 
     document.getElementById('favoriteModal').classList.remove('active'); 
     document.body.classList.remove('no-scroll');
+}
+
+const initialCachedUser = getCachedUser();
+if (initialCachedUser && initialCachedUser.uid) {
+    userId = initialCachedUser.uid;
+    currentUserUsername = initialCachedUser.username || initialCachedUser.name || null;
+    if (initialCachedUser.role && initialCachedUser.role.toLowerCase() === 'admin') {
+        isAdminUser = true;
+    }
+    subscribeToPageAccess(initialCachedUser.uid);
 }
 
 renderCategoryChips();
@@ -394,13 +506,23 @@ onAuthStateChanged(auth, user => {
     if(user) {
         userId = user.uid;
         loadFavoritesFromFirebase();
+        subscribeToPageAccess(user.uid);
         
         onValue(ref(db, 'users/' + user.uid), snap => {
             const data = snap.val() || {};
             const name = data.name || "Member";
+            currentUserUsername = data.username || data.name || (user.displayName || (user.email ? user.email.split('@')[0] : '')) || "Member";
+            const unEl = document.getElementById('restrictedModalUsername');
+            const uidEl = document.getElementById('restrictedModalUid');
+            if (unEl) unEl.textContent = currentUserUsername;
+            if (uidEl) uidEl.textContent = user.uid;
             const pic = data.profilePicture || "https://via.placeholder.com/150";
             const role = (data.role || "member").toLowerCase();
             const isAdm = role === 'admin';
+            if (isAdminUser !== isAdm) {
+                isAdminUser = isAdm;
+                renderGrid(currentPaginationPage);
+            }
             
             if(!window.isKickedOut) {
                 if(document.getElementById("sidebar-name")) document.getElementById("sidebar-name").innerText = name;

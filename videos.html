@@ -254,9 +254,21 @@
 
     .card-actions { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
     .btn-watch {
-        background: var(--text-main); color: var(--bg-color); border: none; padding: 8px 16px; border-radius: 8px;
+        background: var(--text-main); color: var(--bg-color); border: 1px solid transparent; padding: 8px 16px; border-radius: 8px;
         font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; text-transform: uppercase;
-        font-family: inherit;
+        font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-watch i { font-size: 10px; }
+    .btn-watch.locked {
+        background: var(--input-bg);
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+    }
+    .btn-watch.locked i {
+        color: #ef4444;
+    }
+    .btn-watch.unlocked i {
+        color: inherit;
     }
     .btn-watch:hover { opacity: 0.9; transform: translateY(-1px); }
 
@@ -599,6 +611,39 @@
                 Got It
             </button>
         </div>
+    </div>
+</div>
+
+<div id="restrictedVideoModal" class="modal-overlay" onclick="if(event.target === this) closeRestrictedVideoModal()">
+    <div class="modal-box" style="max-width: 440px; text-align: center; padding: 30px 24px;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 16px;">
+            <i class="fas fa-lock"></i>
+        </div>
+        <strong style="color: #FF4444; font-size: 24px; margin-bottom: 10px; display: block; letter-spacing: -0.3px;">Access Restricted</strong>
+        <div id="restrictedVideoDesc" style="font-size: 14px; margin-bottom: 20px; line-height: 1.5; color: var(--text-muted);">
+            This content is restricted. Your account does not have permission to watch this video.
+        </div>
+
+        <div style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 18px; margin-bottom: 22px; text-align: left; width: 100%; box-sizing: border-box;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; font-weight: 700;">Account Details</div>
+            <div style="font-size: 13px; color: var(--text-main); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <span style="color: var(--text-muted);">Username:</span>
+                <span id="restrictedModalUsername" style="font-weight: 600; text-align: right; word-break: break-word;">Loading...</span>
+            </div>
+            <div style="font-size: 13px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; gap: 12px; word-break: break-all;">
+                <span style="color: var(--text-muted); flex-shrink: 0;">UID:</span>
+                <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
+                    <code id="restrictedModalUid" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-main); background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); user-select: all;">Loading...</code>
+                    <button type="button" onclick="copyRestrictedUid()" title="Copy UID" style="background: var(--hover-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer;">
+                        <i id="copyUidIcon" class="far fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="closeRestrictedVideoModal()" class="btn-watch" style="width: 100%; padding: 12px; font-size: 13px; border-radius: 50px;">
+            Close
+        </button>
     </div>
 </div>
 

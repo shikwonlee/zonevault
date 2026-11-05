@@ -104,6 +104,8 @@ function isDirectDownloadAttempt(request) {
   return dest === 'document' || mode === 'navigate';
 }
 
+const ZV_PAYLOAD_KEY = 'zv-shield-2026-payload-cipher-key';
+
 function base64UrlEncode(str) {
   const bytes = new TextEncoder().encode(str);
   return base64UrlEncodeBytes(bytes);
@@ -119,9 +121,8 @@ function base64UrlEncodeBytes(bytes) {
 }
 
 function base64UrlDecode(str) {
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (str.length % 4) str += '=';
-  return atob(str);
+  const bytes = base64UrlDecodeToBytes(str);
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 function base64UrlDecodeToBytes(str) {
@@ -133,6 +134,25 @@ function base64UrlDecodeToBytes(str) {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+// Fast Symmetric Stream Cipher (ZV1) to hide #EXTM3U, segment URLs, and WEBVTT cues in DevTools Network Response tab
+function encryptZvPayload(plainText) {
+  const plainBytes = new TextEncoder().encode(String(plainText || ''));
+  const saltBytes = new Uint8Array(8);
+  crypto.getRandomValues(saltBytes);
+  let saltHex = '';
+  for (let i = 0; i < saltBytes.length; i++) {
+    saltHex += saltBytes[i].toString(16).padStart(2, '0');
+  }
+
+  const keyBytes = new TextEncoder().encode(`${ZV_PAYLOAD_KEY}:${saltHex}`);
+  const cipherBytes = new Uint8Array(plainBytes.length);
+  for (let i = 0; i < plainBytes.length; i++) {
+    cipherBytes[i] = plainBytes[i] ^ keyBytes[i % keyBytes.length] ^ ((i * 31 + 17) & 0xff);
+  }
+
+  return `ZV1.${saltHex}.${base64UrlEncodeBytes(cipherBytes)}`;
 }
 
 async function signStreamJwt(payload, secret) {
@@ -187,7 +207,7 @@ async function verifyStreamJwt(token, secret) {
     }
   }
 
-  // Fallback for legacy base64 json token
+  // Fallback for legacy/client base64url json token (zero-polling support)
   try {
     const decoded = JSON.parse(base64UrlDecode(token));
     if (decoded && decoded.expiresAt && Date.now() > decoded.expiresAt) {
@@ -209,9 +229,10 @@ function corsHeaders(request) {
   };
 }
 
-function rewriteHlsManifest(manifestText, baseUrl, token) {
+function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = false) {
   const lines = manifestText.split(/\r?\n/);
   const rewritten = [];
+  const nativeSuffix = isNativeFallback ? '&native=1' : '';
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -227,7 +248,10 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
         try {
           const absUrl = new URL(uri, baseUrl).href;
           if (absUrl.toLowerCase().includes('.m3u8')) {
-            return `URI="/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}"`;
+            return `URI="/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}"`;
+          }
+          if (absUrl.toLowerCase().includes('.vtt') || absUrl.toLowerCase().includes('.srt')) {
+            return `URI="/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}"`;
           }
           return `URI="${absUrl}"`;
         } catch (_) {
@@ -241,7 +265,9 @@ function rewriteHlsManifest(manifestText, baseUrl, token) {
     try {
       const absUrl = new URL(trimmed, baseUrl).href;
       if (absUrl.toLowerCase().includes('.m3u8')) {
-        rewritten.push(`/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}`);
+        rewritten.push(`/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}`);
+      } else if (absUrl.toLowerCase().includes('.vtt') || absUrl.toLowerCase().includes('.srt')) {
+        rewritten.push(`/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}`);
       } else {
         rewritten.push(absUrl);
       }
@@ -265,7 +291,7 @@ async function handleApiRequest(request, env) {
     });
   }
 
-  // 1. /api/stream-token or /stream-token (supports GET and POST)
+  // 1. /api/stream-token or /stream-token (supports GET and POST, 6-hour concert TTL for zero polling)
   if (pathname === '/api/stream-token' || pathname === '/stream-token' || pathname === '/api/stream/token' || pathname === '/stream/token') {
     if (!checkOriginAllowed(request)) {
       return new Response(JSON.stringify({ error: 'Access denied: Playback allowed only on zonevault.live' }), {
@@ -302,8 +328,8 @@ async function handleApiRequest(request, env) {
     const targetUrl = params.targetUrl || params.u || '';
     const nowMs = Date.now();
     const nowSec = Math.floor(nowMs / 1000);
-    const expiresAtSec = nowSec + 180; // 3-minute initiation window (180 seconds)
-    const expiresAtMs = nowMs + 180 * 1000;
+    const expiresAtSec = nowSec + 21600; // 6-hour concert session window (zero background polling needed)
+    const expiresAtMs = nowMs + 21600 * 1000;
     const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
 
     const jwtPayload = {
@@ -322,7 +348,7 @@ async function handleApiRequest(request, env) {
     };
 
     const token = await signStreamJwt(jwtPayload, STREAM_SECRET);
-    const proxyUrl = targetUrl ? `/api/stream-proxy.m3u8?token=${encodeURIComponent(token)}` : null;
+    const proxyUrl = targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(token)}` : null;
 
     return new Response(JSON.stringify({
       success: true,
@@ -348,9 +374,17 @@ async function handleApiRequest(request, env) {
     });
   }
 
-  // 2. /api/stream-proxy.m3u8 or /api/stream/manifest.m3u8 or /api/stream/live.m3u8
-  if (pathname === '/api/stream-proxy.m3u8' || pathname === '/api/stream/manifest.m3u8' || pathname === '/api/stream/live.m3u8') {
-    // 1. Block external download tools and browser extensions (IDM, Live Stream Downloader, curl, etc.)
+  // 2. Disguised & Encrypted Manifest Gateway (/api/zv-media-sync and legacy aliases)
+  if (
+    pathname === '/api/zv-media-sync' ||
+    pathname === '/zv-media-sync' ||
+    pathname === '/api/stream-proxy.m3u8' ||
+    pathname === '/stream-proxy.m3u8' ||
+    pathname === '/api/stream/manifest.m3u8' ||
+    pathname === '/stream/manifest.m3u8' ||
+    pathname === '/api/stream/live.m3u8' ||
+    pathname === '/stream/live.m3u8'
+  ) {
     if (isDownloadToolOrExtension(request)) {
       return new Response(JSON.stringify({ error: 'Access denied: Download tools and browser extensions are prohibited.' }), {
         status: 403,
@@ -358,7 +392,6 @@ async function handleApiRequest(request, env) {
       });
     }
 
-    // 2. Block direct browser navigation / Save As download attempts
     if (isDirectDownloadAttempt(request)) {
       return new Response('Access denied: Direct download of stream manifest is prohibited. Streaming permitted only inside the Zone Vault player.', {
         status: 403,
@@ -366,7 +399,6 @@ async function handleApiRequest(request, env) {
       });
     }
 
-    // 3. Enforce zonevault.live Referer / Origin (rejects unauthorized third-party sites)
     if (!checkOriginAllowed(request)) {
       return new Response('Access denied: Stream playback allowed only on zonevault.live', {
         status: 403,
@@ -412,13 +444,29 @@ async function handleApiRequest(request, env) {
         return new Response('Upstream stream error', { status: upstreamRes.status, headers: corsHeaders(request) });
       }
 
+      const isNativeFallback = url.searchParams.get('native') === '1';
       const manifestText = await upstreamRes.text();
-      const rewritten = rewriteHlsManifest(manifestText, targetUrl, token);
+      const rewritten = rewriteHlsManifest(manifestText, targetUrl, token, isNativeFallback);
 
-      return new Response(rewritten, {
+      if (isNativeFallback) {
+        return new Response(rewritten, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/vnd.apple.mpegurl',
+            'Content-Disposition': 'inline',
+            'X-Content-Type-Options': 'nosniff',
+            'X-Download-Options': 'noopen',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            ...corsHeaders(request)
+          }
+        });
+      }
+
+      const encryptedPayload = encryptZvPayload(rewritten);
+      return new Response(encryptedPayload, {
         status: 200,
         headers: {
-          'Content-Type': 'application/vnd.apple.mpegurl',
+          'Content-Type': 'application/octet-stream',
           'Content-Disposition': 'inline',
           'X-Content-Type-Options': 'nosniff',
           'X-Download-Options': 'noopen',
@@ -431,9 +479,108 @@ async function handleApiRequest(request, env) {
     }
   }
 
+  // 2b. Disguised & Encrypted Subtitle Gateway (/api/zv-sub-sync and aliases)
+  if (
+    pathname === '/api/zv-sub-sync' ||
+    pathname === '/zv-sub-sync' ||
+    pathname === '/api/subtitle-proxy' ||
+    pathname === '/subtitle-proxy'
+  ) {
+    if (isDownloadToolOrExtension(request)) {
+      return new Response(JSON.stringify({ error: 'Access denied: Download tools and browser extensions are prohibited.' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(request) }
+      });
+    }
+
+    if (isDirectDownloadAttempt(request)) {
+      return new Response('Access denied: Direct access or download of subtitle files is prohibited.', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
+      });
+    }
+
+    if (!checkOriginAllowed(request)) {
+      return new Response('Access denied: Subtitles allowed only on zonevault.live', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain', ...corsHeaders(request) }
+      });
+    }
+
+    const token = url.searchParams.get('token') || url.searchParams.get('t') || request.headers.get('x-stream-token');
+    if (!token) {
+      return new Response('Missing stream token', { status: 400, headers: corsHeaders(request) });
+    }
+
+    const verified = await verifyStreamJwt(token, STREAM_SECRET);
+    if (!verified) {
+      return new Response('Invalid stream token signature', { status: 403, headers: corsHeaders(request) });
+    }
+    if (verified.expired) {
+      return new Response('Stream token expired', { status: 403, headers: corsHeaders(request) });
+    }
+
+    let subUrl = url.searchParams.get('u') || url.searchParams.get('url');
+    if (subUrl && !subUrl.startsWith('http://') && !subUrl.startsWith('https://')) {
+      try {
+        const decoded = base64UrlDecode(subUrl);
+        if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+          subUrl = decoded;
+        }
+      } catch (_) {}
+    }
+
+    if (!subUrl || (!subUrl.startsWith('https://') && !subUrl.startsWith('http://'))) {
+      return new Response('Invalid subtitle target', { status: 400, headers: corsHeaders(request) });
+    }
+
+    try {
+      const upstreamRes = await fetch(subUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        }
+      });
+
+      if (!upstreamRes.ok) {
+        return new Response('Upstream subtitle error', { status: upstreamRes.status, headers: corsHeaders(request) });
+      }
+
+      const subText = await upstreamRes.text();
+      const isNativeFallback = url.searchParams.get('native') === '1';
+
+      if (isNativeFallback) {
+        return new Response(subText, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/vtt; charset=utf-8',
+            'Content-Disposition': 'inline',
+            'X-Content-Type-Options': 'nosniff',
+            'X-Download-Options': 'noopen',
+            'Cache-Control': 'private, max-age=7200',
+            ...corsHeaders(request)
+          }
+        });
+      }
+
+      const encryptedSub = encryptZvPayload(subText);
+      return new Response(encryptedSub, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': 'inline',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Download-Options': 'noopen',
+          'Cache-Control': 'private, max-age=7200',
+          ...corsHeaders(request)
+        }
+      });
+    } catch (err) {
+      return new Response('Error loading subtitle', { status: 502, headers: corsHeaders(request) });
+    }
+  }
+
   // 3. /api/stream/chunk
   if (pathname === '/api/stream/chunk') {
-    // 1. Block external download tools and browser extensions (IDM, Live Stream Downloader, curl, etc.)
     if (isDownloadToolOrExtension(request)) {
       return new Response('Access denied: Browser download extensions and media rippers are prohibited.', {
         status: 403,
@@ -441,7 +588,6 @@ async function handleApiRequest(request, env) {
       });
     }
 
-    // 2. Block direct browser navigation / Save As download attempts
     if (isDirectDownloadAttempt(request)) {
       return new Response('Access denied: Direct download of stream segments is prohibited.', {
         status: 403,
@@ -449,7 +595,6 @@ async function handleApiRequest(request, env) {
       });
     }
 
-    // 3. Enforce zonevault.live Referer / Origin (rejects unauthorized third-party sites)
     if (!checkOriginAllowed(request)) {
       return new Response('Access denied: Media playback allowed only on zonevault.live', {
         status: 403,
@@ -582,7 +727,13 @@ async function handleApiRequest(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/stream-')) {
+    if (
+      url.pathname.startsWith('/api/') ||
+      url.pathname.startsWith('/stream-') ||
+      url.pathname === '/zv-media-sync' ||
+      url.pathname === '/zv-sub-sync' ||
+      url.pathname === '/subtitle-proxy'
+    ) {
       return handleApiRequest(request, env);
     }
     if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {

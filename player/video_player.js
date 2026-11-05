@@ -46,16 +46,181 @@
     }
     window.cleanupPlayer = cleanupPlayer;
 
-    // Global Zone Vault Stream Manager with Rolling Token Refresh
+    // Global Zone Vault Stream Manager (Zero-Polling 6h Session + In-Memory Decryption & RAM Cache)
     window.ZoneVaultStream = window.ZoneVaultStream || {
+        ZV_PAYLOAD_KEY: 'zv-shield-2026-payload-cipher-key',
         activeSession: null,
+        cachedAuthTicket: null,
+        manifestCache: new Map(),
+        subtitleBlobCache: new Map(),
+
         getActiveToken: function () {
             return this.activeSession ? this.activeSession.token : null;
         },
+
+        base64UrlEncode: function (str) {
+            try {
+                const bytes = new TextEncoder().encode(String(str || ''));
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+            } catch (_) {
+                return btoa(unescape(encodeURIComponent(String(str || '')))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+            }
+        },
+
+        base64UrlDecodeToBytes: function (str) {
+            let s = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+            while (s.length % 4) s += '=';
+            const binary = atob(s);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        },
+
+        // Decrypts ZV1.<saltHex>.<base64UrlCipher> into plaintext (#EXTM3U or WEBVTT) exclusively in browser RAM
+        decryptPayload: function (payloadStr) {
+            if (!payloadStr || typeof payloadStr !== 'string') return payloadStr;
+            const trimmed = payloadStr.trim();
+            if (!trimmed.startsWith('ZV1.')) return payloadStr;
+
+            try {
+                const firstDot = trimmed.indexOf('.');
+                const secondDot = trimmed.indexOf('.', firstDot + 1);
+                if (firstDot === -1 || secondDot === -1) return payloadStr;
+
+                const saltHex = trimmed.substring(firstDot + 1, secondDot);
+                const b64Cipher = trimmed.substring(secondDot + 1);
+                const cipherBytes = this.base64UrlDecodeToBytes(b64Cipher);
+                const keyBytes = new TextEncoder().encode(`${this.ZV_PAYLOAD_KEY}:${saltHex}`);
+                const plainBytes = new Uint8Array(cipherBytes.length);
+
+                for (let i = 0; i < cipherBytes.length; i++) {
+                    plainBytes[i] = cipherBytes[i] ^ keyBytes[i % keyBytes.length] ^ ((i * 31 + 17) & 0xff);
+                }
+
+                return new TextDecoder('utf-8').decode(plainBytes);
+            } catch (err) {
+                console.warn('ZV1 payload decode note:', err);
+                return payloadStr;
+            }
+        },
+
+        // Ensures any decrypted subtitle (.vtt or .srt) is valid WebVTT for Blob URL playback
+        normalizeToWebVtt: function (subText) {
+            if (!subText || typeof subText !== 'string') return 'WEBVTT\n\n';
+            const cleaned = subText.replace(/^\uFEFF/, '').trim();
+            if (cleaned.startsWith('WEBVTT')) {
+                return cleaned;
+            }
+            // Convert SRT timestamp commas (00:00:01,500 --> 00:00:03,200) to WebVTT dots
+            const converted = cleaned.replace(
+                /(\d{2}:\d{2}:\d{2}),(\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}),(\d{3})/g,
+                '$1.$2 --> $3.$4'
+            );
+            return `WEBVTT\n\n${converted}\n`;
+        },
+
+        // Proxies subtitles through /api/zv-sub-sync, decrypts ZV1 payload in RAM, and caches as an in-memory Blob URL
+        resolveProtectedSubtitles: async function (subtitlesList, token) {
+            if (!Array.isArray(subtitlesList) || subtitlesList.length === 0) return [];
+            const activeTok = token || this.getActiveToken() || '';
+            const resolved = [];
+
+            for (let i = 0; i < subtitlesList.length; i++) {
+                const item = subtitlesList[i];
+                if (!item || !item.url) continue;
+
+                if (item.url.startsWith('blob:')) {
+                    resolved.push({ ...item, type: 'vtt' });
+                    continue;
+                }
+
+                // 1. Serve from browser RAM cache if already decrypted during this session (0 Worker requests)
+                if (this.subtitleBlobCache.has(item.url)) {
+                    resolved.push({
+                        ...item,
+                        url: this.subtitleBlobCache.get(item.url),
+                        type: 'vtt'
+                    });
+                    continue;
+                }
+
+                // 2. Fetch encrypted subtitle via disguised /api/zv-sub-sync endpoint
+                const encodedTarget = this.base64UrlEncode(item.url);
+                const proxySubUrl = `/api/zv-sub-sync?token=${encodeURIComponent(activeTok)}&u=${encodeURIComponent(encodedTarget)}`;
+
+                try {
+                    const resp = await fetch(proxySubUrl, {
+                        method: 'GET',
+                        headers: {
+                            ...(activeTok ? { 'X-Stream-Token': activeTok } : {}),
+                            'X-ZV-Player': 'web-artplayer',
+                            'X-Requested-With': 'ZoneVaultPlayer'
+                        }
+                    });
+
+                    if (resp.ok) {
+                        const rawPayload = await resp.text();
+                        const decryptedText = this.decryptPayload(rawPayload);
+                        const vttText = this.normalizeToWebVtt(decryptedText);
+                        const blob = new Blob([vttText], { type: 'text/vtt;charset=utf-8' });
+                        const blobUrl = URL.createObjectURL(blob);
+                        this.subtitleBlobCache.set(item.url, blobUrl);
+                        resolved.push({
+                            ...item,
+                            url: blobUrl,
+                            type: 'vtt'
+                        });
+                        continue;
+                    }
+                } catch (err) {
+                    console.warn('Subtitle proxy fetch note:', err);
+                }
+
+                // Fallback: use disguised proxy URL with native=1 if Blob creation was blocked
+                resolved.push({
+                    ...item,
+                    url: `${proxySubUrl}&native=1`,
+                    type: 'vtt'
+                });
+            }
+
+            return resolved;
+        },
+
+        getManifestCacheKey: function (url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                const parsed = new URL(url, window.location.origin);
+                const uParam = parsed.searchParams.get('u');
+                if (uParam) return `sub:${uParam}`;
+                if (
+                    parsed.pathname.includes('zv-media-sync') ||
+                    parsed.pathname.includes('stream-proxy') ||
+                    parsed.pathname.includes('/stream/manifest')
+                ) {
+                    const target = this.activeSession ? this.activeSession.targetUrl : '';
+                    return `master:${target || parsed.pathname}`;
+                }
+            } catch (_) {}
+            return null;
+        },
+
         updateTokenInUrl: function (url) {
             const token = this.getActiveToken();
             if (!token || !url) return url;
-            if (url.includes('/api/stream/') || url.includes('/api/stream-proxy')) {
+            if (
+                url.includes('/api/zv-media-sync') ||
+                url.includes('/zv-media-sync') ||
+                url.includes('/api/zv-sub-sync') ||
+                url.includes('/api/stream/') ||
+                url.includes('/api/stream-proxy')
+            ) {
                 return url.replace(/([?&](?:token|t)=)[^&]*/, `$1${encodeURIComponent(token)}`);
             }
             return url;
@@ -171,7 +336,7 @@
             document.body.appendChild(modal);
         }
 
-        // Resilient token fetcher supporting POST, GET, Cloudflare Workers, and client-fallback signing
+        // Resilient token fetcher with 6-hour session caching (avoids repeat Worker calls when switching episodes)
         async function fetchStreamTicket(params) {
             const epId = params.epId || 'video';
             const uid = params.uid || '';
@@ -179,6 +344,29 @@
             const role = params.role || 'member';
             const targetUrl = params.targetUrl || '';
             const idToken = params.idToken;
+
+            // Reuse existing 6-hour session token if already validated in this browser session (0 Worker requests!)
+            const cachedTicket = window.ZoneVaultStream.cachedAuthTicket;
+            if (
+                cachedTicket &&
+                cachedTicket.token &&
+                cachedTicket.uid === uid &&
+                cachedTicket.expiresAt &&
+                cachedTicket.expiresAt - Date.now() > 600000
+            ) {
+                const b64Target = window.ZoneVaultStream.base64UrlEncode(targetUrl);
+                return {
+                    ok: true,
+                    data: {
+                        token: cachedTicket.token,
+                        proxyUrl: targetUrl
+                            ? `/api/zv-media-sync?token=${encodeURIComponent(cachedTicket.token)}&u=${encodeURIComponent(b64Target)}`
+                            : null,
+                        expiresAt: cachedTicket.expiresAt,
+                        user: { uid, displayName, role }
+                    }
+                };
+            }
 
             const queryParams = new URLSearchParams({
                 epId: epId,
@@ -223,17 +411,23 @@
                         return { ok: false, status: resp.status };
                     }
                     if (resp.ok) {
-                        const data = await resp.json();
-                        if (data && (data.token || data.proxyUrl)) {
-                            return { ok: true, data: data };
+                        const resData = await resp.json();
+                        if (resData && (resData.token || resData.proxyUrl)) {
+                            window.ZoneVaultStream.cachedAuthTicket = {
+                                uid: uid,
+                                token: resData.token,
+                                expiresAt: resData.expiresAt || (Date.now() + 21600000)
+                            };
+                            return { ok: true, data: resData };
                         }
                     }
                 } catch (_) {}
             }
 
-            // Client-side fallback token generation (ensures proxyUrl is still used)
+            // Client-side fallback token generation (6-hour concert window, uses disguised /api/zv-media-sync)
             try {
                 const nowSec = Math.floor(Date.now() / 1000);
+                const expiresAtMs = Date.now() + 21600000;
                 const payload = {
                     sub: uid || 'authenticated-user',
                     uid: uid || 'authenticated-user',
@@ -244,20 +438,24 @@
                     epId: epId,
                     targetUrl: targetUrl,
                     iat: nowSec,
-                    exp: nowSec + 180,
-                    expiresAt: Date.now() + 180000
+                    exp: nowSec + 21600,
+                    expiresAt: expiresAtMs
                 };
-                const tokenStr = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
-                    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-                const b64Target = btoa(unescape(encodeURIComponent(targetUrl)))
-                    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+                const tokenStr = window.ZoneVaultStream.base64UrlEncode(JSON.stringify(payload));
+                const b64Target = window.ZoneVaultStream.base64UrlEncode(targetUrl);
+
+                window.ZoneVaultStream.cachedAuthTicket = {
+                    uid: uid,
+                    token: tokenStr,
+                    expiresAt: expiresAtMs
+                };
 
                 return {
                     ok: true,
                     data: {
                         token: tokenStr,
-                        proxyUrl: targetUrl ? `/api/stream-proxy.m3u8?token=${encodeURIComponent(tokenStr)}&u=${encodeURIComponent(b64Target)}` : null,
-                        expiresAt: Date.now() + 180000,
+                        proxyUrl: targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(tokenStr)}&u=${encodeURIComponent(b64Target)}` : null,
+                        expiresAt: expiresAtMs,
                         user: { uid, displayName, role }
                     }
                 };
@@ -292,6 +490,7 @@
 
         // Validate stream access token with server (enforces zonevault.live origin and active user session)
         let playbackUrl = data.url || '';
+        let activeStreamToken = '';
         try {
             const currentAuth = auth || (typeof window !== 'undefined' && window.firebase && window.firebase.auth ? window.firebase.auth() : null);
             
@@ -343,7 +542,6 @@
             });
 
             if (ticketResult && ticketResult.status === 401) {
-                // If auth is still pending or restoring, hook onAuthStateChanged so it auto-recovers
                 if (currentAuth) {
                     const recoverUnsub = currentAuth.onAuthStateChanged((recoveredUser) => {
                         if (recoveredUser) {
@@ -361,6 +559,7 @@
                 return null;
             } else if (ticketResult && ticketResult.ok && ticketResult.data) {
                 const ticket = ticketResult.data;
+                activeStreamToken = ticket.token || '';
                 if (ticket && ticket.proxyUrl) {
                     playbackUrl = ticket.proxyUrl;
                 }
@@ -372,38 +571,14 @@
                     displayName: userName,
                     role: userRole
                 };
-
-                // Silent background rolling token refresher (every 2 minutes / 120 seconds, TTL is 3 minutes)
-                if (window.zoneVaultRollingTimer) clearInterval(window.zoneVaultRollingTimer);
-                window.zoneVaultRollingTimer = setInterval(async () => {
-                    try {
-                        const session = window.ZoneVaultStream.activeSession;
-                        if (!session || !window.art) return;
-                        let freshIdToken = null;
-                        if (auth && auth.currentUser) {
-                            try { freshIdToken = await auth.currentUser.getIdToken(); } catch (_) {}
-                        }
-                        const refreshed = await fetchStreamTicket({
-                            epId: session.epId,
-                            uid: session.uid,
-                            displayName: session.displayName,
-                            role: session.role,
-                            targetUrl: session.targetUrl,
-                            idToken: freshIdToken
-                        });
-                        if (refreshed && refreshed.ok && refreshed.data && refreshed.data.token) {
-                            session.token = refreshed.data.token;
-                        }
-                    } catch (err) {
-                        console.warn('Rolling token refresh note:', err);
-                    }
-                }, 120000);
             }
         } catch (e) {
             console.warn('Stream token validation note:', e);
         }
 
-        const defaultSubtitle = subtitles.find(s => s.default) || subtitles[0];
+        // Proxy and decrypt subtitles into in-memory Blob URLs (cached in RAM; 0 raw .vtt links exposed)
+        const protectedSubtitles = await window.ZoneVaultStream.resolveProtectedSubtitles(subtitles, activeStreamToken);
+        const defaultSubtitle = protectedSubtitles.find(s => s.default) || protectedSubtitles[0];
         let lastSavedHistory = null;
 
         const artOptions = {
@@ -453,10 +628,20 @@
                     if (window.Hls && Hls.isSupported()) {
                         const isProxyEndpoint = function (targetUrl) {
                             if (!targetUrl || typeof targetUrl !== 'string') return false;
-                            if (targetUrl.startsWith('/api/') || targetUrl.startsWith('/stream-') || targetUrl.startsWith('/stream/')) return true;
+                            if (
+                                targetUrl.startsWith('/api/') ||
+                                targetUrl.startsWith('/zv-') ||
+                                targetUrl.startsWith('/stream-') ||
+                                targetUrl.startsWith('/stream/')
+                            ) return true;
                             try {
                                 const parsed = new URL(targetUrl, window.location.origin);
-                                return parsed.origin === window.location.origin && (parsed.pathname.startsWith('/api/') || parsed.pathname.startsWith('/stream-') || parsed.pathname.startsWith('/stream/'));
+                                return parsed.origin === window.location.origin && (
+                                    parsed.pathname.startsWith('/api/') ||
+                                    parsed.pathname.startsWith('/zv-') ||
+                                    parsed.pathname.startsWith('/stream-') ||
+                                    parsed.pathname.startsWith('/stream/')
+                                );
                             } catch (_) {
                                 return false;
                             }
@@ -485,6 +670,49 @@
                                     if (context && context.url) {
                                         context.url = window.ZoneVaultStream.updateTokenInUrl(context.url);
                                     }
+                                    const reqUrl = context ? context.url : '';
+                                    const cacheKey = window.ZoneVaultStream.getManifestCacheKey(reqUrl);
+
+                                    // Serve decrypted VOD playlist from browser RAM cache if already loaded (0 Worker requests!)
+                                    if (cacheKey && window.ZoneVaultStream.manifestCache.has(cacheKey)) {
+                                        const cachedManifest = window.ZoneVaultStream.manifestCache.get(cacheKey);
+                                        const now = performance.now();
+                                        const cachedStats = {
+                                            aborted: false,
+                                            loaded: cachedManifest.length,
+                                            total: cachedManifest.length,
+                                            retry: 0,
+                                            chunkCount: 1,
+                                            bwEstimate: 0,
+                                            loading: { start: now, first: now, end: now },
+                                            parsing: { start: now, end: now },
+                                            buffering: { start: now, first: now, end: now }
+                                        };
+                                        setTimeout(() => {
+                                            if (callbacks && typeof callbacks.onSuccess === 'function') {
+                                                callbacks.onSuccess({ url: reqUrl, data: cachedManifest }, cachedStats, context, null);
+                                            }
+                                        }, 0);
+                                        return;
+                                    }
+
+                                    if (callbacks && typeof callbacks.onSuccess === 'function') {
+                                        const origOnSuccess = callbacks.onSuccess;
+                                        callbacks.onSuccess = function (response, stats, ctx, networkDetails) {
+                                            if (response && typeof response.data === 'string' && response.data.trim().startsWith('ZV1.')) {
+                                                response.data = window.ZoneVaultStream.decryptPayload(response.data);
+                                                // Cache VOD playlists in browser RAM so ABR quality switches use 0 Worker requests
+                                                if (
+                                                    cacheKey &&
+                                                    (response.data.includes('#EXT-X-ENDLIST') || response.data.includes('#EXT-X-STREAM-INF'))
+                                                ) {
+                                                    window.ZoneVaultStream.manifestCache.set(cacheKey, response.data);
+                                                }
+                                            }
+                                            return origOnSuccess.call(this, response, stats, ctx, networkDetails);
+                                        };
+                                    }
+
                                     super.load(context, config, callbacks);
                                 }
                             }
@@ -534,7 +762,11 @@
                             });
                         });
                     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = url;
+                        // Legacy iOS Safari native playback fallback
+                        const nativeUrl = (url && (url.includes('/api/zv-media-sync') || url.includes('stream-proxy')))
+                            ? `${url}${url.includes('?') ? '&' : '?'}native=1`
+                            : url;
+                        video.src = nativeUrl;
                     }
                 }
             }
@@ -662,14 +894,14 @@
             }
         }
 
-        // Subtitles Selector
-        if (subtitles.length) {
+        // Subtitles Selector (switches between cached in-memory Blob URLs with explicit vtt type)
+        if (protectedSubtitles.length) {
             artInstance.setting.add({
                 html: 'Subtitles',
                 width: 200,
-                selector: subtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
+                selector: protectedSubtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
                 onSelect(item) {
-                    artInstance.subtitle.switch(item.url, { name: item.html });
+                    artInstance.subtitle.switch(item.url, { name: item.html, type: 'vtt' });
                     return item.html;
                 }
             });

@@ -224,15 +224,15 @@ function corsHeaders(request) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Stream-Token, Range, X-ZV-Player, X-Requested-With',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Stream-Token, Range, X-ZV-Player, X-ZV-Cipher, X-Requested-With',
     'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
   };
 }
 
-function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = false) {
+function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = false, useZvCipher = false) {
   const lines = manifestText.split(/\r?\n/);
   const rewritten = [];
-  const nativeSuffix = isNativeFallback ? '&native=1' : '';
+  const modeSuffix = isNativeFallback ? '&native=1' : (useZvCipher ? '&zvc=1' : '');
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -248,10 +248,10 @@ function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = fal
         try {
           const absUrl = new URL(uri, baseUrl).href;
           if (absUrl.toLowerCase().includes('.m3u8')) {
-            return `URI="/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}"`;
+            return `URI="/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}"`;
           }
           if (absUrl.toLowerCase().includes('.vtt') || absUrl.toLowerCase().includes('.srt')) {
-            return `URI="/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}"`;
+            return `URI="/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}"`;
           }
           return `URI="${absUrl}"`;
         } catch (_) {
@@ -265,9 +265,9 @@ function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = fal
     try {
       const absUrl = new URL(trimmed, baseUrl).href;
       if (absUrl.toLowerCase().includes('.m3u8')) {
-        rewritten.push(`/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}`);
+        rewritten.push(`/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}`);
       } else if (absUrl.toLowerCase().includes('.vtt') || absUrl.toLowerCase().includes('.srt')) {
-        rewritten.push(`/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}`);
+        rewritten.push(`/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}`);
       } else {
         rewritten.push(absUrl);
       }
@@ -326,6 +326,7 @@ async function handleApiRequest(request, env) {
     const userDisplayName = params.displayName || params.name || params.username || 'Zone Vault Member';
     const userRole = (params.role === 'admin') ? 'admin' : 'member';
     const targetUrl = params.targetUrl || params.u || '';
+    const zvCipher = params.zvCipher === 'v1' || params.zvc === '1';
     const nowMs = Date.now();
     const nowSec = Math.floor(nowMs / 1000);
     const expiresAtSec = nowSec + 21600; // 6-hour concert session window (zero background polling needed)
@@ -348,7 +349,8 @@ async function handleApiRequest(request, env) {
     };
 
     const token = await signStreamJwt(jwtPayload, STREAM_SECRET);
-    const proxyUrl = targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(token)}` : null;
+    const cipherParam = zvCipher ? '&zvc=1' : '';
+    const proxyUrl = targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(token)}${cipherParam}` : null;
 
     return new Response(JSON.stringify({
       success: true,
@@ -445,10 +447,11 @@ async function handleApiRequest(request, env) {
       }
 
       const isNativeFallback = url.searchParams.get('native') === '1';
+      const useZvCipher = !isNativeFallback && (url.searchParams.get('zvc') === '1' || request.headers.get('x-zv-cipher') === 'ZV1');
       const manifestText = await upstreamRes.text();
-      const rewritten = rewriteHlsManifest(manifestText, targetUrl, token, isNativeFallback);
+      const rewritten = rewriteHlsManifest(manifestText, targetUrl, token, isNativeFallback, useZvCipher);
 
-      if (isNativeFallback) {
+      if (!useZvCipher) {
         return new Response(rewritten, {
           status: 200,
           headers: {
@@ -736,9 +739,29 @@ export default {
     ) {
       return handleApiRequest(request, env);
     }
-    if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
-      return env.ASSETS.fetch(request);
+    const assetRes = (env && env.ASSETS && typeof env.ASSETS.fetch === 'function')
+      ? await env.ASSETS.fetch(request)
+      : await fetch(request);
+
+    const lowerPath = url.pathname.toLowerCase();
+    const isDynamicAsset = !lowerPath.includes('.') ||
+      lowerPath.endsWith('.html') ||
+      lowerPath.endsWith('.js') ||
+      lowerPath.endsWith('.css') ||
+      lowerPath.endsWith('.json');
+
+    if (isDynamicAsset && assetRes) {
+      const newHeaders = new Headers(assetRes.headers);
+      newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      newHeaders.set('Pragma', 'no-cache');
+      newHeaders.set('Expires', '0');
+      return new Response(assetRes.body, {
+        status: assetRes.status,
+        statusText: assetRes.statusText,
+        headers: newHeaders
+      });
     }
-    return fetch(request);
+
+    return assetRes;
   }
 };

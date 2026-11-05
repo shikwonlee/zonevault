@@ -247,7 +247,7 @@ app.use((req, res, next) => {
   const origin = req.headers.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Stream-Token, Range, X-ZV-Player, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Stream-Token, Range, X-ZV-Player, X-ZV-Cipher, X-Requested-With');
   res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
@@ -269,6 +269,7 @@ const handleStreamToken = (req, res) => {
   const role = params.role;
   const idToken = params.idToken;
   const targetUrl = params.targetUrl || params.url;
+  const zvCipher = params.zvCipher === 'v1' || params.zvc === '1';
 
   const authHeader = req.headers.authorization;
   const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
@@ -309,7 +310,8 @@ const handleStreamToken = (req, res) => {
   };
 
   const token = signStreamJwt(jwtPayload, STREAM_SECRET);
-  const proxyUrl = targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(token)}` : null;
+  const cipherParam = zvCipher ? '&zvc=1' : '';
+  const proxyUrl = targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(token)}${cipherParam}` : null;
 
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({
@@ -340,10 +342,10 @@ app.post('/stream/token', handleStreamToken);
 
 // Helper function to rewrite HLS manifests: routes all master & sub-playlists (.m3u8) through the disguised gateway (/api/zv-media-sync)
 // while resolving media chunks (.ts, .m4s, .mp4, .aac) directly to the upstream CDN to save 99.9% of Worker requests
-function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = false) {
+function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = false, useZvCipher = false) {
   const lines = manifestText.split(/\r?\n/);
   const rewrittenLines = [];
-  const nativeSuffix = isNativeFallback ? '&native=1' : '';
+  const modeSuffix = isNativeFallback ? '&native=1' : (useZvCipher ? '&zvc=1' : '');
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -360,10 +362,10 @@ function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = fal
         try {
           const absUrl = new URL(uri, baseUrl).href;
           if (absUrl.toLowerCase().includes('.m3u8')) {
-            return `URI="/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}"`;
+            return `URI="/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}"`;
           }
           if (absUrl.toLowerCase().includes('.vtt') || absUrl.toLowerCase().includes('.srt')) {
-            return `URI="/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}"`;
+            return `URI="/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}"`;
           }
           return `URI="${absUrl}"`;
         } catch (_) {
@@ -378,9 +380,9 @@ function rewriteHlsManifest(manifestText, baseUrl, token, isNativeFallback = fal
     try {
       const absUrl = new URL(trimmed, baseUrl).href;
       if (absUrl.toLowerCase().includes('.m3u8')) {
-        rewrittenLines.push(`/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}`);
+        rewrittenLines.push(`/api/zv-media-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}`);
       } else if (absUrl.toLowerCase().includes('.vtt') || absUrl.toLowerCase().includes('.srt')) {
-        rewrittenLines.push(`/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${nativeSuffix}`);
+        rewrittenLines.push(`/api/zv-sub-sync?token=${encodeURIComponent(token)}&u=${encodeURIComponent(base64UrlEncode(absUrl))}${modeSuffix}`);
       } else {
         rewrittenLines.push(absUrl);
       }
@@ -460,17 +462,18 @@ const handleStreamProxyManifest = async (req, res) => {
     }
 
     const isNativeFallback = req.query.native === '1';
+    const useZvCipher = !isNativeFallback && (req.query.zvc === '1' || req.headers['x-zv-cipher'] === 'ZV1');
     const manifestText = await upstreamRes.text();
-    const rewritten = rewriteHlsManifest(manifestText, targetUrl, token, isNativeFallback);
+    const rewritten = rewriteHlsManifest(manifestText, targetUrl, token, isNativeFallback, useZvCipher);
 
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Download-Options', 'noopen');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token, X-ZV-Player');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token, X-ZV-Player, X-ZV-Cipher');
 
-    if (isNativeFallback) {
+    if (!useZvCipher) {
       res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
       return res.send(rewritten);
     }

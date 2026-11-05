@@ -68,7 +68,8 @@
                         uid: p.uid || '',
                         displayName: p.displayName || '',
                         role: p.role || 'member',
-                        targetUrl: p.targetUrl || ''
+                        targetUrl: p.targetUrl || '',
+                        zvCipher: 'v1'
                     });
                     const endpoints = [
                         { url: '/api/stream-token', method: 'POST' },
@@ -88,12 +89,17 @@
                                 }
                             };
                             if (item.method === 'POST') {
-                                opts.body = JSON.stringify(p);
+                                opts.body = JSON.stringify({ ...p, zvCipher: 'v1' });
                             }
                             const res = await fetch(item.url, opts);
                             if (res.ok) {
                                 const d = await res.json();
-                                if (d && (d.token || d.proxyUrl)) return d;
+                                if (d && (d.token || d.proxyUrl)) {
+                                    if (d.proxyUrl && !d.proxyUrl.includes('zvc=1')) {
+                                        d.proxyUrl += (d.proxyUrl.includes('?') ? '&' : '?') + 'zvc=1';
+                                    }
+                                    return d;
+                                }
                             }
                         } catch (_) {}
                     }
@@ -106,7 +112,8 @@
                     displayName: displayName,
                     role: userRole || 'member',
                     targetUrl: streamUrl,
-                    idToken: idToken
+                    idToken: idToken,
+                    zvCipher: 'v1'
                 });
 
                 if (ticket && (ticket.token || ticket.proxyUrl)) {
@@ -143,11 +150,15 @@
             const config = {
                 xhrSetup: function (xhr, url) {
                     if (!isProxyEndpoint(url)) return;
+                    if (!xhr.readyState) {
+                        xhr.open('GET', url, true);
+                    }
                     if (self.activeToken) {
                         try { xhr.setRequestHeader('X-Stream-Token', self.activeToken); } catch (_) {}
                     }
                     try {
                         xhr.setRequestHeader('X-ZV-Player', 'web-artplayer');
+                        xhr.setRequestHeader('X-ZV-Cipher', 'ZV1');
                         xhr.setRequestHeader('X-Requested-With', 'ZoneVaultPlayer');
                     } catch (_) {}
                 }

@@ -360,7 +360,7 @@
                     data: {
                         token: cachedTicket.token,
                         proxyUrl: targetUrl
-                            ? `/api/zv-media-sync?token=${encodeURIComponent(cachedTicket.token)}&u=${encodeURIComponent(b64Target)}`
+                            ? `/api/zv-media-sync?token=${encodeURIComponent(cachedTicket.token)}&u=${encodeURIComponent(b64Target)}&zvc=1`
                             : null,
                         expiresAt: cachedTicket.expiresAt,
                         user: { uid, displayName, role }
@@ -373,7 +373,8 @@
                 uid: uid,
                 displayName: displayName,
                 role: role,
-                targetUrl: targetUrl
+                targetUrl: targetUrl,
+                zvCipher: 'v1'
             });
 
             const endpoints = [
@@ -402,7 +403,8 @@
                             name: displayName,
                             role: role,
                             targetUrl: targetUrl,
-                            idToken: idToken
+                            idToken: idToken,
+                            zvCipher: 'v1'
                         });
                     }
 
@@ -413,6 +415,9 @@
                     if (resp.ok) {
                         const resData = await resp.json();
                         if (resData && (resData.token || resData.proxyUrl)) {
+                            if (resData.proxyUrl && !resData.proxyUrl.includes('zvc=1')) {
+                                resData.proxyUrl += (resData.proxyUrl.includes('?') ? '&' : '?') + 'zvc=1';
+                            }
                             window.ZoneVaultStream.cachedAuthTicket = {
                                 uid: uid,
                                 token: resData.token,
@@ -454,7 +459,7 @@
                     ok: true,
                     data: {
                         token: tokenStr,
-                        proxyUrl: targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(tokenStr)}&u=${encodeURIComponent(b64Target)}` : null,
+                        proxyUrl: targetUrl ? `/api/zv-media-sync?token=${encodeURIComponent(tokenStr)}&u=${encodeURIComponent(b64Target)}&zvc=1` : null,
                         expiresAt: expiresAtMs,
                         user: { uid, displayName, role }
                     }
@@ -651,6 +656,9 @@
                             ...(typeof startPosition === 'number' && startPosition > 0 ? { startPosition: startPosition } : {}),
                             xhrSetup: function (xhr, reqUrl) {
                                 if (!isProxyEndpoint(reqUrl)) return;
+                                if (!xhr.readyState) {
+                                    xhr.open('GET', reqUrl, true);
+                                }
                                 const currentTok = window.ZoneVaultStream.getActiveToken();
                                 if (currentTok) {
                                     try {
@@ -659,6 +667,7 @@
                                 }
                                 try {
                                     xhr.setRequestHeader('X-ZV-Player', 'web-artplayer');
+                                    xhr.setRequestHeader('X-ZV-Cipher', 'ZV1');
                                     xhr.setRequestHeader('X-Requested-With', 'ZoneVaultPlayer');
                                 } catch (_) {}
                             }
@@ -671,6 +680,9 @@
                                         context.url = window.ZoneVaultStream.updateTokenInUrl(context.url);
                                     }
                                     const reqUrl = context ? context.url : '';
+                                    const absReqUrl = (function () {
+                                        try { return new URL(reqUrl, window.location.origin).href; } catch (_) { return reqUrl; }
+                                    })();
                                     const cacheKey = window.ZoneVaultStream.getManifestCacheKey(reqUrl);
 
                                     // Serve decrypted VOD playlist from browser RAM cache if already loaded (0 Worker requests!)
@@ -690,7 +702,7 @@
                                         };
                                         setTimeout(() => {
                                             if (callbacks && typeof callbacks.onSuccess === 'function') {
-                                                callbacks.onSuccess({ url: reqUrl, data: cachedManifest }, cachedStats, context, null);
+                                                callbacks.onSuccess({ url: absReqUrl, data: cachedManifest }, cachedStats, context, null);
                                             }
                                         }, 0);
                                         return;

@@ -61,6 +61,7 @@ if (savedVideosCategory) activeCategory = savedVideosCategory;
 if (!isNaN(savedVideosPage) && savedVideosPage > 0) currentPaginationPage = savedVideosPage;
 
 const data = [
+  {id:"v19", pageAccessId:null, thumb:"https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png", category:"CONCERT", title:" TOUR-ING : SEVENTEEN WORLD TOUR <BE THE SUN> ", hashtags:"available soon", link:"#"},
   {id:"v18", pageAccessId:"jxj2026", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png", category:"CONCERT", title:" JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON ", hashtags:"", link:"2026/jxj_into_dreaming"},
   {id:"v17", pageAccessId:null, thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg", category:"SPECIAL", title:" SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day] ", hashtags:"", link:"2026/svtreaming_2026"},
   {id:"v16", pageAccessId:"dxp2026", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", category:"CONCERT", title:"2026 DINO X PICHEOLIN 吉BOARD SHOW ", hashtags:"c: uvvul", link:"2026/dinoxpicheolin"},   
@@ -107,7 +108,9 @@ window.handleWatchClick = function(itemId) {
     const item = data.find(d => d.id === itemId);
     if (!item) return;
     if (hasVideoAccess(item)) {
-        window.location.href = item.link;
+        if (item.link && item.link !== '#') {
+            window.location.href = item.link;
+        }
     } else {
         openRestrictedVideoModal(item);
     }
@@ -258,6 +261,10 @@ window.addEventListener('resize', () => {
     }
 });
 
+function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function renderGrid(page) {
     if(!grid) return;
     grid.innerHTML = "";
@@ -289,16 +296,17 @@ function renderGrid(page) {
         const isUnlocked = hasVideoAccess(item);
         const lockStateClass = isUnlocked ? 'unlocked' : 'locked';
         const lockIcon = isUnlocked ? '<i class="fas fa-lock-open"></i>' : '<i class="fas fa-lock"></i>';
+        const safeTitle = escapeHtml(item.title);
         
         el.innerHTML = `
           <div class="thumb-wrapper">
-            <img src="${item.thumb}" loading="lazy" alt="${item.title}">
+            <img src="${item.thumb}" loading="lazy" alt="${safeTitle}">
             <div class="countdown-badge" data-date="${item.releaseDate || ''}"></div>
           </div>
           <div class="card-body">
             <div class="video-meta">${item.category}</div>
-            <div class="video-title">${item.title}</div>
-            <div class="video-hashtags">${item.hashtags}</div>
+            <div class="video-title">${safeTitle}</div>
+            <div class="video-hashtags">${escapeHtml(item.hashtags)}</div>
             <div class="card-actions">
                 <button class="btn-watch ${lockStateClass}" onclick="handleWatchClick('${item.id}')">${lockIcon} WATCH</button>
                 <button class="btn-fav ${isFav}" onclick="toggleFavorite('${item.id}')">${starIcon}</button>
@@ -388,7 +396,7 @@ window.openFavoriteModal = function() {
                 el.innerHTML = `
                     <img src="${item.thumb}" class="fav-thumb" loading="lazy">
                     <div class="fav-list-info">
-                        <div class="fav-list-title">${item.title}</div>
+                        <div class="fav-list-title">${escapeHtml(item.title)}</div>
                         <div class="fav-list-cat">${item.category}</div>
                     </div>
                     <div class="fav-actions">

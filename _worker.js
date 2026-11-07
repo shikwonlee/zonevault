@@ -730,6 +730,30 @@ async function handleApiRequest(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const lowerPath = url.pathname.toLowerCase();
+
+    // Protect separate media config scripts (e.g. /2026/bethesun_config.js) from direct browser navigation, curl, or external access
+    if (lowerPath === '/2026/bethesun_config.js' || lowerPath.endsWith('_config.js')) {
+      const dest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
+      const mode = (request.headers.get('sec-fetch-mode') || '').toLowerCase();
+      if (
+        isDownloadToolOrExtension(request) ||
+        isDirectDownloadAttempt(request) ||
+        !checkOriginAllowed(request) ||
+        (dest && dest !== 'script' && dest !== 'empty') ||
+        mode === 'navigate'
+      ) {
+        return new Response('Access denied: Direct access to protected media configuration is prohibited.', {
+          status: 403,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            ...corsHeaders(request)
+          }
+        });
+      }
+    }
+
     if (
       url.pathname.startsWith('/api/') ||
       url.pathname.startsWith('/stream-') ||
@@ -743,7 +767,6 @@ export default {
       ? await env.ASSETS.fetch(request)
       : await fetch(request);
 
-    const lowerPath = url.pathname.toLowerCase();
     const isDynamicAsset = !lowerPath.includes('.') ||
       lowerPath.endsWith('.html') ||
       lowerPath.endsWith('.js') ||

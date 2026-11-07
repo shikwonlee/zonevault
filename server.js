@@ -760,6 +760,27 @@ app.get('/api/firebase-config', (req, res) => {
   });
 });
 
+// Protect separate media config scripts (e.g. /2026/bethesun_config.js) from direct browser navigation, curl, or external access
+app.use((req, res, next) => {
+  const lowerPath = req.path.toLowerCase();
+  if (lowerPath === '/2026/bethesun_config.js' || lowerPath.endsWith('_config.js')) {
+    const dest = (req.headers['sec-fetch-dest'] || '').toLowerCase();
+    const mode = (req.headers['sec-fetch-mode'] || '').toLowerCase();
+    if (
+      isDownloadToolOrExtension(req) ||
+      isDirectDownloadAttempt(req) ||
+      !isAllowedOrigin(req) ||
+      (dest && dest !== 'script' && dest !== 'empty') ||
+      mode === 'navigate'
+    ) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return res.status(403).send('Access denied: Direct access to protected media configuration is prohibited.');
+    }
+  }
+  next();
+});
+
 // Middleware to prevent stale caching of HTML, JS, CSS, and Service Workers
 // Solves the issue where code updates aren't reflected without Ctrl+F5
 app.use((req, res, next) => {

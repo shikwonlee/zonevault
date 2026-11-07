@@ -61,7 +61,7 @@ if (savedVideosCategory) activeCategory = savedVideosCategory;
 if (!isNaN(savedVideosPage) && savedVideosPage > 0) currentPaginationPage = savedVideosPage;
 
 const data = [
-  {id:"v19", pageAccessId:null, thumb:"https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png", category:"CONCERT", title:" TOUR-ING : SEVENTEEN WORLD TOUR <BE THE SUN> ", hashtags:"available soon", link:"#"},
+  {id:"v19", pageAccessId:null, thumb:"https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png", category:"CONCERT", title:" TOUR-ING : SEVENTEEN WORLD TOUR <BE THE SUN> ", hashtags:"", link:"2026/bethesun"},
   {id:"v18", pageAccessId:"jxj2026", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png", category:"CONCERT", title:" JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON ", hashtags:"", link:"2026/jxj_into_dreaming"},
   {id:"v17", pageAccessId:null, thumb:"https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg", category:"SPECIAL", title:" SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day] ", hashtags:"", link:"2026/svtreaming_2026"},
   {id:"v16", pageAccessId:"dxp2026", thumb:"https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", category:"CONCERT", title:"2026 DINO X PICHEOLIN 吉BOARD SHOW ", hashtags:"c: uvvul", link:"2026/dinoxpicheolin"},   

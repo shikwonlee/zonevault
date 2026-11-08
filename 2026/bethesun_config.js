@@ -60,9 +60,9 @@
     // --- VIDEO CARD 5 (Ilagay mo dito yung title, url, at subtitle) ---
     {
       id: "5",
-      title: "",
-      url: "",
-      subtitle: "",
+      title: "[BE THE CARAT] SPECIAL STAGE MIX - 아주 NICE",
+      url: "https://stream.mux.com/3pwwvuvmz2DBc00ovE5ame6RFSP00Dsv4sMJJNY4nYk4I.m3u8",
+      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794117311/BE_THE_CARAT_SPECIAL_STAGE_MIX_-_%EC%95%84%EC%A3%BC_NICE_fx94wc.vtt",
       image: BETHESUN_THUMBNAIL
     },
 

@@ -29,76 +29,60 @@
       subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794063181/bethesun_gycm3q.vtt",
       image: BETHESUN_THUMBNAIL
     },
-
-    // --- VIDEO CARD 2 ---
     {
       id: "2",
+      title: "PROCESSING",
+      url: "",
+      subtitle: "",
+      image: BETHESUN_THUMBNAIL
+    },
+    {
+      id: "3",
       title: "[TO CARAT] HIPHOP TEAM",
       url: "https://stream.mux.com/501B1TjHHU6VyJwy5ifCYcjjRFNO02Y02nTae5iBPhsgHw.m3u8",
       subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794063184/TO_CARAT_HIPHOP_TEAM_bbuup9.vtt",
       image: BETHESUN_THUMBNAIL
     },
-
-    // --- VIDEO CARD 3 ---
     {
-      id: "3",
+      id: "4",
       title: "[TO CARAT] VOCAL TEAM",
       url: "https://stream.mux.com/9KDf9QH01c4x8xrdCX017l02HQD2r99m7TGZ7r9ADq6udQ.m3u8",
       subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794063192/TO_CARAT_VOCAL_TEAM_hed4mn.vtt",
       image: BETHESUN_THUMBNAIL
     },
-
-    // --- VIDEO CARD 4 (Ilagay mo dito yung title, url, at subtitle) ---
-    {
-      id: "4",
-      title: "[TO CARAT] PERFORMANCE TEAM",
-      url: "https://stream.mux.com/2i3UUD01LyEJphXYFgkuMWV2MahInaPE0201GZ0000a400zuE.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794064632/TO_CARAT_PERFORMANCE_TEAM_awxlpd.vtt",
-      image: BETHESUN_THUMBNAIL
-    },
-
-    // --- VIDEO CARD 5 (Ilagay mo dito yung title, url, at subtitle) ---
     {
       id: "5",
-      title: "[BE THE CARAT] SPECIAL STAGE MIX - 아주 NICE",
-      url: "https://stream.mux.com/3pwwvuvmz2DBc00ovE5ame6RFSP00Dsv4sMJJNY4nYk4I.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794117311/BE_THE_CARAT_SPECIAL_STAGE_MIX_-_%EC%95%84%EC%A3%BC_NICE_fx94wc.vtt",
+      title: "[TO CARAT] PERFORMANCE TEAM",
+      url: "https://stream.mux.com/rnmHkBLA00iagsBqoTkVIwwkrC7P1r8Ms9gCdQEj3UqA.m3u8",
+      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794118150/TO_CARAT_PERFORMANCE_TEAM_atluos.vtt",
       image: BETHESUN_THUMBNAIL
     },
-
-    // --- VIDEO CARD 6 (Ilagay mo dito yung title, url, at subtitle) ---
     {
       id: "6",
-      title: "",
-      url: "",
-      subtitle: "",
+      title: "[BE THE CARAT] SPECIAL STAGE MIX - 아주 NICE",
+      url: "https://stream.mux.com/GWK02G5rJOAC9a7HeYsh4Ns9ctZViJcNNbAddR2YkvBE.m3u8",
+      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794118449/BE_THE_CARAT_SPECIAL_STAGE_MIX_-_%EC%95%84%EC%A3%BC_NICE_ibqira.vtt",
       image: BETHESUN_THUMBNAIL
     },
-
-    // --- VIDEO CARD 7 (Ilagay mo dito yung title, url, at subtitle) ---
     {
       id: "7",
-      title: "",
-      url: "",
-      subtitle: "",
+      title: "[BE THE CARAT] SPECIAL STAGE MIX - WORLD ",
+      url: "https://stream.mux.com/eqFRJTgYWUeEyWIu005EeN6fPKp37HpbvXotHOhQQZEw.m3u8",
+      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794120695/BE_THE_CARAT_SPECIAL_STAGE_MIX_-_WORLD_wj1n3l.vtt",
       image: BETHESUN_THUMBNAIL
     },
-
-    // --- VIDEO CARD 8 (Ilagay mo dito yung title, url, at subtitle) ---
     {
       id: "8",
-      title: "",
-      url: "",
-      subtitle: "",
+      title: "[WITH CARAT] Snap Shoot Freestyle with CARAT",
+      url: "https://stream.mux.com/dDq02Ogwjadk35PLGCEDOX1gfwIugL53742z6fZ86xWs.m3u8",
+      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794121222/WITH_CARAT_Snap_Shoot_Freestyle_with_CARAT_spmvgl.vtt",
       image: BETHESUN_THUMBNAIL
     },
-
-    // --- VIDEO CARD 9 (Ilagay mo dito yung title, url, at subtitle) ---
     {
       id: "9",
-      title: "",
-      url: "",
-      subtitle: "",
+      title: "[WITH CARAT] SEVENTEEN with CARAT",
+      url: "https://stream.mux.com/5orKynERvmc3suzagRVVWxdhOdRr9S00o4UHnW6lFvPc.m3u8",
+      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794122130/WITH_CARAT_SEVENTEEN_with_CARAT_yii8jt.vtt",
       image: BETHESUN_THUMBNAIL
     }
   ];

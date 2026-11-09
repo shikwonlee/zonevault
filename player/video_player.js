@@ -1192,20 +1192,55 @@
                 });
             }
 
-            const syncDesktopAndMobileFullscreenClass = () => {
+            const syncDesktopAndMobileFullscreenClass = (forcedState) => {
+                const outerContainer = document.getElementById('player-container');
+                const artContainer = artInstance && artInstance.template && artInstance.template.$container;
+                const playlistEl = document.getElementById('playlist');
                 const fsEl =
                     document.fullscreenElement ||
-                    document.webkitFullscreenElement ||
                     document.mozFullScreenElement ||
+                    document.webkitFullscreenElement ||
                     document.msFullscreenElement;
-                const inFs = Boolean(
-                    fsEl ||
-                    artInstance.fullscreen ||
-                    artInstance.fullscreenWeb ||
-                    playerEl.classList.contains('art-fullscreen') ||
-                    playerEl.classList.contains('art-fullscreen-web')
+                const isPlayerFsElement = Boolean(
+                    fsEl && (
+                        fsEl === playerEl ||
+                        fsEl === artContainer ||
+                        fsEl === outerContainer ||
+                        playerEl.contains(fsEl) ||
+                        (outerContainer && outerContainer.contains(fsEl))
+                    )
                 );
+                const isMobileLandscapeFullscreen = Boolean(
+                    outerContainer &&
+                    window.getComputedStyle(outerContainer).position === 'fixed' &&
+                    playlistEl &&
+                    window.getComputedStyle(playlistEl).display === 'none'
+                );
+                const inFs = typeof forcedState === 'boolean'
+                    ? Boolean(forcedState || isPlayerFsElement || artInstance.fullscreen || artInstance.fullscreenWeb || isMobileLandscapeFullscreen)
+                    : Boolean(
+                        isPlayerFsElement ||
+                        artInstance.fullscreen ||
+                        artInstance.fullscreenWeb ||
+                        playerEl.classList.contains('art-fullscreen') ||
+                        playerEl.classList.contains('art-fullscreen-web') ||
+                        isMobileLandscapeFullscreen
+                    );
+
                 playerEl.classList.toggle('zv-is-fullscreen', inFs);
+                if (artContainer) artContainer.classList.toggle('zv-is-fullscreen', inFs);
+                if (outerContainer) outerContainer.classList.toggle('zv-is-fullscreen', inFs);
+
+                if (fsCardsToggleBtn && fsCardsListEl) {
+                    if (inFs) {
+                        fsCardsToggleBtn.style.setProperty('display', 'flex', 'important');
+                        fsCardsListEl.style.setProperty('display', 'flex', 'important');
+                    } else {
+                        fsCardsToggleBtn.style.setProperty('display', 'none', 'important');
+                        fsCardsListEl.style.setProperty('display', 'none', 'important');
+                    }
+                }
+
                 if (inFs) {
                     onDesktopPointerWakeUp();
                 } else {
@@ -1214,24 +1249,32 @@
             };
 
             artInstance.on('fullscreen', (state) => {
-                playerEl.classList.toggle('zv-is-fullscreen', Boolean(state || artInstance.fullscreenWeb));
-                if (state) onDesktopPointerWakeUp();
+                syncDesktopAndMobileFullscreenClass(Boolean(state));
                 if (!state && !artInstance.fullscreenWeb) setDrawerOpen(false);
             });
             artInstance.on('fullscreenWeb', (state) => {
-                playerEl.classList.toggle('zv-is-fullscreen', Boolean(state || artInstance.fullscreen));
-                if (state) onDesktopPointerWakeUp();
+                syncDesktopAndMobileFullscreenClass(Boolean(state));
                 if (!state && !artInstance.fullscreen) setDrawerOpen(false);
             });
+            artInstance.on('resize', () => {
+                syncDesktopAndMobileFullscreenClass();
+            });
 
-            document.addEventListener('fullscreenchange', syncDesktopAndMobileFullscreenClass);
-            document.addEventListener('webkitfullscreenchange', syncDesktopAndMobileFullscreenClass);
+            const onNativeFsChange = () => syncDesktopAndMobileFullscreenClass();
+            document.addEventListener('fullscreenchange', onNativeFsChange);
+            document.addEventListener('webkitfullscreenchange', onNativeFsChange);
+            document.addEventListener('mozfullscreenchange', onNativeFsChange);
+            window.addEventListener('resize', onNativeFsChange);
+
+            syncDesktopAndMobileFullscreenClass();
 
             window.zvFsSyncCleanup = () => {
                 if (desktopPointerIdleTimer) clearTimeout(desktopPointerIdleTimer);
                 if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
-                document.removeEventListener('fullscreenchange', syncDesktopAndMobileFullscreenClass);
-                document.removeEventListener('webkitfullscreenchange', syncDesktopAndMobileFullscreenClass);
+                document.removeEventListener('fullscreenchange', onNativeFsChange);
+                document.removeEventListener('webkitfullscreenchange', onNativeFsChange);
+                document.removeEventListener('mozfullscreenchange', onNativeFsChange);
+                window.removeEventListener('resize', onNativeFsChange);
             };
         };
 

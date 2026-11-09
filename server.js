@@ -772,7 +772,9 @@ app.get('/api/zv-vault-sync', (req, res) => {
     return res.status(403).send('Access denied');
   }
   try {
-    const configPath = path.join(__dirname, '2026', 'bethesun_config.js');
+    const keyParam = String(req.query.k || 'bts26').toLowerCase();
+    const fileName = keyParam === 'nana26' ? 'nanatour_config.js' : 'bethesun_config.js';
+    const configPath = path.join(__dirname, '2026', fileName);
     const rawCode = fs.readFileSync(configPath, 'utf8');
     const encryptedPayload = encryptZvPayload(rawCode);
     res.setHeader('Content-Type', 'application/octet-stream');
@@ -784,10 +786,10 @@ app.get('/api/zv-vault-sync', (req, res) => {
   }
 });
 
-// Block ALL direct/script requests to /2026/bethesun_config.js so it never appears in DevTools Sources or browser tabs
+// Block ALL direct/script requests to /2026/*_config.js so they never appear in DevTools Sources or browser tabs
 app.use((req, res, next) => {
   const lowerPath = req.path.toLowerCase();
-  if (lowerPath === '/2026/bethesun_config.js' || lowerPath.endsWith('_config.js')) {
+  if (lowerPath === '/2026/bethesun_config.js' || lowerPath === '/2026/nanatour_config.js' || lowerPath.endsWith('_config.js')) {
     if (req.headers['x-zv-vault-sync'] === 'ZV1' && isAllowedOrigin(req) && !isDirectDownloadAttempt(req)) {
       try {
         const configPath = path.join(__dirname, req.path);

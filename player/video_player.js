@@ -125,6 +125,48 @@
             return `WEBVTT\n\n${converted}\n`;
         },
 
+        // Shifts all WebVTT cue timestamps by +offsetSeconds (used when separate .vtt files are paired with a single combined multi-hour video)
+        offsetWebVttTimestamps: function (subText, offsetSeconds) {
+            const normalized = this.normalizeToWebVtt(subText);
+            const offsetMs = Math.round((Number(offsetSeconds) || 0) * 1000);
+            if (!offsetMs) return normalized;
+
+            const parseVttTimeMs = (timeStr) => {
+                const parts = String(timeStr || '').trim().split(':');
+                let hours = 0, minutes = 0, secondsMs = '0';
+                if (parts.length === 3) {
+                    hours = parseInt(parts[0], 10) || 0;
+                    minutes = parseInt(parts[1], 10) || 0;
+                    secondsMs = parts[2];
+                } else if (parts.length === 2) {
+                    minutes = parseInt(parts[0], 10) || 0;
+                    secondsMs = parts[1];
+                }
+                const [secPart, msPart = '0'] = String(secondsMs).replace(',', '.').split('.');
+                const seconds = parseInt(secPart, 10) || 0;
+                const ms = parseInt(String(msPart).padEnd(3, '0').slice(0, 3), 10) || 0;
+                return ((hours * 3600 + minutes * 60 + seconds) * 1000) + ms;
+            };
+
+            const formatVttTimeMs = (totalMs) => {
+                const clamped = Math.max(0, Math.round(totalMs));
+                const hours = Math.floor(clamped / 3600000);
+                const minutes = Math.floor((clamped % 3600000) / 60000);
+                const seconds = Math.floor((clamped % 60000) / 1000);
+                const ms = clamped % 1000;
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+            };
+
+            return normalized.replace(
+                /((?:\d{1,2}:)?\d{2}:\d{2}[.,]\d{1,3})\s*-->\s*((?:\d{1,2}:)?\d{2}:\d{2}[.,]\d{1,3})/g,
+                (match, startStr, endStr) => {
+                    const newStart = formatVttTimeMs(parseVttTimeMs(startStr) + offsetMs);
+                    const newEnd = formatVttTimeMs(parseVttTimeMs(endStr) + offsetMs);
+                    return `${newStart} --> ${newEnd}`;
+                }
+            );
+        },
+
         // Proxies subtitles through /api/zv-sub-sync, decrypts ZV1 payload in RAM, and caches as an in-memory Blob URL
         resolveProtectedSubtitles: async function (subtitlesList, token) {
             if (!Array.isArray(subtitlesList) || subtitlesList.length === 0) return [];
@@ -140,11 +182,14 @@
                     continue;
                 }
 
+                const offsetSec = Number(item.offsetSeconds) || 0;
+                const cacheKey = offsetSec ? `${item.url}::offset=${offsetSec}` : item.url;
+
                 // 1. Serve from browser RAM cache if already decrypted during this session (0 Worker requests)
-                if (this.subtitleBlobCache.has(item.url)) {
+                if (this.subtitleBlobCache.has(cacheKey)) {
                     resolved.push({
                         ...item,
-                        url: this.subtitleBlobCache.get(item.url),
+                        url: this.subtitleBlobCache.get(cacheKey),
                         type: 'vtt'
                     });
                     continue;
@@ -167,10 +212,12 @@
                     if (resp.ok) {
                         const rawPayload = await resp.text();
                         const decryptedText = this.decryptPayload(rawPayload);
-                        const vttText = this.normalizeToWebVtt(decryptedText);
+                        const vttText = offsetSec
+                            ? this.offsetWebVttTimestamps(decryptedText, offsetSec)
+                            : this.normalizeToWebVtt(decryptedText);
                         const blob = new Blob([vttText], { type: 'text/vtt;charset=utf-8' });
                         const blobUrl = URL.createObjectURL(blob);
-                        this.subtitleBlobCache.set(item.url, blobUrl);
+                        this.subtitleBlobCache.set(cacheKey, blobUrl);
                         resolved.push({
                             ...item,
                             url: blobUrl,

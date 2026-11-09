@@ -55,8 +55,12 @@ function updateDynamicURL(uid, role, status) {
 // ==========================================
 window.addEventListener('load', () => {
     setTimeout(() => {
-        document.getElementById('toast').classList.add('show');
-        setTimeout(() => { document.getElementById('toast').classList.remove('show'); }, 4000);
+        const toastEl = document.getElementById('toast');
+        if (!toastEl) return;
+        toastEl.classList.add('show');
+        setTimeout(() => {
+            if (toastEl) toastEl.classList.remove('show');
+        }, 4000);
     }, 1000);
 });
 

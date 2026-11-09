@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan to completely hide and disable the bottom slider when player controls are hidden, enable smooth scrolling inside the Settings/Quality menu, and move the screen lock button to the top-right corner of the video player.",
-  "updatedAt":  "2026-11-09T11:04:50.039452079Z",
+  "summary":  "Implementation plan for creating /2026/nanatour.html and /2026/nanatour_config.js with 30 video cards, encrypted config delivery, HH:MM:SS startTime/endTime chapter-part synchronization for combined 2-hour episodes, automatic WebVTT subtitle timestamp offsetting per part, and seamless auto-switching of active cards and subtitle files during playback.",
+  "updatedAt":  "2026-11-09T16:35:43.487314312Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

@@ -733,8 +733,8 @@ export default {
     const lowerPath = url.pathname.toLowerCase();
 
     // Disguised & ZV1-Encrypted Vault Config Endpoint (/api/zv-vault-sync)
-    // Never exposes bethesun_config.js in DevTools Sources, Elements, or Network tabs
-    if (lowerPath === '/api/zv-vault-sync' || lowerPath === '/2026/bethesun_config.js' || lowerPath.endsWith('_config.js')) {
+    // Never exposes bethesun_config.js or nanatour_config.js in DevTools Sources, Elements, or Network tabs
+    if (lowerPath === '/api/zv-vault-sync' || lowerPath === '/2026/bethesun_config.js' || lowerPath === '/2026/nanatour_config.js' || lowerPath.endsWith('_config.js')) {
       if (
         isDownloadToolOrExtension(request) ||
         isDirectDownloadAttempt(request) ||
@@ -752,7 +752,11 @@ export default {
       }
 
       try {
-        const targetAssetUrl = new URL('/2026/bethesun_config.js', request.url);
+        const keyParam = (url.searchParams.get('k') || 'bts26').toLowerCase();
+        const targetConfigPath = lowerPath.endsWith('_config.js')
+          ? url.pathname
+          : (keyParam === 'nana26' ? '/2026/nanatour_config.js' : '/2026/bethesun_config.js');
+        const targetAssetUrl = new URL(targetConfigPath, request.url);
         const assetReq = new Request(targetAssetUrl.toString(), { method: 'GET' });
         const rawRes = (env && env.ASSETS && typeof env.ASSETS.fetch === 'function')
           ? await env.ASSETS.fetch(assetReq)

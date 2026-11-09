@@ -304,20 +304,37 @@ body:has(#player-container:fullscreen) {
     display: none !important;
 }
 
-/* Enabled ONLY when player is in Fullscreen or Mobile Landscape */
+/* Enabled when player is in Fullscreen (Desktop, Laptop, Tablet, Mobile) or Mobile Landscape */
+.art-video-player.zv-is-fullscreen .zv-fs-cards-toggle,
 .art-video-player.art-fullscreen .zv-fs-cards-toggle,
 .art-video-player.art-fullscreen-web .zv-fs-cards-toggle,
 .art-video-player:fullscreen .zv-fs-cards-toggle,
 .art-video-player:-webkit-full-screen .zv-fs-cards-toggle,
 #player-container:fullscreen .zv-fs-cards-toggle,
 #player-container:-webkit-full-screen .zv-fs-cards-toggle,
+html:fullscreen .art-video-player .zv-fs-cards-toggle,
+html:-webkit-full-screen .art-video-player .zv-fs-cards-toggle,
+body:fullscreen .art-video-player .zv-fs-cards-toggle,
+body:-webkit-full-screen .art-video-player .zv-fs-cards-toggle,
+.art-video-player.zv-is-fullscreen .zv-fs-cards-list,
 .art-video-player.art-fullscreen .zv-fs-cards-list,
 .art-video-player.art-fullscreen-web .zv-fs-cards-list,
 .art-video-player:fullscreen .zv-fs-cards-list,
 .art-video-player:-webkit-full-screen .zv-fs-cards-list,
 #player-container:fullscreen .zv-fs-cards-list,
-#player-container:-webkit-full-screen .zv-fs-cards-list {
+#player-container:-webkit-full-screen .zv-fs-cards-list,
+html:fullscreen .art-video-player .zv-fs-cards-list,
+html:-webkit-full-screen .art-video-player .zv-fs-cards-list,
+body:fullscreen .art-video-player .zv-fs-cards-list,
+body:-webkit-full-screen .art-video-player .zv-fs-cards-list {
     display: flex !important;
+}
+
+@media (display-mode: fullscreen) {
+    .art-video-player .zv-fs-cards-toggle,
+    .art-video-player .zv-fs-cards-list {
+        display: flex !important;
+    }
 }
 
 @media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
@@ -327,19 +344,19 @@ body:has(#player-container:fullscreen) {
     }
 }
 
-/* Middle-right floating toggle button (auto-hides with .art-control-show, GPU smooth slide) */
+/* Middle-right floating toggle button (auto-hides with controls, GPU smooth slide) */
 .zv-fs-cards-toggle {
     position: absolute !important;
-    right: clamp(12px, 2.2vmin, 20px) !important;
+    right: clamp(12px, 2.2vmin, 22px) !important;
     top: 50% !important;
     transform: translate3d(0, -50%, 0) !important;
     width: var(--zv-toggle-size) !important;
     height: var(--zv-toggle-size) !important;
     border-radius: 50% !important;
-    background: rgba(14, 14, 18, 0.82) !important;
+    background: rgba(14, 14, 18, 0.84) !important;
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.34) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.36) !important;
     color: #ffffff !important;
     align-items: center !important;
     justify-content: center !important;
@@ -350,20 +367,20 @@ body:has(#player-container:fullscreen) {
     visibility: visible !important;
     pointer-events: auto !important;
     transition:
-        transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 0.26s cubic-bezier(0.22, 1, 0.36, 1),
-        visibility 0.26s ease,
-        background-color 0.22s ease,
-        color 0.22s ease,
-        border-color 0.22s ease,
-        box-shadow 0.22s ease !important;
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.24s ease,
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease !important;
     will-change: transform, opacity !important;
     padding: 0 !important;
     outline: none !important;
 }
 
-/* Auto-hide button in sync with progressEl when controls hide (unless drawer is open) */
-.zv-fs-cards-toggle.is-controls-hidden:not(.is-open),
+/* Auto-hide button in sync with progressEl when controls hide (unless drawer is open or hovered) */
+.zv-fs-cards-toggle.is-controls-hidden:not(.is-open):not(:hover),
 .art-video-player.art-lock .zv-fs-cards-toggle {
     opacity: 0 !important;
     visibility: hidden !important;
@@ -375,6 +392,8 @@ body:has(#player-container:fullscreen) {
     background: rgba(255, 255, 255, 0.95) !important;
     color: #0a0a0c !important;
     border-color: rgba(255, 255, 255, 0.9) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .zv-fs-cards-toggle svg {
@@ -394,13 +413,13 @@ body:has(#player-container:fullscreen) {
     pointer-events: auto !important;
 }
 
-/* Frameless 3-card vertical carousel drawer (NO outer box, NO panel background, zero overflow) */
+/* Frameless 3-card vertical carousel drawer (NO outer box, NO panel background, smooth momentum scroll) */
 .zv-fs-cards-list {
     position: absolute !important;
     top: 50% !important;
     bottom: auto !important;
     right: clamp(10px, 2vmin, 18px) !important;
-    width: calc(var(--zv-card-w) + 20px) !important;
+    width: calc(var(--zv-card-w) + 22px) !important;
     height: calc((var(--zv-card-h) * 3) + (var(--zv-card-gap) * 2) + 12px) !important;
     max-height: 82dvh !important;
     background: transparent !important;
@@ -408,7 +427,7 @@ body:has(#player-container:fullscreen) {
     box-shadow: none !important;
     padding-top: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
     padding-bottom: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
-    padding-left: 14px !important;
+    padding-left: 16px !important;
     padding-right: 6px !important;
     margin: 0 !important;
     box-sizing: border-box !important;
@@ -417,14 +436,14 @@ body:has(#player-container:fullscreen) {
     gap: var(--zv-card-gap) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    scroll-snap-type: y mandatory !important;
+    scroll-snap-type: y proximity !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain !important;
     touch-action: pan-y !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%) !important;
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%) !important;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 91%, transparent 100%) !important;
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 91%, transparent 100%) !important;
     z-index: 129 !important;
     opacity: 0 !important;
     visibility: hidden !important;
@@ -432,10 +451,10 @@ body:has(#player-container:fullscreen) {
     transform: translate3d(28px, -50%, 0) scale(0.95) !important;
     transform-origin: right center !important;
     transition:
-        opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-        visibility 0.34s ease !important;
-    will-change: transform, opacity !important;
+        opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.32s ease !important;
+    will-change: scroll-position, transform, opacity !important;
 }
 
 .zv-fs-cards-list.is-open {
@@ -456,9 +475,10 @@ body:has(#player-container:fullscreen) {
 }
 
 /* Individual floating video card:
-   - Default (top & bottom slots of the 3 visible cards): smaller scale (0.84) & softer opacity
-   - Center slot (.is-center-card): larger scale (1.03) & full opacity */
+   - Smoothly interpolated scale & opacity via --zv-card-scale and --zv-card-opacity */
 .zv-fs-card-item {
+    --zv-card-scale: 0.84;
+    --zv-card-opacity: 0.56;
     display: flex !important;
     align-items: center !important;
     gap: clamp(8px, 1.6vmin, 12px) !important;
@@ -476,16 +496,15 @@ body:has(#player-container:fullscreen) {
     cursor: pointer !important;
     flex-shrink: 0 !important;
     scroll-snap-align: center !important;
-    scroll-snap-stop: always !important;
     transform-origin: right center !important;
-    transform: translate3d(0, 0, 0) scale(0.84) !important;
-    opacity: 0.58 !important;
+    transform: translate3d(0, 0, 0) scale(var(--zv-card-scale)) !important;
+    opacity: var(--zv-card-opacity) !important;
     transition:
-        transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        background-color 0.22s ease,
-        border-color 0.22s ease,
-        box-shadow 0.28s ease !important;
+        transform 0.14s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.14s cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease !important;
     will-change: transform, opacity !important;
     color: #fcfcfc !important;
     text-align: left !important;
@@ -494,15 +513,15 @@ body:has(#player-container:fullscreen) {
 }
 
 .zv-fs-card-item.is-far-card {
-    transform: translate3d(0, 0, 0) scale(0.76) !important;
-    opacity: 0.15 !important;
+    --zv-card-scale: 0.76;
+    --zv-card-opacity: 0.18;
 }
 
 .zv-fs-card-item.is-center-card {
-    transform: translate3d(0, 0, 0) scale(1.03) !important;
-    opacity: 1 !important;
+    --zv-card-scale: 1.04;
+    --zv-card-opacity: 1;
     background: rgba(28, 28, 38, 0.93) !important;
-    border-color: rgba(255, 255, 255, 0.42) !important;
+    border-color: rgba(255, 255, 255, 0.44) !important;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65) !important;
     z-index: 2 !important;
 }

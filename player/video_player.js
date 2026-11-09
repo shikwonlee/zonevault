@@ -905,6 +905,28 @@
 
         let setDrawerOpen = () => {};
         let renderFullscreenCards = () => {};
+        let desktopPointerIdleTimer = null;
+
+        const onDesktopPointerWakeUp = () => {
+            isControlsVisible = true;
+            try { artInstance.controls.show = true; } catch (_) {}
+            syncProgressVisibility(true);
+            if (desktopPointerIdleTimer) clearTimeout(desktopPointerIdleTimer);
+            desktopPointerIdleTimer = setTimeout(() => {
+                const isDrawerOpen = Boolean(fsCardsListEl && fsCardsListEl.classList.contains('is-open'));
+                let isHoveringDrawerOrBtn = false;
+                try {
+                    isHoveringDrawerOrBtn = Boolean(
+                        (fsCardsToggleBtn && fsCardsToggleBtn.matches(':hover')) ||
+                        (fsCardsListEl && fsCardsListEl.matches(':hover'))
+                    );
+                } catch (_) {}
+                if (!isDrawerOpen && !isHoveringDrawerOrBtn && artInstance && artInstance.playing) {
+                    isControlsVisible = false;
+                    syncProgressVisibility(false);
+                }
+            }, 2800);
+        };
 
         const mountFullscreenCardsOverlay = () => {
             const playerEl = artInstance && artInstance.template && artInstance.template.$player;
@@ -939,14 +961,14 @@
                 }
             };
 
-            // Dynamically highlight & enlarge the card in the vertical center of the 3-card viewport
+            // Continuously interpolate scale & opacity for silky-smooth 60/120fps scrolling
             let scrollRafId = null;
+            let scrollSnapSettleTimer = null;
             const updateCenterCardScale = () => {
                 if (!fsCardsListEl) return;
                 const cards = Array.from(fsCardsListEl.querySelectorAll('.zv-fs-card-item'));
                 if (cards.length === 0) return;
 
-                let centerIdx = 0;
                 const firstCard = cards[0];
                 const secondCard = cards[1];
                 const stride = secondCard
@@ -954,30 +976,35 @@
                     : (firstCard ? firstCard.offsetHeight : 0);
 
                 if (stride > 0) {
-                    centerIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fsCardsListEl.scrollTop / stride)));
-                } else {
-                    const listRect = fsCardsListEl.getBoundingClientRect();
-                    if (listRect.height > 0) {
-                        const centerY = listRect.top + (listRect.height / 2);
-                        let minDistance = Infinity;
-                        cards.forEach((card, idx) => {
-                            const rect = card.getBoundingClientRect();
-                            const dist = Math.abs((rect.top + rect.height / 2) - centerY);
-                            if (dist < minDistance) {
-                                minDistance = dist;
-                                centerIdx = idx;
-                            }
-                        });
-                    } else {
-                        centerIdx = Math.max(0, cards.findIndex(c => c.classList.contains('active')));
-                    }
-                }
+                    const fractionalIdx = fsCardsListEl.scrollTop / stride;
+                    const closestIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fractionalIdx)));
 
-                cards.forEach((card, idx) => {
-                    const distFromCenter = Math.abs(idx - centerIdx);
-                    card.classList.toggle('is-center-card', distFromCenter === 0);
-                    card.classList.toggle('is-far-card', distFromCenter > 1);
-                });
+                    cards.forEach((card, idx) => {
+                        const dist = Math.abs(idx - fractionalIdx);
+                        const clampedT = Math.max(0, 1 - Math.min(1, dist));
+                        const smoothT = clampedT * clampedT * (3 - 2 * clampedT);
+                        const scale = dist > 1.2
+                            ? 0.76
+                            : (0.84 + (0.20 * smoothT));
+                        const opacity = dist > 1.2
+                            ? Math.max(0.16, 0.56 - ((dist - 1) * 0.45))
+                            : (0.56 + (0.44 * smoothT));
+
+                        card.style.setProperty('--zv-card-scale', scale.toFixed(3));
+                        card.style.setProperty('--zv-card-opacity', opacity.toFixed(3));
+                        card.classList.toggle('is-center-card', idx === closestIdx);
+                        card.classList.toggle('is-far-card', dist > 1.35);
+                    });
+                } else {
+                    const activeIdx = Math.max(0, cards.findIndex(c => c.classList.contains('active')));
+                    cards.forEach((card, idx) => {
+                        const isCenter = idx === activeIdx;
+                        card.style.setProperty('--zv-card-scale', isCenter ? '1.04' : '0.84');
+                        card.style.setProperty('--zv-card-opacity', isCenter ? '1' : '0.56');
+                        card.classList.toggle('is-center-card', isCenter);
+                        card.classList.toggle('is-far-card', Math.abs(idx - activeIdx) > 1);
+                    });
+                }
             };
 
             const getEffectivePlaylistItems = () => {
@@ -1114,6 +1141,7 @@
             fsCardsToggleBtn.addEventListener('click', (ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
+                onDesktopPointerWakeUp();
                 const nextState = !fsCardsListEl.classList.contains('is-open');
                 setDrawerOpen(nextState);
             });
@@ -1121,6 +1149,19 @@
             fsCardsListEl.addEventListener('scroll', () => {
                 if (scrollRafId) cancelAnimationFrame(scrollRafId);
                 scrollRafId = requestAnimationFrame(updateCenterCardScale);
+                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
+                scrollSnapSettleTimer = setTimeout(() => {
+                    const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
+                    if (cards.length > 1) {
+                        const stride = cards[1].offsetTop - cards[0].offsetTop;
+                        if (stride > 0) {
+                            const nearestIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fsCardsListEl.scrollTop / stride)));
+                            if (Math.abs(fsCardsListEl.scrollTop - (nearestIdx * stride)) > 2) {
+                                scrollCardIndexToCenter(nearestIdx, true);
+                            }
+                        }
+                    }
+                }, 140);
             }, { passive: true });
 
             // Stop wheel events from bubbling out of the scrollable cards list
@@ -1131,6 +1172,11 @@
             playerEl.appendChild(fsCardsListEl);
             playerEl.appendChild(fsCardsToggleBtn);
             renderFullscreenCards();
+
+            // Wake up controls on desktop/laptop mouse movement and hover
+            playerEl.addEventListener('mousemove', onDesktopPointerWakeUp, { passive: true });
+            playerEl.addEventListener('pointermove', onDesktopPointerWakeUp, { passive: true });
+            playerEl.addEventListener('mouseenter', onDesktopPointerWakeUp, { passive: true });
 
             // Observe #playlist-items so dynamic active-card updates (like nanatour.html auto-switching) sync automatically
             const domPlaylistContainer = document.getElementById('playlist-items');
@@ -1146,25 +1192,46 @@
                 });
             }
 
-            artInstance.on('fullscreen', (state) => {
-                if (!state && !artInstance.fullscreenWeb) setDrawerOpen(false);
-            });
-            artInstance.on('fullscreenWeb', (state) => {
-                if (!state && !artInstance.fullscreen) setDrawerOpen(false);
-            });
-
-            const onGlobalFsChange = () => {
-                const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-                if (!fsEl && !artInstance.fullscreen && !artInstance.fullscreenWeb) {
+            const syncDesktopAndMobileFullscreenClass = () => {
+                const fsEl =
+                    document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.mozFullScreenElement ||
+                    document.msFullscreenElement;
+                const inFs = Boolean(
+                    fsEl ||
+                    artInstance.fullscreen ||
+                    artInstance.fullscreenWeb ||
+                    playerEl.classList.contains('art-fullscreen') ||
+                    playerEl.classList.contains('art-fullscreen-web')
+                );
+                playerEl.classList.toggle('zv-is-fullscreen', inFs);
+                if (inFs) {
+                    onDesktopPointerWakeUp();
+                } else {
                     setDrawerOpen(false);
                 }
             };
-            document.addEventListener('fullscreenchange', onGlobalFsChange);
-            document.addEventListener('webkitfullscreenchange', onGlobalFsChange);
+
+            artInstance.on('fullscreen', (state) => {
+                playerEl.classList.toggle('zv-is-fullscreen', Boolean(state || artInstance.fullscreenWeb));
+                if (state) onDesktopPointerWakeUp();
+                if (!state && !artInstance.fullscreenWeb) setDrawerOpen(false);
+            });
+            artInstance.on('fullscreenWeb', (state) => {
+                playerEl.classList.toggle('zv-is-fullscreen', Boolean(state || artInstance.fullscreen));
+                if (state) onDesktopPointerWakeUp();
+                if (!state && !artInstance.fullscreen) setDrawerOpen(false);
+            });
+
+            document.addEventListener('fullscreenchange', syncDesktopAndMobileFullscreenClass);
+            document.addEventListener('webkitfullscreenchange', syncDesktopAndMobileFullscreenClass);
 
             window.zvFsSyncCleanup = () => {
-                document.removeEventListener('fullscreenchange', onGlobalFsChange);
-                document.removeEventListener('webkitfullscreenchange', onGlobalFsChange);
+                if (desktopPointerIdleTimer) clearTimeout(desktopPointerIdleTimer);
+                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
+                document.removeEventListener('fullscreenchange', syncDesktopAndMobileFullscreenClass);
+                document.removeEventListener('webkitfullscreenchange', syncDesktopAndMobileFullscreenClass);
             };
         };
 
@@ -1184,9 +1251,13 @@
             mountFullscreenCardsOverlay();
             renderFullscreenCards();
 
-            // Restore fullscreenWeb if episode was switched while in fullscreenWeb
+            // Restore fullscreenWeb or native fullscreen class if episode was switched while in fullscreen
             if (prevWasFullscreenWeb) {
                 try { artInstance.fullscreenWeb = true; } catch (_) {}
+                playerEl.classList.add('zv-is-fullscreen');
+            }
+            if (prevWasFullscreen && (document.fullscreenElement || document.webkitFullscreenElement)) {
+                playerEl.classList.add('zv-is-fullscreen');
             }
 
             if (window.ZoneVaultCaptureShield) {
@@ -1228,6 +1299,7 @@
             }, { passive: false });
 
             let lastTapTime = 0;
+            let lastTouchEndTime = 0;
             let singleTapTimer = null;
 
             const processTapLogic = (clientX) => {
@@ -1268,6 +1340,7 @@
             };
 
             playerEl.addEventListener('touchend', (e) => {
+                lastTouchEndTime = Date.now();
                 if (
                     e.target.closest('.art-controls') ||
                     e.target.closest('.art-settings') ||
@@ -1300,7 +1373,7 @@
                 ) {
                     return;
                 }
-                if ('ontouchstart' in window) return;
+                if (Date.now() - lastTouchEndTime < 450) return;
                 e.preventDefault();
                 e.stopPropagation();
                 processTapLogic(e.clientX);

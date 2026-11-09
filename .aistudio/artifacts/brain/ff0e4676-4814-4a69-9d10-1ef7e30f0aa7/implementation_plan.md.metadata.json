@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for creating /2026/nanatour.html and /2026/nanatour_config.js with 30 video cards, encrypted config delivery, HH:MM:SS startTime/endTime chapter-part synchronization for combined 2-hour episodes, automatic WebVTT subtitle timestamp offsetting per part, and seamless auto-switching of active cards and subtitle files during playback.",
-  "updatedAt":  "2026-11-09T16:35:43.487314312Z",
+  "summary":  "Implementation plan for adding a Fullscreen & Landscape In-Player Video Card Selector on the middle-right edge of the shared Zone Vault player (/player/video_player.js and /player/video_player.css) that displays floating scrollable video cards without an outer container box while keeping the regular right-side playlist unchanged.",
+  "updatedAt":  "2026-11-09T17:12:36.990756238Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

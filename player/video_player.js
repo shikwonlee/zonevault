@@ -16,6 +16,18 @@
      * Clean up existing player and HLS streams
      */
     function cleanupPlayer() {
+        if (typeof window.zvFsSyncCleanup === 'function') {
+            try {
+                window.zvFsSyncCleanup();
+            } catch (_) {}
+            window.zvFsSyncCleanup = null;
+        }
+        if (window.zvFsPlaylistObserver) {
+            try {
+                window.zvFsPlaylistObserver.disconnect();
+            } catch (_) {}
+            window.zvFsPlaylistObserver = null;
+        }
         if (window.zoneVaultRollingTimer) {
             clearInterval(window.zoneVaultRollingTimer);
             window.zoneVaultRollingTimer = null;
@@ -346,6 +358,18 @@
             onLoadedMetadata,
             onTimeUpdate
         } = options;
+
+        const prevWasFullscreenWeb = Boolean(
+            (window.art && window.art.fullscreenWeb) || window.__zvPreserveFullscreenWeb
+        );
+        const prevWasFullscreen = Boolean(
+            (window.art && window.art.fullscreen) ||
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            window.__zvPreserveFullscreen
+        );
+        window.__zvPreserveFullscreenWeb = false;
+        window.__zvPreserveFullscreen = false;
 
         cleanupPlayer();
 
@@ -834,31 +858,319 @@
         const artInstance = new Artplayer(artOptions);
         window.art = artInstance;
 
-        // Sync progress slider visibility strictly with Artplayer control show/hide state
+        let fsCardsToggleBtn = null;
+        let fsCardsListEl = null;
+        let isControlsVisible = true;
+
+        // Sync progress slider visibility with Artplayer control show/hide state
         // so the slider never drops to the bottom or gets accidentally tapped when controls hide
         const syncProgressVisibility = (isControlShown) => {
+            const shown = Boolean(isControlShown);
             const progressEl = artInstance.template && artInstance.template.$progress;
-            if (!progressEl) return;
-            if (isControlShown && !artInstance.lock) {
-                progressEl.style.opacity = '1';
-                progressEl.style.visibility = 'visible';
-                progressEl.style.pointerEvents = 'auto';
-            } else {
-                progressEl.style.opacity = '0';
-                progressEl.style.visibility = 'hidden';
-                progressEl.style.pointerEvents = 'none';
+            if (progressEl) {
+                if (shown && !artInstance.lock) {
+                    progressEl.style.opacity = '1';
+                    progressEl.style.visibility = 'visible';
+                    progressEl.style.pointerEvents = 'auto';
+                } else {
+                    progressEl.style.opacity = '0';
+                    progressEl.style.visibility = 'hidden';
+                    progressEl.style.pointerEvents = 'none';
+                }
+            }
+            if (fsCardsToggleBtn) {
+                fsCardsToggleBtn.classList.toggle('is-controls-hidden', !(shown && !artInstance.lock));
+            }
+            if (fsCardsListEl && artInstance.lock) {
+                fsCardsListEl.classList.remove('is-open');
+                if (fsCardsToggleBtn) fsCardsToggleBtn.classList.remove('is-open');
             }
         };
 
         artInstance.on('control', (state) => {
-            syncProgressVisibility(state);
+            isControlsVisible = Boolean(state);
+            syncProgressVisibility(isControlsVisible);
         });
 
         artInstance.on('lock', (isLocked) => {
-            syncProgressVisibility(!isLocked && artInstance.controls.show);
+            syncProgressVisibility(!isLocked && isControlsVisible);
         });
 
-        // Custom touch gestures, anti-capture shield & click handling
+        // =========================================================
+        // FULLSCREEN & LANDSCAPE IN-PLAYER FLOATING VIDEO CARDS
+        // Mounted immediately onto artInstance.template.$player
+        // =========================================================
+        const playlistIconSvg = '<svg viewBox="0 0 24 24"><path d="M4 6h11v2H4V6zm0 4h11v2H4v-2zm0 4h7v2H4v-2zm13-1v7l6-3.5-6-3.5z"/></svg>';
+        const closeIconSvg = '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>';
+
+        let setDrawerOpen = () => {};
+        let renderFullscreenCards = () => {};
+
+        const mountFullscreenCardsOverlay = () => {
+            const playerEl = artInstance && artInstance.template && artInstance.template.$player;
+            if (!playerEl || fsCardsToggleBtn) return;
+
+            fsCardsToggleBtn = document.createElement('button');
+            fsCardsToggleBtn.type = 'button';
+            fsCardsToggleBtn.className = 'zv-fs-cards-toggle';
+            fsCardsToggleBtn.setAttribute('aria-label', 'Toggle Episodes');
+            fsCardsToggleBtn.innerHTML = playlistIconSvg;
+
+            fsCardsListEl = document.createElement('div');
+            fsCardsListEl.className = 'zv-fs-cards-list';
+
+            // Scroll a specific card index to the exact center of the 3-card drawer without scrolling the outer page
+            const scrollCardIndexToCenter = (idx, smooth = true) => {
+                if (!fsCardsListEl) return;
+                const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
+                if (!cards.length) return;
+                const clampedIdx = Math.max(0, Math.min(cards.length - 1, idx));
+                const stride = cards.length > 1
+                    ? (cards[1].offsetTop - cards[0].offsetTop)
+                    : (cards[0].offsetHeight + 8);
+                const targetTop = Math.max(0, clampedIdx * stride);
+                try {
+                    fsCardsListEl.scrollTo({
+                        top: targetTop,
+                        behavior: smooth ? 'smooth' : 'auto'
+                    });
+                } catch (_) {
+                    fsCardsListEl.scrollTop = targetTop;
+                }
+            };
+
+            // Dynamically highlight & enlarge the card in the vertical center of the 3-card viewport
+            let scrollRafId = null;
+            const updateCenterCardScale = () => {
+                if (!fsCardsListEl) return;
+                const cards = Array.from(fsCardsListEl.querySelectorAll('.zv-fs-card-item'));
+                if (cards.length === 0) return;
+
+                let centerIdx = 0;
+                const firstCard = cards[0];
+                const secondCard = cards[1];
+                const stride = secondCard
+                    ? (secondCard.offsetTop - firstCard.offsetTop)
+                    : (firstCard ? firstCard.offsetHeight : 0);
+
+                if (stride > 0) {
+                    centerIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fsCardsListEl.scrollTop / stride)));
+                } else {
+                    const listRect = fsCardsListEl.getBoundingClientRect();
+                    if (listRect.height > 0) {
+                        const centerY = listRect.top + (listRect.height / 2);
+                        let minDistance = Infinity;
+                        cards.forEach((card, idx) => {
+                            const rect = card.getBoundingClientRect();
+                            const dist = Math.abs((rect.top + rect.height / 2) - centerY);
+                            if (dist < minDistance) {
+                                minDistance = dist;
+                                centerIdx = idx;
+                            }
+                        });
+                    } else {
+                        centerIdx = Math.max(0, cards.findIndex(c => c.classList.contains('active')));
+                    }
+                }
+
+                cards.forEach((card, idx) => {
+                    const distFromCenter = Math.abs(idx - centerIdx);
+                    card.classList.toggle('is-center-card', distFromCenter === 0);
+                    card.classList.toggle('is-far-card', distFromCenter > 1);
+                });
+            };
+
+            const getEffectivePlaylistItems = () => {
+                const domCards = Array.from(document.querySelectorAll('#playlist-items .playlist-item'));
+                if (domCards.length > 0) {
+                    return domCards.map((el, idx) => {
+                        const id = el.dataset.id || String(idx + 1);
+                        const imgEl = el.querySelector('img');
+                        const titleEl = el.querySelector('.playlist-title');
+                        return {
+                            id: String(id),
+                            title: (titleEl && titleEl.textContent) || '',
+                            image: (imgEl && imgEl.getAttribute('src')) || poster || '',
+                            active: el.classList.contains('active'),
+                            domEl: el
+                        };
+                    });
+                }
+                if (Array.isArray(playlistData) && playlistData.length > 0) {
+                    return playlistData.map((item, idx) => {
+                        const id = String(item.id || (idx + 1));
+                        return {
+                            id: id,
+                            title: item.title || '',
+                            image: item.image || poster || '',
+                            active: Boolean(window.currentEpData && String(window.currentEpData.id) === id),
+                            domEl: null
+                        };
+                    });
+                }
+                return [];
+            };
+
+            renderFullscreenCards = () => {
+                if (!fsCardsListEl) return;
+                const items = getEffectivePlaylistItems();
+                if (items.length <= 1) return;
+                const prevScrollTop = fsCardsListEl.scrollTop;
+                fsCardsListEl.innerHTML = '';
+
+                items.forEach((item, idx) => {
+                    const cardBtn = document.createElement('div');
+                    cardBtn.className = 'zv-fs-card-item' + (item.active ? ' active' : '');
+                    cardBtn.dataset.id = item.id;
+                    cardBtn.dataset.index = String(idx);
+
+                    const thumbDiv = document.createElement('div');
+                    thumbDiv.className = 'zv-fs-card-thumb';
+                    const img = document.createElement('img');
+                    img.src = item.image || poster || '';
+                    img.loading = 'lazy';
+                    img.alt = item.title || `Stream ${item.id}`;
+                    thumbDiv.appendChild(img);
+
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'zv-fs-card-text';
+                    const titleSpan = document.createElement('span');
+                    titleSpan.className = 'zv-fs-card-title';
+                    titleSpan.textContent = item.title;
+                    textDiv.appendChild(titleSpan);
+
+                    const barsDiv = document.createElement('div');
+                    barsDiv.className = 'zv-fs-card-bars';
+                    barsDiv.innerHTML = '<span></span><span></span><span></span>';
+
+                    cardBtn.appendChild(thumbDiv);
+                    cardBtn.appendChild(textDiv);
+                    cardBtn.appendChild(barsDiv);
+
+                    cardBtn.addEventListener('click', (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+
+                        // Preserve fullscreen state when switching streams
+                        if (artInstance.fullscreenWeb) {
+                            window.__zvPreserveFullscreenWeb = true;
+                        }
+                        const outerPlayerContainer = document.getElementById('player-container');
+                        const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+                        if (artInstance.fullscreen || fsEl) {
+                            window.__zvPreserveFullscreen = true;
+                            if (outerPlayerContainer && fsEl && fsEl !== outerPlayerContainer) {
+                                try {
+                                    if (outerPlayerContainer.requestFullscreen) {
+                                        outerPlayerContainer.requestFullscreen().catch(() => {});
+                                    } else if (outerPlayerContainer.webkitRequestFullscreen) {
+                                        outerPlayerContainer.webkitRequestFullscreen();
+                                    }
+                                } catch (_) {}
+                            }
+                        }
+
+                        // Highlight & center selected card smoothly inside the drawer
+                        fsCardsListEl.querySelectorAll('.zv-fs-card-item').forEach(c => {
+                            c.classList.toggle('active', c.dataset.id === item.id);
+                        });
+                        scrollCardIndexToCenter(idx, true);
+                        requestAnimationFrame(updateCenterCardScale);
+
+                        const domTarget = document.querySelector(`#playlist-items .playlist-item[data-id="${item.id}"]`) || item.domEl;
+                        if (domTarget) {
+                            domTarget.click();
+                        } else if (typeof window.loadAndPlayEpisode === 'function') {
+                            window.loadAndPlayEpisode(item.id, true);
+                        }
+                    });
+
+                    fsCardsListEl.appendChild(cardBtn);
+                });
+
+                if (prevScrollTop > 0) {
+                    fsCardsListEl.scrollTop = prevScrollTop;
+                }
+                requestAnimationFrame(updateCenterCardScale);
+            };
+
+            setDrawerOpen = (openState) => {
+                if (!fsCardsListEl || !fsCardsToggleBtn) return;
+                const effectiveOpen = Boolean(openState);
+                fsCardsListEl.classList.toggle('is-open', effectiveOpen);
+                fsCardsToggleBtn.classList.toggle('is-open', effectiveOpen);
+                fsCardsToggleBtn.innerHTML = effectiveOpen ? closeIconSvg : playlistIconSvg;
+                if (effectiveOpen) {
+                    renderFullscreenCards();
+                    const cards = Array.from(fsCardsListEl.querySelectorAll('.zv-fs-card-item'));
+                    const activeIdx = Math.max(0, cards.findIndex(c => c.classList.contains('active')));
+                    requestAnimationFrame(() => {
+                        scrollCardIndexToCenter(activeIdx, false);
+                        updateCenterCardScale();
+                    });
+                }
+            };
+
+            fsCardsToggleBtn.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const nextState = !fsCardsListEl.classList.contains('is-open');
+                setDrawerOpen(nextState);
+            });
+
+            fsCardsListEl.addEventListener('scroll', () => {
+                if (scrollRafId) cancelAnimationFrame(scrollRafId);
+                scrollRafId = requestAnimationFrame(updateCenterCardScale);
+            }, { passive: true });
+
+            // Stop wheel events from bubbling out of the scrollable cards list
+            fsCardsListEl.addEventListener('wheel', (ev) => {
+                ev.stopPropagation();
+            }, { passive: true });
+
+            playerEl.appendChild(fsCardsListEl);
+            playerEl.appendChild(fsCardsToggleBtn);
+            renderFullscreenCards();
+
+            // Observe #playlist-items so dynamic active-card updates (like nanatour.html auto-switching) sync automatically
+            const domPlaylistContainer = document.getElementById('playlist-items');
+            if (domPlaylistContainer && typeof MutationObserver !== 'undefined') {
+                window.zvFsPlaylistObserver = new MutationObserver(() => {
+                    renderFullscreenCards();
+                });
+                window.zvFsPlaylistObserver.observe(domPlaylistContainer, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+            }
+
+            artInstance.on('fullscreen', (state) => {
+                if (!state && !artInstance.fullscreenWeb) setDrawerOpen(false);
+            });
+            artInstance.on('fullscreenWeb', (state) => {
+                if (!state && !artInstance.fullscreen) setDrawerOpen(false);
+            });
+
+            const onGlobalFsChange = () => {
+                const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+                if (!fsEl && !artInstance.fullscreen && !artInstance.fullscreenWeb) {
+                    setDrawerOpen(false);
+                }
+            };
+            document.addEventListener('fullscreenchange', onGlobalFsChange);
+            document.addEventListener('webkitfullscreenchange', onGlobalFsChange);
+
+            window.zvFsSyncCleanup = () => {
+                document.removeEventListener('fullscreenchange', onGlobalFsChange);
+                document.removeEventListener('webkitfullscreenchange', onGlobalFsChange);
+            };
+        };
+
+        mountFullscreenCardsOverlay();
+
+        // Custom touch gestures, anti-capture shield, fullscreen video cards & click handling
         artInstance.on('ready', () => {
             if (artInstance.video) {
                 artInstance.video.setAttribute('preload', 'metadata');
@@ -869,20 +1181,47 @@
             const playerEl = artInstance.template.$player;
             if (!playerEl) return;
 
+            mountFullscreenCardsOverlay();
+            renderFullscreenCards();
+
+            // Restore fullscreenWeb if episode was switched while in fullscreenWeb
+            if (prevWasFullscreenWeb) {
+                try { artInstance.fullscreenWeb = true; } catch (_) {}
+            }
+
             if (window.ZoneVaultCaptureShield) {
                 window.ZoneVaultCaptureShield.protectPlayerContainer(playerEl, artInstance.video);
             }
 
-            // Prevent screen touch-sliding gestures on video, while allowing touch scrolling inside Settings/Quality
+            // Ensure clicking Artplayer's fullscreen button exits fullscreen cleanly even if #player-container holds native fullscreen
+            playerEl.addEventListener('click', (e) => {
+                const fsControlBtn = e.target.closest('.art-control-fullscreen');
+                if (!fsControlBtn) return;
+                const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+                const outerContainer = document.getElementById('player-container');
+                if (fsEl && fsEl === outerContainer && fsEl !== playerEl) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                }
+            }, true);
+
+            // Prevent screen touch-sliding gestures on video, while allowing touch scrolling inside Settings/Quality and Fullscreen Video Cards
             playerEl.addEventListener('touchmove', (e) => {
                 if (
                     e.target.closest('.art-settings') ||
                     e.target.closest('.art-setting') ||
-                    e.target.closest('.art-setting-panel')
+                    e.target.closest('.art-setting-panel') ||
+                    e.target.closest('.zv-fs-cards-list') ||
+                    e.target.closest('.zv-fs-cards-toggle')
                 ) {
                     return;
                 }
-                if (!e.target.closest('.art-control-progress') || !artInstance.controls.show) {
+                if (!e.target.closest('.art-control-progress') || !isControlsVisible) {
                     e.preventDefault();
                     e.stopPropagation();
                 }
@@ -892,6 +1231,10 @@
             let singleTapTimer = null;
 
             const processTapLogic = (clientX) => {
+                if (fsCardsListEl && fsCardsListEl.classList.contains('is-open')) {
+                    setDrawerOpen(false);
+                    return;
+                }
                 const rect = playerEl.getBoundingClientRect();
                 const x = clientX - rect.left;
                 const width = rect.width;
@@ -931,7 +1274,9 @@
                     e.target.closest('.art-setting') ||
                     e.target.closest('.art-setting-panel') ||
                     e.target.closest('.art-layer-lock') ||
-                    (artInstance.controls.show && e.target.closest('.art-control-progress'))
+                    e.target.closest('.zv-fs-cards-list') ||
+                    e.target.closest('.zv-fs-cards-toggle') ||
+                    (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
                     return;
                 }
@@ -949,7 +1294,9 @@
                     e.target.closest('.art-setting') ||
                     e.target.closest('.art-setting-panel') ||
                     e.target.closest('.art-layer-lock') ||
-                    (artInstance.controls.show && e.target.closest('.art-control-progress'))
+                    e.target.closest('.zv-fs-cards-list') ||
+                    e.target.closest('.zv-fs-cards-toggle') ||
+                    (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
                     return;
                 }
@@ -1411,7 +1758,12 @@
                 case 'f':
                 case 'F':
                     e.preventDefault();
-                    playerInstance.fullscreen = !playerInstance.fullscreen;
+                    if (document.fullscreenElement || document.webkitFullscreenElement) {
+                        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                    } else {
+                        playerInstance.fullscreen = !playerInstance.fullscreen;
+                    }
                     break;
                 case 'm':
                 case 'M':

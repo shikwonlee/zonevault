@@ -192,6 +192,401 @@ video.zv-video-frame-blackout {
     touch-action: pan-y !important;
 }
 
+/* Keep #player-container full viewport if it holds native fullscreen */
+#player-container,
+#artplayer,
+.art-video-player {
+    overflow: hidden !important;
+}
 
+#player-container:fullscreen,
+#player-container:-webkit-full-screen,
+.art-video-player:fullscreen,
+.art-video-player:-webkit-full-screen {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    aspect-ratio: auto !important;
+    border-radius: 0 !important;
+    background: #000 !important;
+    overflow: hidden !important;
+}
 
+/* Lock page scrollbars whenever player is in fullscreen or mobile landscape fullscreen */
+html:has(.art-video-player.zv-is-fullscreen),
+body:has(.art-video-player.zv-is-fullscreen),
+html:has(#player-container:fullscreen),
+body:has(#player-container:fullscreen) {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+}
 
+/* Prevent horizontal overflow on all 2021-2026 video pages across any window/screen size */
+.app-wrapper,
+.main-layout,
+.video-wrapper-left {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+#poster-container,
+#player-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Fix mobile landscape mode so #player-container fills viewport without 16/9 horizontal overflow */
+@media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+    html,
+    body {
+        overflow: hidden !important;
+    }
+    #player-container {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        aspect-ratio: auto !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        z-index: 9999 !important;
+        overflow: hidden !important;
+    }
+}
+
+/* =========================================
+   FULLSCREEN & LANDSCAPE IN-PLAYER VIDEO CARDS
+   - Strictly visible ONLY when .zv-is-fullscreen is active on .art-video-player
+   - No outer container box
+   - Auto-adaptive fluid sizing across mobile, tablet, and desktop resolutions
+   - Shows 3 cards at a time: center card scales larger, top/bottom cards scale smaller
+   ========================================= */
+.art-video-player {
+    --zv-card-h: clamp(48px, 11.5vmin, 74px);
+    --zv-card-w: clamp(190px, 40vmin, 305px);
+    --zv-card-gap: clamp(6px, 1.5vmin, 11px);
+    --zv-thumb-w: clamp(56px, 13vmin, 88px);
+    --zv-title-size: clamp(10.5px, 2vmin, 13px);
+    --zv-toggle-size: clamp(34px, 6.8vmin, 44px);
+}
+
+/* Compact mobile landscape / small viewport adaptation */
+@media (max-height: 460px), (max-width: 720px) {
+    .art-video-player {
+        --zv-card-h: clamp(42px, 11.8vmin, 54px);
+        --zv-card-w: clamp(168px, 34vw, 224px);
+        --zv-card-gap: 6px;
+        --zv-thumb-w: clamp(48px, 12.5vmin, 64px);
+        --zv-title-size: clamp(9.5px, 2.1vmin, 11.5px);
+        --zv-toggle-size: clamp(30px, 7.2vmin, 36px);
+    }
+}
+
+/* Large desktop monitor fullscreen adaptation */
+@media (min-width: 1440px) and (min-height: 800px) {
+    .art-video-player {
+        --zv-card-h: 74px;
+        --zv-card-w: 304px;
+        --zv-card-gap: 11px;
+        --zv-thumb-w: 88px;
+        --zv-title-size: 13px;
+        --zv-toggle-size: 44px;
+    }
+}
+
+/* Strictly hidden when NOT in fullscreen / mobile landscape */
+.zv-fs-cards-toggle,
+.zv-fs-cards-list {
+    display: none !important;
+}
+
+/* Enabled ONLY when player is in Fullscreen or Mobile Landscape */
+.art-video-player.art-fullscreen .zv-fs-cards-toggle,
+.art-video-player.art-fullscreen-web .zv-fs-cards-toggle,
+.art-video-player:fullscreen .zv-fs-cards-toggle,
+.art-video-player:-webkit-full-screen .zv-fs-cards-toggle,
+#player-container:fullscreen .zv-fs-cards-toggle,
+#player-container:-webkit-full-screen .zv-fs-cards-toggle,
+.art-video-player.art-fullscreen .zv-fs-cards-list,
+.art-video-player.art-fullscreen-web .zv-fs-cards-list,
+.art-video-player:fullscreen .zv-fs-cards-list,
+.art-video-player:-webkit-full-screen .zv-fs-cards-list,
+#player-container:fullscreen .zv-fs-cards-list,
+#player-container:-webkit-full-screen .zv-fs-cards-list {
+    display: flex !important;
+}
+
+@media (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+    .art-video-player .zv-fs-cards-toggle,
+    .art-video-player .zv-fs-cards-list {
+        display: flex !important;
+    }
+}
+
+/* Middle-right floating toggle button (auto-hides with .art-control-show, GPU smooth slide) */
+.zv-fs-cards-toggle {
+    position: absolute !important;
+    right: clamp(12px, 2.2vmin, 20px) !important;
+    top: 50% !important;
+    transform: translate3d(0, -50%, 0) !important;
+    width: var(--zv-toggle-size) !important;
+    height: var(--zv-toggle-size) !important;
+    border-radius: 50% !important;
+    background: rgba(14, 14, 18, 0.82) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.34) !important;
+    color: #ffffff !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 130 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transition:
+        transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.26s ease,
+        background-color 0.22s ease,
+        color 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease !important;
+    will-change: transform, opacity !important;
+    padding: 0 !important;
+    outline: none !important;
+}
+
+/* Auto-hide button in sync with progressEl when controls hide (unless drawer is open) */
+.zv-fs-cards-toggle.is-controls-hidden:not(.is-open),
+.art-video-player.art-lock .zv-fs-cards-toggle {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate3d(12px, -50%, 0) scale(0.92) !important;
+}
+
+.zv-fs-cards-toggle:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #0a0a0c !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.zv-fs-cards-toggle svg {
+    width: clamp(16px, 3.8vmin, 22px) !important;
+    height: clamp(16px, 3.8vmin, 22px) !important;
+    fill: currentColor !important;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.zv-fs-cards-toggle.is-open {
+    transform: translate3d(calc(-1 * (var(--zv-card-w) + clamp(14px, 2.4vmin, 22px))), -50%, 0) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #0a0a0c !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+/* Frameless 3-card vertical carousel drawer (NO outer box, NO panel background, zero overflow) */
+.zv-fs-cards-list {
+    position: absolute !important;
+    top: 50% !important;
+    bottom: auto !important;
+    right: clamp(10px, 2vmin, 18px) !important;
+    width: calc(var(--zv-card-w) + 20px) !important;
+    height: calc((var(--zv-card-h) * 3) + (var(--zv-card-gap) * 2) + 12px) !important;
+    max-height: 82dvh !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding-top: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
+    padding-bottom: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
+    padding-left: 14px !important;
+    padding-right: 6px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: var(--zv-card-gap) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scroll-snap-type: y mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%) !important;
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%) !important;
+    z-index: 129 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate3d(28px, -50%, 0) scale(0.95) !important;
+    transform-origin: right center !important;
+    transition:
+        opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.34s ease !important;
+    will-change: transform, opacity !important;
+}
+
+.zv-fs-cards-list.is-open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, -50%, 0) scale(1) !important;
+}
+
+.zv-fs-cards-list * {
+    touch-action: pan-y !important;
+}
+
+.zv-fs-cards-list::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Individual floating video card:
+   - Default (top & bottom slots of the 3 visible cards): smaller scale (0.84) & softer opacity
+   - Center slot (.is-center-card): larger scale (1.03) & full opacity */
+.zv-fs-card-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: clamp(8px, 1.6vmin, 12px) !important;
+    width: var(--zv-card-w) !important;
+    height: var(--zv-card-h) !important;
+    min-height: var(--zv-card-h) !important;
+    max-height: var(--zv-card-h) !important;
+    padding: clamp(5px, 1.3vmin, 9px) !important;
+    border-radius: clamp(10px, 2vmin, 14px) !important;
+    background: rgba(16, 16, 22, 0.78) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.42) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: center !important;
+    scroll-snap-stop: always !important;
+    transform-origin: right center !important;
+    transform: translate3d(0, 0, 0) scale(0.84) !important;
+    opacity: 0.58 !important;
+    transition:
+        transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.28s ease !important;
+    will-change: transform, opacity !important;
+    color: #fcfcfc !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+    user-select: none !important;
+}
+
+.zv-fs-card-item.is-far-card {
+    transform: translate3d(0, 0, 0) scale(0.76) !important;
+    opacity: 0.15 !important;
+}
+
+.zv-fs-card-item.is-center-card {
+    transform: translate3d(0, 0, 0) scale(1.03) !important;
+    opacity: 1 !important;
+    background: rgba(28, 28, 38, 0.93) !important;
+    border-color: rgba(255, 255, 255, 0.42) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65) !important;
+    z-index: 2 !important;
+}
+
+.zv-fs-card-item.active {
+    background: rgba(42, 42, 56, 0.95) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.72) !important;
+}
+
+.zv-fs-card-item:hover {
+    opacity: 1 !important;
+    border-color: rgba(255, 255, 255, 0.52) !important;
+}
+
+.zv-fs-card-thumb {
+    position: relative !important;
+    width: var(--zv-thumb-w) !important;
+    aspect-ratio: 16 / 9 !important;
+    border-radius: clamp(5px, 1.3vmin, 8px) !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    background: #111 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+}
+
+.zv-fs-card-thumb img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+.zv-fs-card-text {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+.zv-fs-card-title {
+    font-family: 'Inter', sans-serif !important;
+    font-size: var(--zv-title-size) !important;
+    font-weight: 600 !important;
+    color: #fcfcfc !important;
+    line-height: 1.3 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+.zv-fs-card-item.active .zv-fs-card-title,
+.zv-fs-card-item.is-center-card .zv-fs-card-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.zv-fs-card-bars {
+    display: none !important;
+    align-items: center !important;
+    gap: 2.5px !important;
+    margin-left: auto !important;
+    padding-left: 5px !important;
+    flex-shrink: 0 !important;
+}
+
+.zv-fs-card-item.active .zv-fs-card-bars {
+    display: flex !important;
+}
+
+.zv-fs-card-bars span {
+    width: 2.5px !important;
+    height: clamp(8px, 2vmin, 11px) !important;
+    background: #ffffff !important;
+    border-radius: 2px !important;
+    animation: sound 1s ease-in-out infinite !important;
+}
+
+.zv-fs-card-bars span:nth-child(2) {
+    animation-delay: 0.12s !important;
+    height: clamp(12px, 2.8vmin, 16px) !important;
+}
+
+.zv-fs-card-bars span:nth-child(3) {
+    animation-delay: 0.24s !important;
+    height: clamp(7px, 1.8vmin, 9px) !important;
+}

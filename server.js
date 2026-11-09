@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import crypto from 'crypto';
+import fs from 'fs';
 import https from 'https';
 import { Readable } from 'stream';
 
@@ -678,12 +679,34 @@ const handleStreamChunk = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Stream-Token, Range');
 
-    Readable.fromWeb(upstreamRes.body).on('error', (err) => {
+    if (!upstreamRes.body) {
+      return res.end();
+    }
+
+    const nodeStream = Readable.fromWeb(upstreamRes.body);
+    nodeStream.on('error', (err) => {
       console.warn('Chunk stream transfer note:', err.message);
-    }).pipe(res);
+      if (!res.headersSent) {
+        res.status(502).end();
+      } else {
+        res.end();
+      }
+    });
+    res.on('error', (err) => {
+      console.warn('Chunk response stream error:', err.message);
+      nodeStream.destroy();
+    });
+    req.on('close', () => {
+      nodeStream.destroy();
+    });
+    nodeStream.pipe(res);
   } catch (err) {
     console.error('Chunk proxy error:', err);
-    res.status(502).send('Error streaming media chunk');
+    if (!res.headersSent) {
+      res.status(502).send('Error streaming media chunk');
+    } else {
+      res.end();
+    }
   }
 };
 
@@ -760,8 +783,6 @@ app.get('/api/firebase-config', (req, res) => {
   });
 });
 
-import fs from 'fs';
-
 // Disguised & ZV1-Encrypted Vault Config Endpoint (/api/zv-vault-sync)
 // Never exposes filename or plain JS in DevTools Sources / Network tabs
 app.get('/api/zv-vault-sync', (req, res) => {
@@ -834,6 +855,19 @@ app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
 });
+
+server.on('error', (err) => {
+  console.error('Server error:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+});
+

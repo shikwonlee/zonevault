@@ -447,6 +447,9 @@ body:has(#player-container:fullscreen) {
     height: calc((var(--zv-card-h) * 3) + (var(--zv-card-gap) * 2) + 12px) !important;
     max-height: 82dvh !important;
     background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: none !important;
     box-shadow: none !important;
     padding-top: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
@@ -499,6 +502,7 @@ body:has(#player-container:fullscreen) {
 }
 
 /* Individual floating video card:
+   - Completely transparent background (no dark/black card box)
    - Smoothly interpolated scale & opacity via --zv-card-scale and --zv-card-opacity */
 .zv-fs-card-item {
     --zv-card-scale: 0.84;
@@ -512,11 +516,12 @@ body:has(#player-container:fullscreen) {
     max-height: var(--zv-card-h) !important;
     padding: clamp(5px, 1.3vmin, 9px) !important;
     border-radius: clamp(10px, 2vmin, 14px) !important;
-    background: rgba(16, 16, 22, 0.78) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.42) !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
     scroll-snap-align: center !important;
@@ -525,10 +530,7 @@ body:has(#player-container:fullscreen) {
     opacity: var(--zv-card-opacity) !important;
     transition:
         transform 0.14s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 0.14s cubic-bezier(0.22, 1, 0.36, 1),
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        box-shadow 0.2s ease !important;
+        opacity 0.14s cubic-bezier(0.22, 1, 0.36, 1) !important;
     will-change: transform, opacity !important;
     color: #fcfcfc !important;
     text-align: left !important;
@@ -544,20 +546,26 @@ body:has(#player-container:fullscreen) {
 .zv-fs-card-item.is-center-card {
     --zv-card-scale: 1.04;
     --zv-card-opacity: 1;
-    background: rgba(28, 28, 38, 0.93) !important;
-    border-color: rgba(255, 255, 255, 0.44) !important;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65) !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
     z-index: 2 !important;
 }
 
 .zv-fs-card-item.active {
-    background: rgba(42, 42, 56, 0.95) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.72) !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .zv-fs-card-item:hover {
     opacity: 1 !important;
-    border-color: rgba(255, 255, 255, 0.52) !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .zv-fs-card-thumb {
@@ -567,8 +575,12 @@ body:has(#player-container:fullscreen) {
     border-radius: clamp(5px, 1.3vmin, 8px) !important;
     overflow: hidden !important;
     flex-shrink: 0 !important;
-    background: #111 !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+    background: transparent !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55) !important;
+}
+
+.zv-fs-card-item.active .zv-fs-card-thumb {
+    border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
 }
 
 .zv-fs-card-thumb img {
@@ -583,6 +595,7 @@ body:has(#player-container:fullscreen) {
     flex-direction: column !important;
     flex: 1 !important;
     min-width: 0 !important;
+    background: transparent !important;
 }
 
 .zv-fs-card-title {
@@ -591,6 +604,10 @@ body:has(#player-container:fullscreen) {
     font-weight: 600 !important;
     color: #fcfcfc !important;
     line-height: 1.3 !important;
+    text-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.95),
+        0 2px 8px rgba(0, 0, 0, 0.9),
+        0 0 12px rgba(0, 0, 0, 0.75) !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
@@ -621,6 +638,7 @@ body:has(#player-container:fullscreen) {
     height: clamp(8px, 2vmin, 11px) !important;
     background: #ffffff !important;
     border-radius: 2px !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
     animation: sound 1s ease-in-out infinite !important;
 }
 

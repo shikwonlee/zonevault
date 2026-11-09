@@ -1,17 +1,14 @@
 /**
  * ============================================================================
- * ZONE VAULT — Protected Media Configuration for SEVENTEEN <BE THE SUN>
+ * ZONE VAULT — Encrypted Media Configuration for SEVENTEEN <BE THE SUN>
  * Location: /2026/bethesun_config.js
- * Connected to: /2025/bethesun.html
  *
  * SECURITY NOTE:
- * Direct browser access (typing this URL in the address bar, Save-As, curl, or
- * external sites) is strictly blocked by server.js and _worker.js (403 Denied).
- * Only /2025/bethesun.html can load this file.
- *
- * HOW TO EDIT CARDS 4 TO 9:
- * Simply paste the title, m3u8 stream url, and vtt subtitle link inside the
- * quotes "" for cards 4 through 9 below.
+ * 1. All stream (.m3u8) and subtitle (.vtt) links below are ZV1-encrypted so no
+ *    raw Mux or Cloudinary links exist in this file.
+ * 2. You can also paste normal "https://..." links if you ever update a card;
+ *    the server/worker automatically ZV1-encrypts the entire file payload over
+ *    the network via /api/zv-vault-sync and blocks direct access to this file.
  * ============================================================================
  */
 
@@ -21,68 +18,67 @@
   const BETHESUN_THUMBNAIL = "https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png";
 
   const BETHESUN_VIDEOS = [
-    // --- VIDEO CARD 1 ---
     {
       id: "1",
       title: "[FULL STAGE] TOUR-ING : SEVENTEEN <BE THE SUN>",
-      url: "https://stream.mux.com/N5jIesqE00ERZqNKQYdnHMtS01PvGBfPDf7kZOGnLewsE.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794063181/bethesun_gycm3q.vtt",
+      url: "ZV1.3b3a673d4b673191.AzIWbZb_gakecQcz1v_A_xUhfVJzlbn3pQIWVnTInYe4b052L6PWrIMIfWwex8PD6WETDzJpo5faoxhBKAPPyJn3HRIPbtm73A",
+      subtitle: "ZV1.a5501b53f3530203.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRiZUKt3th6lLLRox07yG4ARcfEA5wOKEpVx5AjDJ4Y_1AAhGeomj1_pAIFl1",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "2",
       title: "[3 CITY MIX] TOUR-ING : SEVENTEEN <BE THE SUN>",
-      url: "https://stream.mux.com/ITFCPseVCmAdZrI01pdHOqYdDQrcuMsexWhTQ6pnLLSk.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794221308/1423fb67-6c71-11ed-96ea-4a18110e4706-1669346844336_en_US_cp_clipped_cqlyqz.vtt",
+      url: "ZV1.65e3245525ff8464.AzIWbZb_gakecQcz1v_A_xUhfVJzlbnwxC4cY3TcjvTla30hevapz6xZXTxyu_-yhkYGPT18lqvr_CdKUTTPyLDTBXlMMJ_2",
+      subtitle: "ZV1.1234c7f341602323.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRnZTLNm_0vpLfxgy0L6H4gRcfEI9wuCMrFwqU3aS4p62WXoXYN3_ybpfM0ksyLnP5KsQbV9wn-vf9BE2VXOPstXrBGQOcMH1lbFZdzY03MyjodEfNWh2lLWK5RkgZHSS8d36DjgMLM4",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "3",
       title: "[TO CARAT] HIPHOP TEAM",
-      url: "https://stream.mux.com/501B1TjHHU6VyJwy5ifCYcjjRFNO02Y02nTae5iBPhsgHw.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794063184/TO_CARAT_HIPHOP_TEAM_bbuup9.vtt",
+      url: "ZV1.76a5dffc02681a99.AzIWbZb_gakecQcz1v_A_xUhfVJzlbmMoFkdAlPTkP_dHE4BRs62meYNVC0w1vjxnncqeEJWw-HSwBJ-Ui3j1JTzCR9WLYf9kbM",
+      subtitle: "ZV1.cd6d5113569dc095.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRiQFKYnp1K1Lfh89hO-E6QJcfEA5wOKEoFxPKBvixa7BOghpSrqGq9sxAmhAvNDI5_NRLgFjiPid",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "4",
       title: "[TO CARAT] VOCAL TEAM",
-      url: "https://stream.mux.com/9KDf9QH01c4x8xrdCX017l02HQD2r99m7TGZ7r9ADq6udQ.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794063192/TO_CARAT_VOCAL_TEAM_hed4mn.vtt",
+      url: "ZV1.5ba87e8e8abf693d.AzIWbZb_gakecQcz1v_A_xUhfVJzlbmA2yw5Clbx6IbrHmIUdMb47IldLhBr0qezgyBXOkk2nuTo0yksFX3gwI22GzNwLYf9kbM",
+      subtitle: "ZV1.9f9587be47f3ba5c.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRn4HJtjk0v4dfx5i0-7V5VRcfEA5wOKFplxPKBvixa7BOgh3TKmPqNQ6E2xMrufP4bJJahQ02_U",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "5",
       title: "[TO CARAT] PERFORMANCE TEAM",
-      url: "https://stream.mux.com/rnmHkBLA00iagsBqoTkVIwwkrC7P1r8Ms9gCdQEj3UqA.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794118150/TO_CARAT_PERFORMANCE_TEAM_atluos.vtt",
+      url: "ZV1.1246df2d2ad7370a.AzIWbZb_gakecQcz1v_A_xUhfVJzlbnL_gUXWEX1mYe4Q38bKvi-w48HQ252xPuHklY1eQI3vqCF8zB_NgHLt6nxL3lMMJ_2",
+      subtitle: "ZV1.c894412a9a05a806.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRiRZJtno1K4Zckg01e2M4AFcfEE-y-KJpFxPKBvixa7BOghxRriIq9kjF2NCtND-wMdpAQU2wviGtll6QTc",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "6",
       title: "[BE THE CARAT] SPECIAL STAGE MIX - 아주 NICE",
-      url: "https://stream.mux.com/GWK02G5rJOAC9a7HeYsh4Ns9ctZViJcNNbAddR2YkvBE.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794118449/BE_THE_CARAT_SPECIAL_STAGE_MIX_-_%EC%95%84%EC%A3%BC_NICE_ibqira.vtt",
+      url: "ZV1.f16ec9a3ad121bab.AzIWbZb_gakecQcz1v_A_xUhfVJzlbn-xyNvAUCMqv3HawpGOt6AltFILhYaxavD9DgzITpsvZ3e1Rd_NXb474rCK3lMMJ_2",
+      subtitle: "ZV1.7a9694909747c1a8.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRnAAJtvl0aVIch4w1--FsQ9cfEE-y-eIrVxZIhv1zLnfLRZzQr6Rt9srFWRAvdD50cdjT2IP5diz43kpJgSA69SrDmMfA7rk4LFPAyoO_Nq1t9EVJ0Z8ir3U4wgw",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "7",
       title: "[BE THE CARAT] SPECIAL STAGE MIX - WORLD ",
-      url: "https://stream.mux.com/eqFRJTgYWUeEyWIu005EeN6fPKp37HpbvXotHOhQQZEw.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794120695/BE_THE_CARAT_SPECIAL_STAGE_MIX_-_WORLD_wj1n3l.vtt",
+      url: "ZV1.1a29506fbd189c6a.AzIWbZb_gakecQcz1v_A_xUhfVJzlbnc4S4NeVPegeDdT1tWCPzryu9bAEcaivzxnBFWfzh_kaXk-wdTKCzw1abFGXlMMJ_2",
+      subtitle: "ZV1.7e3f0d32a6622dae.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRnAELIvsga9KKh8y0r7QsVJcfEE9w-WFoVxZIhv1zLnfLRZzQr6Rt9srFWRAvdD50cdjT2YFtdHj6XsDLRfsx-v5AWZUdZXv1_Ye",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "8",
       title: "[WITH CARAT] Snap Shoot Freestyle with CARAT",
-      url: "https://stream.mux.com/dDq02Ogwjadk35PLGCEDOX1gfwIugL53742z6fZ86xWs.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794121222/WITH_CARAT_Snap_Shoot_Freestyle_with_CARAT_spmvgl.vtt",
+      url: "ZV1.43ac8973b28a313f.AzIWbZb_gakecQcz1v_A_xUhfVJzlbnd1BlvAUjer93pTnBOOb_ftJ1-ATsF1PeVpS8QLzw6wOSIpgktAR6ZsoTXHXlMMJ_2",
+      subtitle: "ZV1.49ec024800aea049.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRnNYeo7s16hAexllhe2E5A5cfEE9wuGOplxMLhDp27_BPBZ1XLmghfsxBUVunvv1w_RBbBZqgOWPnFlsEHqok6GJdgNlNYms1-UGbx8lxg",
       image: BETHESUN_THUMBNAIL
     },
     {
       id: "9",
       title: "[WITH CARAT] SEVENTEEN with CARAT",
-      url: "https://stream.mux.com/5orKynERvmc3suzagRVVWxdhOdRr9S00o4UHnW6lFvPc.m3u8",
-      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794122130/WITH_CARAT_SEVENTEEN_with_CARAT_yii8jt.vtt",
+      url: "ZV1.0a24f23130f315e5.AzIWbZb_gakecQcz1v_A_xUhfVJzlbmM_xoUSmn8isHlSSxcKsKsn4hvQiF70_q44GcXcSM_w7yIwTt1MHLNworQDXlMMJ_2",
+      subtitle: "ZV1.5fe107c9a398888b.AzIWbZb_gakfYAZ41P6B5wQwPVBugbja_wVwQGbXrcbqRnIHetzs0v9BKho92LSM6FVcfEE9weKPpFxMLhDp27_BPBZ1XLmLss4gAmhEv9Dd7PJMV3lf-ci7y1Y9DnLA_cahGCM",
       image: BETHESUN_THUMBNAIL
     }
   ];
@@ -123,11 +119,4 @@
       }
     }
   });
-
-  // Self-remove script tag from DOM after loading
-  try {
-    if (document.currentScript && document.currentScript.parentNode) {
-      document.currentScript.parentNode.removeChild(document.currentScript);
-    }
-  } catch (_) {}
 })();

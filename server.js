@@ -760,23 +760,46 @@ app.get('/api/firebase-config', (req, res) => {
   });
 });
 
-// Protect separate media config scripts (e.g. /2026/bethesun_config.js) from direct browser navigation, curl, or external access
+import fs from 'fs';
+
+// Disguised & ZV1-Encrypted Vault Config Endpoint (/api/zv-vault-sync)
+// Never exposes filename or plain JS in DevTools Sources / Network tabs
+app.get('/api/zv-vault-sync', (req, res) => {
+  if (isDownloadToolOrExtension(req) || isDirectDownloadAttempt(req) || !isAllowedOrigin(req)) {
+    return res.status(403).send('Access denied');
+  }
+  if (req.headers['x-zv-vault-sync'] !== 'ZV1') {
+    return res.status(403).send('Access denied');
+  }
+  try {
+    const configPath = path.join(__dirname, '2026', 'bethesun_config.js');
+    const rawCode = fs.readFileSync(configPath, 'utf8');
+    const encryptedPayload = encryptZvPayload(rawCode);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.send(encryptedPayload);
+  } catch (err) {
+    return res.status(404).send('Not found');
+  }
+});
+
+// Block ALL direct/script requests to /2026/bethesun_config.js so it never appears in DevTools Sources or browser tabs
 app.use((req, res, next) => {
   const lowerPath = req.path.toLowerCase();
   if (lowerPath === '/2026/bethesun_config.js' || lowerPath.endsWith('_config.js')) {
-    const dest = (req.headers['sec-fetch-dest'] || '').toLowerCase();
-    const mode = (req.headers['sec-fetch-mode'] || '').toLowerCase();
-    if (
-      isDownloadToolOrExtension(req) ||
-      isDirectDownloadAttempt(req) ||
-      !isAllowedOrigin(req) ||
-      (dest && dest !== 'script' && dest !== 'empty') ||
-      mode === 'navigate'
-    ) {
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      return res.status(403).send('Access denied: Direct access to protected media configuration is prohibited.');
+    if (req.headers['x-zv-vault-sync'] === 'ZV1' && isAllowedOrigin(req) && !isDirectDownloadAttempt(req)) {
+      try {
+        const configPath = path.join(__dirname, req.path);
+        const rawCode = fs.readFileSync(configPath, 'utf8');
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        return res.send(encryptZvPayload(rawCode));
+      } catch (_) {}
     }
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return res.status(403).send('Access denied: Direct access to protected media configuration is prohibited.');
   }
   next();
 });

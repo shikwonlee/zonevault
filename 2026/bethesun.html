@@ -13,8 +13,6 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <link rel="stylesheet" href="/player/video_player.css">
   <script src="/player/video_player.js?v=20261105"></script>
-  <!-- Protected separate media config file in 2026 folder -->
-  <script src="/2026/bethesun_config.js?v=20261107"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -368,23 +366,19 @@
 </div>
 
 <script>
-const THUMBNAIL = (window.__ZV_BETHESUN_VAULT__ && window.__ZV_BETHESUN_VAULT__.thumbnail) ||
-  "https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png";
+const THUMBNAIL = "https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png";
 
-// Load the 9 cards metadata from the protected /2026/bethesun_config.js file
-const playlistData = (window.__ZV_BETHESUN_VAULT__ && typeof window.__ZV_BETHESUN_VAULT__.getPlaylistMeta === 'function')
-  ? window.__ZV_BETHESUN_VAULT__.getPlaylistMeta()
-  : [
-      { id: "1", title: "[FULL STAGE] TOUR-ING : SEVENTEEN <BE THE SUN>", image: THUMBNAIL },
-      { id: "2", title: "[TO CARAT] HIPHOP TEAM", image: THUMBNAIL },
-      { id: "3", title: "[TO CARAT] VOCAL TEAM", image: THUMBNAIL },
-      { id: "4", title: "", image: THUMBNAIL },
-      { id: "5", title: "", image: THUMBNAIL },
-      { id: "6", title: "", image: THUMBNAIL },
-      { id: "7", title: "", image: THUMBNAIL },
-      { id: "8", title: "", image: THUMBNAIL },
-      { id: "9", title: "", image: THUMBNAIL }
-    ];
+let playlistData = [
+  { id: "1", title: "[FULL STAGE] TOUR-ING : SEVENTEEN <BE THE SUN>", image: THUMBNAIL },
+  { id: "2", title: "[3 CITY MIX] TOUR-ING : SEVENTEEN <BE THE SUN>", image: THUMBNAIL },
+  { id: "3", title: "[TO CARAT] HIPHOP TEAM", image: THUMBNAIL },
+  { id: "4", title: "[TO CARAT] VOCAL TEAM", image: THUMBNAIL },
+  { id: "5", title: "[TO CARAT] PERFORMANCE TEAM", image: THUMBNAIL },
+  { id: "6", title: "[BE THE CARAT] SPECIAL STAGE MIX - 아주 NICE", image: THUMBNAIL },
+  { id: "7", title: "[BE THE CARAT] SPECIAL STAGE MIX - WORLD ", image: THUMBNAIL },
+  { id: "8", title: "[WITH CARAT] Snap Shoot Freestyle with CARAT", image: THUMBNAIL },
+  { id: "9", title: "[WITH CARAT] SEVENTEEN with CARAT", image: THUMBNAIL }
+];
 
 const playlistContainer = document.getElementById('playlist-items');
 const posterContainer = document.getElementById('poster-container');
@@ -396,6 +390,44 @@ let episodeLoadToken = 0;
 let currentHistoryKey = null;
 let lastSavedHistory = null;
 let pageIdentifier = window.location.pathname.split("/").pop().replace(".html", "") || "bethesun";
+let vaultReadyPromise = null;
+
+// Fetch & decrypt media config exclusively in browser RAM via disguised /api/zv-vault-sync endpoint
+// (Never loads a <script src> tag, so bethesun_config.js never appears in DevTools Elements, Sources, or Network)
+function ensureVaultLoaded() {
+    if (window.__ZV_BETHESUN_VAULT__) return Promise.resolve(window.__ZV_BETHESUN_VAULT__);
+    if (vaultReadyPromise) return vaultReadyPromise;
+
+    vaultReadyPromise = (async () => {
+        try {
+            const res = await fetch('/api/zv-vault-sync?k=bts26', {
+                method: 'GET',
+                headers: {
+                    'X-ZV-Vault-Sync': 'ZV1',
+                    'X-Requested-With': 'ZoneVaultPlayer'
+                }
+            });
+            if (res.ok) {
+                const encryptedPayload = await res.text();
+                const decryptedJs = (window.ZoneVaultStream && typeof window.ZoneVaultStream.decryptPayload === 'function')
+                    ? window.ZoneVaultStream.decryptPayload(encryptedPayload)
+                    : encryptedPayload;
+                if (decryptedJs && !decryptedJs.startsWith('ZV1.')) {
+                    const execFn = new Function(decryptedJs);
+                    execFn();
+                }
+            }
+        } catch (_) {}
+
+        if (window.__ZV_BETHESUN_VAULT__ && typeof window.__ZV_BETHESUN_VAULT__.getPlaylistMeta === 'function') {
+            playlistData = window.__ZV_BETHESUN_VAULT__.getPlaylistMeta();
+            renderPlaylistCards();
+        }
+        return window.__ZV_BETHESUN_VAULT__ || null;
+    })();
+
+    return vaultReadyPromise;
+}
 
 // Global next-episode helper
 window.playNextEpisodeGlobal = function() {
@@ -450,6 +482,8 @@ function setActiveEpisode(ep) {
 
 // --- 4. ARTPLAYER & LOGIC ---
 async function loadAndPlayEpisode(epId, updateUrl = true) {
+    await ensureVaultLoaded();
+
     const ep = playlistData.find(item => item.id === String(epId));
     if (!ep) return;
 
@@ -515,39 +549,48 @@ window.addEventListener('popstate', (event) => {
 });
 
 // --- 5. BUILD THE 9 VIDEO CARDS ---
-playlistData.forEach(ep => {
-  const epDiv = document.createElement('div');
-  epDiv.className = 'playlist-item';
-  epDiv.dataset.id = ep.id;
+function renderPlaylistCards() {
+    playlistContainer.innerHTML = '';
+    playlistData.forEach(ep => {
+        const epDiv = document.createElement('div');
+        epDiv.className = 'playlist-item';
+        if (window.currentEpData && window.currentEpData.id === ep.id) {
+            epDiv.classList.add('active');
+        }
+        epDiv.dataset.id = ep.id;
 
-  const imgWrapper = document.createElement('div');
-  imgWrapper.className = "playlist-img-wrapper";
-  
-  const img = document.createElement('img'); 
-  img.src = ep.image || THUMBNAIL; 
-  img.loading = "lazy";
-  img.alt = ep.title || `Stream ${ep.id}`;
-  imgWrapper.appendChild(img);
-  
-  const textDiv = document.createElement('div'); 
-  textDiv.className = "playlist-text";
-  
-  const title = document.createElement('span'); 
-  title.className = "playlist-title"; 
-  title.textContent = ep.title;
-  textDiv.appendChild(title);
+        const imgWrapper = document.createElement('div');
+        imgWrapper.className = "playlist-img-wrapper";
+        
+        const img = document.createElement('img'); 
+        img.src = ep.image || THUMBNAIL; 
+        img.loading = "lazy";
+        img.alt = ep.title || `Stream ${ep.id}`;
+        imgWrapper.appendChild(img);
+        
+        const textDiv = document.createElement('div'); 
+        textDiv.className = "playlist-text";
+        
+        const title = document.createElement('span'); 
+        title.className = "playlist-title"; 
+        title.textContent = ep.title;
+        textDiv.appendChild(title);
 
-  const indicator = document.createElement('div');
-  indicator.className = 'playing-indicator';
-  indicator.innerHTML = '<div class="bar"></div><div class="bar"></div><div class="bar"></div>';
-  
-  epDiv.appendChild(imgWrapper); 
-  epDiv.appendChild(textDiv);
-  epDiv.appendChild(indicator);
-  
-  epDiv.addEventListener('click', () => loadAndPlayEpisode(ep.id, true));
-  playlistContainer.appendChild(epDiv);
-});
+        const indicator = document.createElement('div');
+        indicator.className = 'playing-indicator';
+        indicator.innerHTML = '<div class="bar"></div><div class="bar"></div><div class="bar"></div>';
+        
+        epDiv.appendChild(imgWrapper); 
+        epDiv.appendChild(textDiv);
+        epDiv.appendChild(indicator);
+        
+        epDiv.addEventListener('click', () => loadAndPlayEpisode(ep.id, true));
+        playlistContainer.appendChild(epDiv);
+    });
+}
+
+renderPlaylistCards();
+ensureVaultLoaded();
 
 window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);

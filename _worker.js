@@ -732,16 +732,14 @@ export default {
     const url = new URL(request.url);
     const lowerPath = url.pathname.toLowerCase();
 
-    // Protect separate media config scripts (e.g. /2026/bethesun_config.js) from direct browser navigation, curl, or external access
-    if (lowerPath === '/2026/bethesun_config.js' || lowerPath.endsWith('_config.js')) {
-      const dest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
-      const mode = (request.headers.get('sec-fetch-mode') || '').toLowerCase();
+    // Disguised & ZV1-Encrypted Vault Config Endpoint (/api/zv-vault-sync)
+    // Never exposes bethesun_config.js in DevTools Sources, Elements, or Network tabs
+    if (lowerPath === '/api/zv-vault-sync' || lowerPath === '/2026/bethesun_config.js' || lowerPath.endsWith('_config.js')) {
       if (
         isDownloadToolOrExtension(request) ||
         isDirectDownloadAttempt(request) ||
         !checkOriginAllowed(request) ||
-        (dest && dest !== 'script' && dest !== 'empty') ||
-        mode === 'navigate'
+        request.headers.get('x-zv-vault-sync') !== 'ZV1'
       ) {
         return new Response('Access denied: Direct access to protected media configuration is prohibited.', {
           status: 403,
@@ -751,6 +749,30 @@ export default {
             ...corsHeaders(request)
           }
         });
+      }
+
+      try {
+        const targetAssetUrl = new URL('/2026/bethesun_config.js', request.url);
+        const assetReq = new Request(targetAssetUrl.toString(), { method: 'GET' });
+        const rawRes = (env && env.ASSETS && typeof env.ASSETS.fetch === 'function')
+          ? await env.ASSETS.fetch(assetReq)
+          : await fetch(assetReq);
+        if (!rawRes || !rawRes.ok) {
+          return new Response('Not found', { status: 404, headers: corsHeaders(request) });
+        }
+        const rawCode = await rawRes.text();
+        const encryptedPayload = encryptZvPayload(rawCode);
+        return new Response(encryptedPayload, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'X-Content-Type-Options': 'nosniff',
+            ...corsHeaders(request)
+          }
+        });
+      } catch (_) {
+        return new Response('Error', { status: 500, headers: corsHeaders(request) });
       }
     }
 

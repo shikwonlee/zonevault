@@ -599,7 +599,7 @@
             setting: true,
             fullscreen: true,
             fullscreenWeb: false,
-            miniProgressBar: true,
+            miniProgressBar: false,
             autoOrientation: true,
             lock: true,
             fastForward: false, // Disable built-in fast forward slide
@@ -787,6 +787,30 @@
         const artInstance = new Artplayer(artOptions);
         window.art = artInstance;
 
+        // Sync progress slider visibility strictly with Artplayer control show/hide state
+        // so the slider never drops to the bottom or gets accidentally tapped when controls hide
+        const syncProgressVisibility = (isControlShown) => {
+            const progressEl = artInstance.template && artInstance.template.$progress;
+            if (!progressEl) return;
+            if (isControlShown && !artInstance.lock) {
+                progressEl.style.opacity = '1';
+                progressEl.style.visibility = 'visible';
+                progressEl.style.pointerEvents = 'auto';
+            } else {
+                progressEl.style.opacity = '0';
+                progressEl.style.visibility = 'hidden';
+                progressEl.style.pointerEvents = 'none';
+            }
+        };
+
+        artInstance.on('control', (state) => {
+            syncProgressVisibility(state);
+        });
+
+        artInstance.on('lock', (isLocked) => {
+            syncProgressVisibility(!isLocked && artInstance.controls.show);
+        });
+
         // Custom touch gestures, anti-capture shield & click handling
         artInstance.on('ready', () => {
             if (artInstance.video) {
@@ -802,9 +826,16 @@
                 window.ZoneVaultCaptureShield.protectPlayerContainer(playerEl, artInstance.video);
             }
 
-            // Prevent screen touch-sliding gestures completely
+            // Prevent screen touch-sliding gestures on video, while allowing touch scrolling inside Settings/Quality
             playerEl.addEventListener('touchmove', (e) => {
-                if (!e.target.closest('.art-control-progress')) {
+                if (
+                    e.target.closest('.art-settings') ||
+                    e.target.closest('.art-setting') ||
+                    e.target.closest('.art-setting-panel')
+                ) {
+                    return;
+                }
+                if (!e.target.closest('.art-control-progress') || !artInstance.controls.show) {
                     e.preventDefault();
                     e.stopPropagation();
                 }
@@ -847,7 +878,14 @@
             };
 
             playerEl.addEventListener('touchend', (e) => {
-                if (e.target.closest('.art-controls') || e.target.closest('.art-setting') || e.target.closest('.art-setting-panel')) {
+                if (
+                    e.target.closest('.art-controls') ||
+                    e.target.closest('.art-settings') ||
+                    e.target.closest('.art-setting') ||
+                    e.target.closest('.art-setting-panel') ||
+                    e.target.closest('.art-layer-lock') ||
+                    (artInstance.controls.show && e.target.closest('.art-control-progress'))
+                ) {
                     return;
                 }
                 e.preventDefault();
@@ -858,7 +896,14 @@
             });
 
             playerEl.addEventListener('click', (e) => {
-                if (e.target.closest('.art-controls') || e.target.closest('.art-setting') || e.target.closest('.art-setting-panel')) {
+                if (
+                    e.target.closest('.art-controls') ||
+                    e.target.closest('.art-settings') ||
+                    e.target.closest('.art-setting') ||
+                    e.target.closest('.art-setting-panel') ||
+                    e.target.closest('.art-layer-lock') ||
+                    (artInstance.controls.show && e.target.closest('.art-control-progress'))
+                ) {
                     return;
                 }
                 if ('ontouchstart' in window) return;

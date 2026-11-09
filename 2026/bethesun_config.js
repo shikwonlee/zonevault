@@ -31,9 +31,9 @@
     },
     {
       id: "2",
-      title: "PROCESSING",
-      url: "",
-      subtitle: "",
+      title: "[3 CITY MIX] TOUR-ING : SEVENTEEN <BE THE SUN>",
+      url: "https://stream.mux.com/ITFCPseVCmAdZrI01pdHOqYdDQrcuMsexWhTQ6pnLLSk.m3u8",
+      subtitle: "https://res.cloudinary.com/sanuqblh/raw/upload/v1794221308/1423fb67-6c71-11ed-96ea-4a18110e4706-1669346844336_en_US_cp_clipped_cqlyqz.vtt",
       image: BETHESUN_THUMBNAIL
     },
     {

@@ -164,3 +164,34 @@ video.zv-video-frame-blackout {
     transition: none !important;
 }
 
+/* Hide mini progress bar at the bottom when controls hide */
+.art-video-player .art-mini-progress-bar {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Move Lock button to top-right inside the player */
+.art-video-player .art-layer-lock {
+    top: 16px !important;
+    right: 16px !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+}
+
+/* Allow vertical scrolling inside Settings / Quality menu */
+.art-video-player .art-settings {
+    max-height: calc(100% - 70px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+}
+
+.art-video-player .art-settings * {
+    touch-action: pan-y !important;
+}
+
+
+
+

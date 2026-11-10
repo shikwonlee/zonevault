@@ -1029,10 +1029,12 @@
                 const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
                 if (!cards.length) return;
                 const clampedIdx = Math.max(0, Math.min(cards.length - 1, idx));
-                const stride = cards.length > 1
-                    ? (cards[1].offsetTop - cards[0].offsetTop)
-                    : (cards[0].offsetHeight + 8);
-                const targetTop = Math.max(0, clampedIdx * stride);
+                const targetCard = cards[clampedIdx];
+                const listHeight = fsCardsListEl.clientHeight || (targetCard.offsetHeight * 3);
+                const targetTop = Math.max(
+                    0,
+                    targetCard.offsetTop - (listHeight / 2) + (targetCard.offsetHeight / 2)
+                );
                 try {
                     fsCardsListEl.scrollTo({
                         top: targetTop,
@@ -1043,7 +1045,7 @@
                 }
             };
 
-            // Continuously interpolate scale & opacity for silky-smooth 60/120fps scrolling
+            // Continuously interpolate scale & opacity using true container center for silky-smooth 60/120fps mobile scrolling
             let scrollRafId = null;
             let scrollSnapSettleTimer = null;
             const updateCenterCardScale = () => {
@@ -1051,38 +1053,50 @@
                 const cards = Array.from(fsCardsListEl.querySelectorAll('.zv-fs-card-item'));
                 if (cards.length === 0) return;
 
-                const firstCard = cards[0];
-                const secondCard = cards[1];
-                const stride = secondCard
-                    ? (secondCard.offsetTop - firstCard.offsetTop)
-                    : (firstCard ? firstCard.offsetHeight : 0);
+                const listHeight = fsCardsListEl.clientHeight;
+                if (listHeight > 0) {
+                    const listCenterY = fsCardsListEl.scrollTop + (listHeight / 2);
+                    const firstCard = cards[0];
+                    const secondCard = cards[1];
+                    const stride = secondCard
+                        ? Math.max(1, secondCard.offsetTop - firstCard.offsetTop)
+                        : Math.max(1, (firstCard ? firstCard.offsetHeight : 60) + 8);
 
-                if (stride > 0) {
-                    const fractionalIdx = fsCardsListEl.scrollTop / stride;
-                    const closestIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fractionalIdx)));
+                    let closestIdx = 0;
+                    let minAbsDist = Infinity;
+
+                    const distances = cards.map((card, idx) => {
+                        const cardCenterY = card.offsetTop + (card.offsetHeight / 2);
+                        const d = Math.abs(cardCenterY - listCenterY) / stride;
+                        if (d < minAbsDist) {
+                            minAbsDist = d;
+                            closestIdx = idx;
+                        }
+                        return d;
+                    });
 
                     cards.forEach((card, idx) => {
-                        const dist = Math.abs(idx - fractionalIdx);
+                        const dist = distances[idx];
                         const clampedT = Math.max(0, 1 - Math.min(1, dist));
                         const smoothT = clampedT * clampedT * (3 - 2 * clampedT);
-                        const scale = dist > 1.2
-                            ? 0.76
-                            : (0.84 + (0.20 * smoothT));
-                        const opacity = dist > 1.2
-                            ? Math.max(0.16, 0.56 - ((dist - 1) * 0.45))
-                            : (0.56 + (0.44 * smoothT));
+                        const scale = dist > 1.35
+                            ? 0.78
+                            : (0.85 + (0.19 * smoothT));
+                        const opacity = dist > 1.35
+                            ? Math.max(0.22, 0.58 - ((dist - 1) * 0.42))
+                            : (0.58 + (0.42 * smoothT));
 
                         card.style.setProperty('--zv-card-scale', scale.toFixed(3));
                         card.style.setProperty('--zv-card-opacity', opacity.toFixed(3));
                         card.classList.toggle('is-center-card', idx === closestIdx);
-                        card.classList.toggle('is-far-card', dist > 1.35);
+                        card.classList.toggle('is-far-card', dist > 1.45);
                     });
                 } else {
                     const activeIdx = Math.max(0, cards.findIndex(c => c.classList.contains('active')));
                     cards.forEach((card, idx) => {
                         const isCenter = idx === activeIdx;
-                        card.style.setProperty('--zv-card-scale', isCenter ? '1.04' : '0.84');
-                        card.style.setProperty('--zv-card-opacity', isCenter ? '1' : '0.56');
+                        card.style.setProperty('--zv-card-scale', isCenter ? '1.04' : '0.85');
+                        card.style.setProperty('--zv-card-opacity', isCenter ? '1' : '0.58');
                         card.classList.toggle('is-center-card', isCenter);
                         card.classList.toggle('is-far-card', Math.abs(idx - activeIdx) > 1);
                     });
@@ -1231,19 +1245,25 @@
             fsCardsListEl.addEventListener('scroll', () => {
                 if (scrollRafId) cancelAnimationFrame(scrollRafId);
                 scrollRafId = requestAnimationFrame(updateCenterCardScale);
-                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
-                scrollSnapSettleTimer = setTimeout(() => {
-                    const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
-                    if (cards.length > 1) {
-                        const stride = cards[1].offsetTop - cards[0].offsetTop;
-                        if (stride > 0) {
-                            const nearestIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fsCardsListEl.scrollTop / stride)));
-                            if (Math.abs(fsCardsListEl.scrollTop - (nearestIdx * stride)) > 2) {
-                                scrollCardIndexToCenter(nearestIdx, true);
-                            }
-                        }
-                    }
-                }, 140);
+            }, { passive: true });
+
+            // Allow native mobile touch scrolling inside the cards list without outer player interference
+            fsCardsListEl.addEventListener('touchstart', (ev) => {
+                lastTouchActivityTime = Date.now();
+                onDesktopPointerWakeUp();
+                ev.stopPropagation();
+            }, { passive: true });
+
+            fsCardsListEl.addEventListener('touchmove', (ev) => {
+                lastTouchActivityTime = Date.now();
+                onDesktopPointerWakeUp();
+                ev.stopPropagation();
+            }, { passive: true });
+
+            fsCardsListEl.addEventListener('touchend', (ev) => {
+                lastTouchActivityTime = Date.now();
+                onDesktopPointerWakeUp();
+                ev.stopPropagation();
             }, { passive: true });
 
             // Stop wheel events from bubbling out of the scrollable cards list

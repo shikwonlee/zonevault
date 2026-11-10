@@ -286,35 +286,35 @@ body:has(#player-container:fullscreen) {
    - Separated pseudo-class rules so Firefox, Chrome, Edge, and Safari all parse them cleanly
    ========================================= */
 .art-video-player {
-    --zv-card-h: clamp(48px, 11.5vmin, 74px);
-    --zv-card-w: clamp(190px, 40vmin, 305px);
-    --zv-card-gap: clamp(6px, 1.5vmin, 11px);
-    --zv-thumb-w: clamp(56px, 13vmin, 88px);
-    --zv-title-size: clamp(10.5px, 2vmin, 13px);
-    --zv-toggle-size: clamp(34px, 6.8vmin, 44px);
+    --zv-card-h: clamp(58px, 13.5vmin, 86px);
+    --zv-card-w: clamp(225px, 45vmin, 345px);
+    --zv-card-gap: clamp(8px, 1.8vmin, 13px);
+    --zv-thumb-w: clamp(68px, 15.5vmin, 104px);
+    --zv-title-size: clamp(12px, 2.3vmin, 14.5px);
+    --zv-toggle-size: clamp(38px, 7.6vmin, 48px);
 }
 
 /* Compact mobile landscape / small viewport adaptation */
 @media (max-height: 460px), (max-width: 720px) {
     .art-video-player {
-        --zv-card-h: clamp(42px, 11.8vmin, 54px);
-        --zv-card-w: clamp(168px, 34vw, 224px);
-        --zv-card-gap: 6px;
-        --zv-thumb-w: clamp(48px, 12.5vmin, 64px);
-        --zv-title-size: clamp(9.5px, 2.1vmin, 11.5px);
-        --zv-toggle-size: clamp(30px, 7.2vmin, 36px);
+        --zv-card-h: clamp(52px, 14.2vmin, 66px);
+        --zv-card-w: clamp(210px, 39vw, 270px);
+        --zv-card-gap: 8px;
+        --zv-thumb-w: clamp(62px, 15.5vmin, 80px);
+        --zv-title-size: clamp(11px, 2.4vmin, 13px);
+        --zv-toggle-size: clamp(34px, 8vmin, 42px);
     }
 }
 
 /* Large desktop monitor fullscreen adaptation */
 @media (min-width: 1440px) and (min-height: 800px) {
     .art-video-player {
-        --zv-card-h: 74px;
-        --zv-card-w: 304px;
-        --zv-card-gap: 11px;
-        --zv-thumb-w: 88px;
-        --zv-title-size: 13px;
-        --zv-toggle-size: 44px;
+        --zv-card-h: 86px;
+        --zv-card-w: 345px;
+        --zv-card-gap: 13px;
+        --zv-thumb-w: 104px;
+        --zv-title-size: 14.5px;
+        --zv-toggle-size: 48px;
     }
 }
 
@@ -443,17 +443,17 @@ body:has(#player-container:fullscreen) {
     top: 50% !important;
     bottom: auto !important;
     right: clamp(10px, 2vmin, 18px) !important;
-    width: calc(var(--zv-card-w) + 22px) !important;
-    height: calc((var(--zv-card-h) * 3) + (var(--zv-card-gap) * 2) + 12px) !important;
-    max-height: 82dvh !important;
+    width: calc(var(--zv-card-w) + 24px) !important;
+    height: calc((var(--zv-card-h) * 3) + (var(--zv-card-gap) * 2) + 16px) !important;
+    max-height: 86dvh !important;
     background: transparent !important;
     background-color: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: none !important;
     box-shadow: none !important;
-    padding-top: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
-    padding-bottom: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
     padding-left: 16px !important;
     padding-right: 6px !important;
     margin: 0 !important;
@@ -463,14 +463,14 @@ body:has(#player-container:fullscreen) {
     gap: var(--zv-card-gap) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    scroll-snap-type: y proximity !important;
+    scroll-snap-type: none !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain !important;
     touch-action: pan-y !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 91%, transparent 100%) !important;
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 91%, transparent 100%) !important;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%) !important;
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%) !important;
     z-index: 129 !important;
     opacity: 0 !important;
     visibility: hidden !important;
@@ -482,6 +482,18 @@ body:has(#player-container:fullscreen) {
         transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
         visibility 0.32s ease !important;
     will-change: scroll-position, transform, opacity !important;
+}
+
+/* Guaranteed top & bottom flex spacers so the first and very last video card can always scroll to the exact center on mobile */
+.zv-fs-cards-list::before,
+.zv-fs-cards-list::after {
+    content: "" !important;
+    display: block !important;
+    width: 100% !important;
+    height: calc(50% - (var(--zv-card-h) / 2)) !important;
+    min-height: calc(var(--zv-card-h) * 0.9) !important;
+    flex-shrink: 0 !important;
+    pointer-events: none !important;
 }
 
 .zv-fs-cards-list.is-open {
@@ -503,18 +515,18 @@ body:has(#player-container:fullscreen) {
 
 /* Individual floating video card:
    - Completely transparent background (no dark/black card box)
-   - Smoothly interpolated scale & opacity via --zv-card-scale and --zv-card-opacity */
+   - Instant rAF-driven scale & opacity via --zv-card-scale and --zv-card-opacity for zero-lag mobile scrolling */
 .zv-fs-card-item {
-    --zv-card-scale: 0.84;
-    --zv-card-opacity: 0.56;
+    --zv-card-scale: 0.85;
+    --zv-card-opacity: 0.58;
     display: flex !important;
     align-items: center !important;
-    gap: clamp(8px, 1.6vmin, 12px) !important;
+    gap: clamp(9px, 1.8vmin, 14px) !important;
     width: var(--zv-card-w) !important;
     height: var(--zv-card-h) !important;
     min-height: var(--zv-card-h) !important;
     max-height: var(--zv-card-h) !important;
-    padding: clamp(5px, 1.3vmin, 9px) !important;
+    padding: clamp(6px, 1.4vmin, 10px) !important;
     border-radius: clamp(10px, 2vmin, 14px) !important;
     background: transparent !important;
     background-color: transparent !important;
@@ -524,13 +536,10 @@ body:has(#player-container:fullscreen) {
     box-shadow: none !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
-    scroll-snap-align: center !important;
     transform-origin: right center !important;
     transform: translate3d(0, 0, 0) scale(var(--zv-card-scale)) !important;
     opacity: var(--zv-card-opacity) !important;
-    transition:
-        transform 0.14s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 0.14s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    transition: none !important;
     will-change: transform, opacity !important;
     color: #fcfcfc !important;
     text-align: left !important;

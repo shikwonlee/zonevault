@@ -1048,6 +1048,29 @@
             // Continuously interpolate scale & opacity using true container center for silky-smooth 60/120fps mobile scrolling
             let scrollRafId = null;
             let scrollSnapSettleTimer = null;
+            let isTouchingCardsList = false;
+            let currentClosestCardIdx = 0;
+
+            const scheduleSnapToClosestCard = (delayMs = 110) => {
+                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
+                scrollSnapSettleTimer = setTimeout(() => {
+                    if (isTouchingCardsList || !fsCardsListEl) return;
+                    const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
+                    if (cards.length > 1) {
+                        const clampedIdx = Math.max(0, Math.min(cards.length - 1, currentClosestCardIdx));
+                        const targetCard = cards[clampedIdx];
+                        const listHeight = fsCardsListEl.clientHeight || (targetCard.offsetHeight * 3);
+                        const idealTop = Math.max(
+                            0,
+                            targetCard.offsetTop - (listHeight / 2) + (targetCard.offsetHeight / 2)
+                        );
+                        if (Math.abs(fsCardsListEl.scrollTop - idealTop) > 2) {
+                            scrollCardIndexToCenter(clampedIdx, true);
+                        }
+                    }
+                }, delayMs);
+            };
+
             const updateCenterCardScale = () => {
                 if (!fsCardsListEl) return;
                 const cards = Array.from(fsCardsListEl.querySelectorAll('.zv-fs-card-item'));
@@ -1074,6 +1097,7 @@
                         }
                         return d;
                     });
+                    currentClosestCardIdx = closestIdx;
 
                     cards.forEach((card, idx) => {
                         const dist = distances[idx];
@@ -1093,6 +1117,7 @@
                     });
                 } else {
                     const activeIdx = Math.max(0, cards.findIndex(c => c.classList.contains('active')));
+                    currentClosestCardIdx = activeIdx;
                     cards.forEach((card, idx) => {
                         const isCenter = idx === activeIdx;
                         card.style.setProperty('--zv-card-scale', isCenter ? '1.04' : '0.85');
@@ -1245,26 +1270,38 @@
             fsCardsListEl.addEventListener('scroll', () => {
                 if (scrollRafId) cancelAnimationFrame(scrollRafId);
                 scrollRafId = requestAnimationFrame(updateCenterCardScale);
+                if (!isTouchingCardsList) {
+                    scheduleSnapToClosestCard(110);
+                }
             }, { passive: true });
 
-            // Allow native mobile touch scrolling inside the cards list without outer player interference
+            // Allow native mobile touch scrolling inside the cards list without outer player interference, then auto-center on release
             fsCardsListEl.addEventListener('touchstart', (ev) => {
+                isTouchingCardsList = true;
+                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
                 lastTouchActivityTime = Date.now();
                 onDesktopPointerWakeUp();
                 ev.stopPropagation();
             }, { passive: true });
 
             fsCardsListEl.addEventListener('touchmove', (ev) => {
+                isTouchingCardsList = true;
+                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
                 lastTouchActivityTime = Date.now();
                 onDesktopPointerWakeUp();
                 ev.stopPropagation();
             }, { passive: true });
 
-            fsCardsListEl.addEventListener('touchend', (ev) => {
+            const onCardsTouchRelease = (ev) => {
+                isTouchingCardsList = false;
                 lastTouchActivityTime = Date.now();
                 onDesktopPointerWakeUp();
+                scheduleSnapToClosestCard(120);
                 ev.stopPropagation();
-            }, { passive: true });
+            };
+
+            fsCardsListEl.addEventListener('touchend', onCardsTouchRelease, { passive: true });
+            fsCardsListEl.addEventListener('touchcancel', onCardsTouchRelease, { passive: true });
 
             // Stop wheel events from bubbling out of the scrollable cards list
             fsCardsListEl.addEventListener('wheel', (ev) => {

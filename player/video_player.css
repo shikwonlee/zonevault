@@ -463,7 +463,7 @@ body:has(#player-container:fullscreen) {
     gap: var(--zv-card-gap) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    scroll-snap-type: none !important;
+    scroll-snap-type: y mandatory !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain !important;
     touch-action: pan-y !important;
@@ -484,14 +484,14 @@ body:has(#player-container:fullscreen) {
     will-change: scroll-position, transform, opacity !important;
 }
 
-/* Guaranteed top & bottom flex spacers so the first and very last video card can always scroll to the exact center on mobile */
+/* Guaranteed explicit top & bottom flex spacers so the first and very last video card always snap to the exact center on mobile */
 .zv-fs-cards-list::before,
 .zv-fs-cards-list::after {
     content: "" !important;
     display: block !important;
     width: 100% !important;
-    height: calc(50% - (var(--zv-card-h) / 2)) !important;
-    min-height: calc(var(--zv-card-h) * 0.9) !important;
+    height: calc(var(--zv-card-h) + 8px) !important;
+    min-height: calc(var(--zv-card-h) + 8px) !important;
     flex-shrink: 0 !important;
     pointer-events: none !important;
 }
@@ -536,6 +536,7 @@ body:has(#player-container:fullscreen) {
     box-shadow: none !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
+    scroll-snap-align: center !important;
     transform-origin: right center !important;
     transform: translate3d(0, 0, 0) scale(var(--zv-card-scale)) !important;
     opacity: var(--zv-card-opacity) !important;

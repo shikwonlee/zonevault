@@ -49,14 +49,34 @@ onValue(maintenanceRef, (snapshot) => {
 });
 
 // Dynamic URL Masking
-function updateDynamicURL(uid, role, status) {
-  let token = sessionStorage.getItem('urlToken');
+function normalizeUserRole(role) {
+  const r = String(role || 'member').toLowerCase().trim();
+  return r === 'admin' ? 'admin' : 'member';
+}
+
+function getOrCreateUrlToken() {
+  let token = sessionStorage.getItem('urlToken') || localStorage.getItem('urlToken');
   if (!token) {
-    token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
-    sessionStorage.setItem('urlToken', token);
+    token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
   }
-  const newUrl = `${window.location.pathname}?uid=${encodeURIComponent(uid)}&token=${token}&role=${role}&status=${status}`;
-  window.history.pushState({ path: newUrl }, '', newUrl);
+  sessionStorage.setItem('urlToken', token);
+  localStorage.setItem('urlToken', token);
+  return token;
+}
+
+function buildHomeRedirectUrl(uid, role, status) {
+  const token = getOrCreateUrlToken();
+  const cleanRole = normalizeUserRole(role);
+  const cleanStatus = String(status || 'approved').toLowerCase().trim() || 'approved';
+  return `home?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
+}
+
+function updateDynamicURL(uid, role, status) {
+  const token = getOrCreateUrlToken();
+  const cleanRole = normalizeUserRole(role);
+  const cleanStatus = String(status || 'approved').toLowerCase().trim() || 'approved';
+  const newUrl = `${window.location.pathname}?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
+  window.history.replaceState({ path: newUrl }, '', newUrl);
 }
 
 // UI Section Toggle
@@ -165,16 +185,17 @@ async function checkUserStatus(user) {
 
     if (userSnap.exists() && userSnap.val().status === "approved") {
       const userData = userSnap.val();
+      const userRole = normalizeUserRole(userData.role);
 
       // Set authorization flags only on confirmed approval
       sessionStorage.setItem("internalAccess", "true");
       sessionStorage.setItem("fromIndex", "true");
       sessionStorage.setItem("accessID", userData.accessID);
 
-      updateDynamicURL(currentUid, userData.role || "user", "approved");
+      updateDynamicURL(currentUid, userRole, "approved");
 
       // Replace history state to prevent back-button routing loops
-      window.location.replace(`home.html?access=${encodeURIComponent(userData.accessID)}`);
+      window.location.replace(buildHomeRedirectUrl(currentUid, userRole, "approved"));
       return;
     }
 
@@ -189,7 +210,7 @@ async function checkUserStatus(user) {
     }
 
     const data = reqSnap.val();
-    updateDynamicURL(currentUid, "user", data.status);
+    updateDynamicURL(currentUid, "member", data.status);
 
     if (data.status === "pending") {
       revokeSessionAccess();
@@ -200,13 +221,15 @@ async function checkUserStatus(user) {
         if (realtimeUserSnap.exists()) {
           const userData = realtimeUserSnap.val();
           if (userData.status === "approved") {
+            const rtRole = normalizeUserRole(userData.role);
             sessionStorage.setItem("internalAccess", "true");
             sessionStorage.setItem("fromIndex", "true");
             sessionStorage.setItem("accessID", userData.accessID);
 
+            updateDynamicURL(currentUid, rtRole, "approved");
             show("approved");
             setTimeout(() => { 
-              window.location.replace(`home.html?access=${encodeURIComponent(userData.accessID)}`); 
+              window.location.replace(buildHomeRedirectUrl(currentUid, rtRole, "approved")); 
             }, 1200);
           }
         }
@@ -262,7 +285,7 @@ window.submitRequest = async function() {
       timestamp: serverTimestamp() 
     });
 
-    updateDynamicURL(currentUid, "user", "pending");
+    updateDynamicURL(currentUid, "member", "pending");
     show("waiting");
 
   } catch (error) {

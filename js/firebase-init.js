@@ -72,11 +72,72 @@ export function getCachedUser() {
   }
 }
 
+export function getOrCreateUrlToken() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    let token = params.get('token') || sessionStorage.getItem('urlToken') || localStorage.getItem('urlToken');
+    if (!token) {
+      token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
+    }
+    sessionStorage.setItem('urlToken', token);
+    localStorage.setItem('urlToken', token);
+    return token;
+  } catch (e) {
+    return Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
+  }
+}
+
+export function normalizeUserRole(role) {
+  const r = String(role || 'member').toLowerCase().trim();
+  return r === 'admin' ? 'admin' : 'member';
+}
+
+export function buildAuthenticatedUrl(basePath, uid, role, status) {
+  if (!uid) return basePath;
+  const token = getOrCreateUrlToken();
+  const cleanRole = normalizeUserRole(role);
+  const rawStatus = String(status || 'approved').toLowerCase().trim();
+  const cleanStatus = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
+  const cleanPath = String(basePath || '').split('?')[0];
+  return `${cleanPath}?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
+}
+
+export function updateDynamicURL(uid, role, status) {
+  if (!uid) return;
+  const token = getOrCreateUrlToken();
+  const cleanRole = normalizeUserRole(role);
+  const rawStatus = String(status || 'approved').toLowerCase().trim();
+  const cleanStatus = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
+  const queryStr = `?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
+  const newUrl = `${window.location.pathname}${queryStr}`;
+  window.history.replaceState({ path: newUrl }, '', newUrl);
+
+  const targetPages = ['home', 'videos', 'collection', 'profile', 'home.html', 'videos.html', 'collection.html', 'profile.html'];
+  document.querySelectorAll('a[href]').forEach(a => {
+    const rawHref = a.getAttribute('href');
+    if (!rawHref || rawHref.startsWith('javascript:') || rawHref.startsWith('#') || rawHref.startsWith('http')) return;
+    const baseHref = rawHref.split('?')[0];
+    const cleanName = baseHref.replace(/^\//, '').toLowerCase();
+    if (targetPages.includes(cleanName)) {
+      a.setAttribute('href', `${baseHref}${queryStr}`);
+    }
+  });
+
+  document.querySelectorAll('.sidebar-user').forEach(el => {
+    el.onclick = () => {
+      window.location.href = `profile${queryStr}`;
+    };
+  });
+}
+
 export function setCachedUser(data) {
   try {
     if (!data) return;
     const current = getCachedUser() || {};
     const updated = { ...current, ...data, cachedAt: Date.now() };
+    if (updated.role) {
+      updated.role = normalizeUserRole(updated.role);
+    }
     const serialized = JSON.stringify(updated);
     sessionStorage.setItem(USER_CACHE_KEY, serialized);
     localStorage.setItem(USER_CACHE_KEY, serialized);
@@ -95,7 +156,9 @@ export function clearCachedUser() {
     localStorage.removeItem(USER_CACHE_KEY);
     sessionStorage.removeItem('internalAccess');
     sessionStorage.removeItem('isAdmin');
+    sessionStorage.removeItem('urlToken');
     localStorage.removeItem('internalAccess');
+    localStorage.removeItem('urlToken');
   } catch (e) {
     // Ignore
   }
@@ -110,6 +173,18 @@ export function cleanStaleCaches() {
       }
     });
   }
+}
+
+export function hydrateDynamicUrlFromCacheOrQuery() {
+  try {
+    const cached = getCachedUser();
+    const params = new URLSearchParams(window.location.search);
+    const uid = (cached && cached.uid) || params.get('uid');
+    if (!uid) return;
+    const role = (cached && cached.role) || params.get('role') || 'member';
+    const status = (cached && cached.status) || params.get('status') || 'approved';
+    updateDynamicURL(uid, role, status);
+  } catch (_) {}
 }
 
 // Run cleanup proactively

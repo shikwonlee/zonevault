@@ -35,14 +35,21 @@ onValue(maintenanceRef, (snapshot) => {
     }
 });
 
-function updateDynamicURL(uid, role, status) {
-  let token = sessionStorage.getItem('urlToken');
+function getOrCreateUrlToken() {
+  let token = sessionStorage.getItem('urlToken') || localStorage.getItem('urlToken');
   if (!token) {
       token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-      sessionStorage.setItem('urlToken', token);
   }
-  const newUrl = `${window.location.pathname}?uid=${uid}&token=${token}&role=${role}&status=${status}`;
-  window.history.pushState({ path: newUrl }, '', newUrl);
+  sessionStorage.setItem('urlToken', token);
+  localStorage.setItem('urlToken', token);
+  return token;
+}
+
+function updateDynamicURL(uid, role, status) {
+  const token = getOrCreateUrlToken();
+  const cleanRole = (String(role || 'member').toLowerCase() === 'admin') ? 'admin' : 'member';
+  const newUrl = `${window.location.pathname}?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(status)}`;
+  window.history.replaceState({ path: newUrl }, '', newUrl);
 }
 
 function generateAccessID() {
@@ -97,7 +104,7 @@ window.quickCodeLogin = async function() {
         // Update DB
         const userProfilePromise = update(ref(db, "users/" + uid), {
           name: nickname, telegramUsername: "Guest User", email: dummyEmail,
-          bio: "I am an Access Code guest.", status: "approved", role: "guest", accessID: newAccessID
+          bio: "I am an Access Code guest.", status: "approved", role: "member", accessID: newAccessID
         });
 
         const markCodeUsedPromise = update(ref(db, "validCodes/" + code), { 
@@ -111,10 +118,13 @@ window.quickCodeLogin = async function() {
         sessionStorage.setItem("internalAccess", "true");
         sessionStorage.setItem("fromIndex", "true");
         sessionStorage.setItem("accessID", newAccessID);
-        updateDynamicURL(uid, "guest", "approved");
+        const token = getOrCreateUrlToken();
+        updateDynamicURL(uid, "member", "approved");
 
         show("approved");
-        setTimeout(() => { window.location.href = `home.html?access=${newAccessID}`; }, 1200);
+        setTimeout(() => {
+          window.location.href = `home?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=member&status=approved`;
+        }, 1200);
       } else {
         alert("❌ This access code has expired.");
         btn.innerHTML = 'Unlock Vault'; btn.disabled = false;

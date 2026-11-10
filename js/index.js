@@ -1,7 +1,7 @@
 // ==========================================
 // ZONE VAULT — Landing Page Controller (js/index.js)
 // ==========================================
-import { auth, db, getCachedUser, setCachedUser, cleanStaleCaches } from "./firebase-init.js";
+import { auth, db, getCachedUser, setCachedUser, cleanStaleCaches, buildAuthenticatedUrl, normalizeUserRole } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -31,9 +31,8 @@ function revealLandingPage() {
 // --- 1. INSTANT CACHE CHECK (0ms Instant Redirect) ---
 const cached = getCachedUser();
 if (cached && cached.status === "approved" && cached.uid) {
-  const accessID = cached.accessID || cached.uid;
   if (!currentPath.includes("home")) {
-    window.location.replace(`home?access=${accessID}`);
+    window.location.replace(buildAuthenticatedUrl("home", cached.uid, cached.role || "member", "approved"));
   }
 }
 
@@ -48,13 +47,14 @@ onAuthStateChanged(auth, async (user) => {
         const data = userSnap.val();
         const userStatus = data.status || "approved";
         const userAccessID = data.accessID || user.uid;
+        const userRole = normalizeUserRole(data.role);
 
         setCachedUser({
           uid: user.uid,
           email: user.email,
           name: data.name || data.telegramUsername || "Vault Member",
           profilePicture: data.profilePicture || "https://via.placeholder.com/150",
-          role: (data.role || "member").toLowerCase(),
+          role: userRole,
           status: userStatus,
           accessID: userAccessID,
           favorites: data.favorites || []
@@ -62,7 +62,7 @@ onAuthStateChanged(auth, async (user) => {
 
         if (userStatus === "approved") {
           if (!currentPath.includes("home")) {
-            window.location.replace(`home?access=${userAccessID}`);
+            window.location.replace(buildAuthenticatedUrl("home", user.uid, userRole, "approved"));
           }
         } else {
           if (!currentPath.includes("login")) {
@@ -75,18 +75,20 @@ onAuthStateChanged(auth, async (user) => {
         await set(userRef, {
           status: "approved",
           accessID: user.uid,
-          email: user.email || "No Email"
+          email: user.email || "No Email",
+          role: "member"
         });
 
         setCachedUser({
           uid: user.uid,
           email: user.email,
+          role: "member",
           status: "approved",
           accessID: user.uid
         });
 
         if (!currentPath.includes("home")) {
-          window.location.replace(`home?access=${user.uid}`);
+          window.location.replace(buildAuthenticatedUrl("home", user.uid, "member", "approved"));
         }
       }
     } catch (error) {

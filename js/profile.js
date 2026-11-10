@@ -39,15 +39,56 @@ onValue(maintenanceRef, (snapshot) => {
     }
 });
 
+function normalizeUserRole(role) {
+  const r = String(role || 'member').toLowerCase().trim();
+  return r === 'admin' ? 'admin' : 'member';
+}
+
 function updateDynamicURL(uid, role, status) {
-  let token = sessionStorage.getItem('urlToken');
+  if (!uid) return;
+  const params = new URLSearchParams(window.location.search);
+  let token = params.get('token') || sessionStorage.getItem('urlToken') || localStorage.getItem('urlToken');
   if (!token) {
       token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-      sessionStorage.setItem('urlToken', token);
   }
-  const newUrl = `${window.location.pathname}?uid=${uid}&token=${token}&role=${role}&status=${status}`;
-  window.history.pushState({ path: newUrl }, '', newUrl);
+  sessionStorage.setItem('urlToken', token);
+  localStorage.setItem('urlToken', token);
+
+  const cleanRole = normalizeUserRole(role);
+  const rawStatus = String(status || 'approved').toLowerCase().trim();
+  const cleanStatus = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
+  const queryStr = `?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
+  const newUrl = `${window.location.pathname}${queryStr}`;
+  window.history.replaceState({ path: newUrl }, '', newUrl);
+
+  const targetPages = ['home', 'videos', 'collection', 'profile', 'home.html', 'videos.html', 'collection.html', 'profile.html'];
+  document.querySelectorAll('a[href]').forEach(a => {
+    const rawHref = a.getAttribute('href');
+    if (!rawHref || rawHref.startsWith('javascript:') || rawHref.startsWith('#') || rawHref.startsWith('http')) return;
+    const baseHref = rawHref.split('?')[0];
+    const cleanName = baseHref.replace(/^\//, '').toLowerCase();
+    if (targetPages.includes(cleanName)) {
+      a.setAttribute('href', `${baseHref}${queryStr}`);
+    }
+  });
+
+  document.querySelectorAll('.sidebar-user').forEach(el => {
+    el.onclick = () => {
+      window.location.href = `profile${queryStr}`;
+    };
+  });
 }
+
+// Instant 0ms URL hydration from cached user session or URL query params
+try {
+  const rawCache = sessionStorage.getItem('zv_user_cache') || localStorage.getItem('zv_user_cache');
+  const cached = rawCache ? JSON.parse(rawCache) : null;
+  const params = new URLSearchParams(window.location.search);
+  const uid = (cached && cached.uid) || params.get('uid');
+  if (uid) {
+    updateDynamicURL(uid, (cached && cached.role) || params.get('role') || 'member', (cached && cached.status) || params.get('status') || 'approved');
+  }
+} catch (_) {}
 
 // ----------------------------------------------------
 // SECURE EMAIL MASKING (Middle part uses exactly *****)
@@ -185,7 +226,7 @@ onAuthStateChanged(auth, user => {
             document.getElementById('sidebar-email').innerText = secureEmail;
             document.getElementById('sidebar-pic').src = pic;
 
-            const rawRole = (data.role || "member").toLowerCase();
+            const rawRole = normalizeUserRole(data.role);
             let displayRoleText = rawRole.toUpperCase();
             if (displayRoleText === "USER") displayRoleText = "MEMBER";
             
@@ -233,7 +274,7 @@ onAuthStateChanged(auth, user => {
                             reqStatusEl.style.color = "var(--text-muted)";
                         }
                     }
-                    updateDynamicURL(uid, rawRole, reqStatus || 'none');
+                    updateDynamicURL(uid, rawRole, reqStatus || data.status || 'approved');
                 });
             }
         });
@@ -367,6 +408,10 @@ window.saveProfile = function() {
 
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
+        sessionStorage.removeItem('urlToken');
+        localStorage.removeItem('urlToken');
+        sessionStorage.removeItem('zv_user_cache');
+        localStorage.removeItem('zv_user_cache');
         signOut(auth).then(() => window.location.replace("index"));
     }
 }

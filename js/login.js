@@ -55,14 +55,34 @@ onValue(maintenanceRef, (snapshot) => {
 // ==========================================
 // 2. DYNAMIC URL PARAMETERS
 // ==========================================
-function updateDynamicURL(uid, role, status) {
-  let token = localStorage.getItem('urlToken');
+function normalizeUserRole(role) {
+  const r = String(role || 'member').toLowerCase().trim();
+  return r === 'admin' ? 'admin' : 'member';
+}
+
+function getOrCreateUrlToken() {
+  let token = sessionStorage.getItem('urlToken') || localStorage.getItem('urlToken');
   if (!token) {
       token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-      localStorage.setItem('urlToken', token);
   }
-  const newUrl = `${window.location.pathname}?uid=${uid}&token=${token}&role=${role}&status=${status}`;
-  window.history.pushState({ path: newUrl }, '', newUrl);
+  sessionStorage.setItem('urlToken', token);
+  localStorage.setItem('urlToken', token);
+  return token;
+}
+
+function buildHomeRedirectUrl(uid, role, status) {
+  const token = getOrCreateUrlToken();
+  const cleanRole = normalizeUserRole(role);
+  const cleanStatus = String(status || 'approved').toLowerCase().trim() || 'approved';
+  return `home?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
+}
+
+function updateDynamicURL(uid, role, status) {
+  const token = getOrCreateUrlToken();
+  const cleanRole = normalizeUserRole(role);
+  const cleanStatus = String(status || 'approved').toLowerCase().trim() || 'approved';
+  const newUrl = `${window.location.pathname}?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
+  window.history.replaceState({ path: newUrl }, '', newUrl);
 }
 
 // ==========================================
@@ -117,16 +137,18 @@ async function checkJoinRequest(user) {
           const userData = userSnap.val();
           const userStatus = userData.status || "approved"; 
           const userAccessID = userData.accessID || currentUid;
+          const userRole = normalizeUserRole(userData.role);
 
           if (userStatus === "approved") {
-              updateDynamicURL(currentUid, userData.role || "user", "approved");
+              updateDynamicURL(currentUid, userRole, "approved");
               
               if (!userData.status || !userData.accessID) {
                   await update(userRef, { status: "approved", accessID: userAccessID });
               }
-              window.location.replace(`home?access=${userAccessID}`); 
+              window.location.replace(buildHomeRedirectUrl(currentUid, userRole, "approved")); 
               return;
           } else if (userStatus === "denied") {
+              updateDynamicURL(currentUid, userRole, "denied");
               alert("❌ Your account is denied or banned.");
               signOut(auth).then(() => show("auth-section"));
               return;
@@ -136,18 +158,19 @@ async function checkJoinRequest(user) {
       // SCENARIO B: Nakita sa "joinRequests" database
       if (reqSnap.exists()) {
           const reqData = reqSnap.val();
-          updateDynamicURL(currentUid, "user", reqData.status);
+          updateDynamicURL(currentUid, "member", reqData.status);
 
           if (reqData.status === "approved") {
-              await set(userRef, { status: "approved", accessID: currentUid, email: user.email, role: "user" });
-              window.location.replace(`home?access=${currentUid}`);
+              await set(userRef, { status: "approved", accessID: currentUid, email: user.email, role: "member" });
+              window.location.replace(buildHomeRedirectUrl(currentUid, "member", "approved"));
               return;
           } else if (reqData.status === "pending") {
               show("waiting");
               onValue(userRef, (realtimeUserSnap) => {
                   if (realtimeUserSnap.exists() && realtimeUserSnap.val().status === "approved") {
+                      const rtData = realtimeUserSnap.val();
                       show("approved");
-                      setTimeout(() => window.location.replace(`home?access=${realtimeUserSnap.val().accessID}`), 1200);
+                      setTimeout(() => window.location.replace(buildHomeRedirectUrl(currentUid, rtData.role || "member", "approved")), 1200);
                   }
               });
               return;
@@ -164,9 +187,9 @@ async function checkJoinRequest(user) {
           status: "approved",
           accessID: currentUid,
           email: user.email || "No Email",
-          role: "user"
+          role: "member"
       });
-      window.location.replace(`home?access=${currentUid}`);
+      window.location.replace(buildHomeRedirectUrl(currentUid, "member", "approved"));
 
   } catch (error) {
       console.error("Status Check Error:", error);

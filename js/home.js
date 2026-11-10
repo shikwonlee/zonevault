@@ -1,11 +1,12 @@
 // ==========================================
 // 1. FIREBASE AUTHENTICATION & DATABASE SYNC
 // ==========================================
-import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches } from "./firebase-init.js";
+import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches, updateDynamicURL, normalizeUserRole, hydrateDynamicUrlFromCacheOrQuery } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 cleanStaleCaches();
+hydrateDynamicUrlFromCacheOrQuery();
 
 // --- INSTANT SKELETON-FREE HYDRATION FROM CACHE (0ms) ---
 const initialCached = getCachedUser();
@@ -18,7 +19,7 @@ if (initialCached) {
     pic.onerror = () => { pic.src = "https://via.placeholder.com/150"; };
   }
   if (document.getElementById("status-text-pc")) {
-    document.getElementById("status-text-pc").innerText = initialCached.role === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
+    document.getElementById("status-text-pc").innerText = normalizeUserRole(initialCached.role) === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
   }
 }
 
@@ -81,6 +82,11 @@ onAuthStateChanged(auth, async (user) => {
             }
 
             const data = snapshot.val();
+            const userRole = normalizeUserRole(data.role);
+            const userStatus = (data.status || "approved").toLowerCase();
+
+            // Update URL immediately with uid, token, role (admin/member), and status
+            updateDynamicURL(user.uid, userRole, userStatus);
 
             // Check approval status directly from Firebase
             if (data.status !== "approved") {
@@ -93,13 +99,13 @@ onAuthStateChanged(auth, async (user) => {
 
             // Restore local access flag for compatibility
             localStorage.setItem("internalAccess", "true");
+            sessionStorage.setItem("internalAccess", "true");
 
             initNotifications();
 
             const userEmail = user.email || "";
             const userName = data.name || data.telegramUsername || "Vault Member";
             const userPic = data.profilePicture || "https://via.placeholder.com/150";
-            const userRole = (data.role || "member").toLowerCase();
 
             // Cache immediately to eliminate lag across subsequent page switches
             setCachedUser({

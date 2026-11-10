@@ -102,6 +102,28 @@ export function buildAuthenticatedUrl(basePath, uid, role, status) {
   return `${cleanPath}?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
 }
 
+export function buildVideoNavigationUrl(basePath, accessType, videoTitle, uid, role, status) {
+  const cached = getCachedUser();
+  const params = new URLSearchParams(window.location.search);
+  const resolvedUid = uid || (cached && cached.uid) || params.get('uid') || '';
+  const token = getOrCreateUrlToken();
+  const cleanRole = normalizeUserRole(role || (cached && cached.role) || params.get('role') || 'member');
+  const rawStatus = String(status || (cached && cached.status) || params.get('status') || 'approved').toLowerCase().trim();
+  const cleanStatus = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
+  const cleanAccess = accessType === 'member_access' ? 'member_access' : 'free_access';
+  const cleanTitle = String(videoTitle || '').trim().replace(/\s+/g, '-');
+  const cleanPath = String(basePath || '').split('?')[0];
+
+  const parts = [];
+  if (resolvedUid) parts.push(`uid=${encodeURIComponent(resolvedUid)}`);
+  if (token) parts.push(`token=${encodeURIComponent(token)}`);
+  parts.push(`role=${encodeURIComponent(cleanRole)}`);
+  parts.push(`status=${encodeURIComponent(cleanStatus)}`);
+  parts.push(`access=${encodeURIComponent(cleanAccess)}`);
+  if (cleanTitle) parts.push(`title=${encodeURIComponent(cleanTitle)}`);
+  return `${cleanPath}?${parts.join('&')}`;
+}
+
 export function updateDynamicURL(uid, role, status) {
   if (!uid) return;
   const token = getOrCreateUrlToken();

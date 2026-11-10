@@ -608,6 +608,16 @@
                 }
             }
 
+            if (window.ZoneVaultPageUrlManager && typeof window.ZoneVaultPageUrlManager.syncUrl === 'function') {
+                window.zvCurrentPlaylistData = Array.isArray(playlistData) ? playlistData : [];
+                window.ZoneVaultPageUrlManager.syncUrl({
+                    uid: userUid,
+                    role: userRole,
+                    epId: (ep && ep.id) || null,
+                    title: (ep && ep.title) || (data && data.title) || ''
+                });
+            }
+
             const ticketResult = await fetchStreamTicket({
                 epId: (ep && ep.id) || 'video',
                 uid: userUid,
@@ -1850,6 +1860,415 @@
         window.ZoneVaultCaptureShield = shieldModule;
     }
 
+    // =========================================
+    // ZONE VAULT — 2021–2026 Video Page URL Manager
+    // Syncs uid, token, role, status, access (member_access | free_access), video title, and episode v
+    // across all member_access and free_access video pages.
+    // =========================================
+    if (!window.ZoneVaultPageUrlManager) {
+        const PAGE_METADATA_MAP = {
+            'inthesoop2-N12X5R25-74K2': { access: 'free_access', title: 'IN THE SOOP SEVENTEEN ver. Season2' },
+            '8th_caratland': { access: 'free_access', title: 'SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING' },
+            'magichour': { access: 'free_access', title: 'Magic Hour, The Seventeen' },
+            'rightheregoyang': { access: 'free_access', title: "SEVENTEEN 'RIGHT HERE' WORLD TOUR IN GOYANG" },
+            '9th_caratland': { access: 'free_access', title: 'SEVENTEEN IN CARAT LAND 2025 SVT 9TH FAN MEETING' },
+            'fukuokanewtour': { access: 'member_access', title: 'SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show' },
+            'hxwfanconcert': { access: 'free_access', title: "HOSHIXWOOZI FAN CONCERT 'WARNING' IN SEOUL" },
+            'hxwingwangju': { access: 'free_access', title: "HOSHIXWOOZI FAN CONCERT 'WARNING' IN GWANGJU" },
+            'japannewtour': { access: 'member_access', title: 'SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Osaka Show' },
+            'nanabnb': { access: 'free_access', title: 'NANA bnb with SEVENTEEN' },
+            'newtour': { access: 'free_access', title: 'SEVENTEEN WORLD TOUR [NEW_] IN INCHEON' },
+            'ourchapterS17N-111025-6B4': { access: 'free_access', title: 'SEVENTEEN: OUR CHAPTER' },
+            'svtholiday': { access: 'free_access', title: "SEVENTEEN 2025 JAPAN FAN MEETING 'HOLIDAY" },
+            'svtreaming1': { access: 'free_access', title: "[Let's SVTreaming Day]" },
+            'the-shadows-edge': { access: 'free_access', title: "The Shadow's Edge" },
+            'bethesun': { access: 'free_access', title: 'TOUR-ING : SEVENTEEN WORLD TOUR <BE THE SUN>' },
+            'cxm_in_incheon': { access: 'member_access', title: 'CxM [DOUBLE UP] LIVE PARTY in INCHEON' },
+            'cxminjapan': { access: 'free_access', title: 'CxM [DOUBLE UP] LIVE PARTY in JAPAN' },
+            'dinoxpicheolin': { access: 'member_access', title: '2026 DINO X PICHEOLIN 吉BOARD SHOW' },
+            'dxs_on_stage': { access: 'member_access', title: 'DxS [Serenade] ON STAGE - INCHEON' },
+            'jxj_into_dreaming': { access: 'member_access', title: 'JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON' },
+            'nanatour': { access: 'free_access', title: 'NANA TOUR with SEVENTEEN' },
+            'new_encore': { access: 'member_access', title: 'SEVENTEEN WORLD TOUR [NEW_] ENCORE' },
+            'svt_2026_fanmeeting_yakusoku': { access: 'member_access', title: "SEVENTEEN 2026 JAPAN FANMEETING'YAKUSOKU' Osaka" },
+            'svt_in_carat_land_2026': { access: 'member_access', title: '2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND' },
+            'svtreaming_2026': { access: 'free_access', title: "SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day]" },
+            'vernon_the8_v8': { access: 'member_access', title: '2026 VERNON THE 8 [V8] LIVE - GOYANG' },
+            'arenatour': { access: 'free_access', title: "SEVENTEEN 2018 JAPAN ARENA TOUR 'SVT'" },
+            'svtjapanconcert': { access: 'free_access', title: '17 JAPAN CONCERT Say the name #SEVENTEEN' },
+            'touragain': { access: 'free_access', title: 'SEVENTEEN TOUR AGAIN DISNEY+' }
+        };
+
+        const origPushState = window.history.pushState.bind(window.history);
+        const origReplaceState = window.history.replaceState.bind(window.history);
+
+        const urlManager = {
+            userState: {
+                uid: '',
+                token: '',
+                role: '',
+                status: ''
+            },
+
+            getPageSlug: function () {
+                const seg = (window.location.pathname || '').split('/').filter(Boolean).pop() || '';
+                return seg.replace(/\.html$/i, '');
+            },
+
+            isVideoCatalogPage: function () {
+                const path = window.location.pathname || '';
+                if (/^\/(2021|2024|2025|2026|random)\//i.test(path)) return true;
+                const slug = this.getPageSlug();
+                return Boolean(PAGE_METADATA_MAP[slug]);
+            },
+
+            getOrCreateToken: function (queryParams) {
+                try {
+                    let tok =
+                        (queryParams && queryParams.get('token')) ||
+                        this.userState.token ||
+                        sessionStorage.getItem('urlToken') ||
+                        localStorage.getItem('urlToken');
+                    if (!tok) {
+                        tok = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
+                    }
+                    sessionStorage.setItem('urlToken', tok);
+                    localStorage.setItem('urlToken', tok);
+                    this.userState.token = tok;
+                    return tok;
+                } catch (_) {
+                    return this.userState.token || 'zvsession';
+                }
+            },
+
+            normalizeRole: function (roleStr) {
+                const r = String(roleStr || '').toLowerCase().trim();
+                if (r === 'admin') return 'admin';
+                if (sessionStorage.getItem('isAdmin') === 'true') return 'admin';
+                return 'member';
+            },
+
+            readUserContext: function (overrides) {
+                const ov = overrides || {};
+                const queryParams = new URLSearchParams(window.location.search);
+                let cached = null;
+                try {
+                    const raw = sessionStorage.getItem('zv_user_cache') || localStorage.getItem('zv_user_cache');
+                    if (raw) cached = JSON.parse(raw);
+                } catch (_) {}
+
+                let fbUid = '';
+                try {
+                    if (window.firebase && typeof window.firebase.auth === 'function' && window.firebase.apps && window.firebase.apps.length > 0) {
+                        const cu = window.firebase.auth().currentUser;
+                        if (cu && cu.uid) fbUid = cu.uid;
+                    }
+                } catch (_) {}
+
+                const uid = ov.uid || this.userState.uid || fbUid || (cached && cached.uid) || queryParams.get('uid') || '';
+                const token = this.getOrCreateToken(queryParams);
+                const rawRole = ov.role || this.userState.role || window.currentUserRole || (cached && cached.role) || queryParams.get('role') || 'member';
+                const role = this.normalizeRole(rawRole);
+                const rawStatus = String(ov.status || this.userState.status || (cached && cached.status) || queryParams.get('status') || 'approved').toLowerCase().trim();
+                const status = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
+
+                if (uid) this.userState.uid = uid;
+                if (role) this.userState.role = role;
+                if (status) this.userState.status = status;
+
+                return { uid, token, role, status };
+            },
+
+            resolveAccessType: function () {
+                const slug = this.getPageSlug();
+                if (PAGE_METADATA_MAP[slug] && PAGE_METADATA_MAP[slug].access) {
+                    return PAGE_METADATA_MAP[slug].access;
+                }
+                if (typeof window.PAGE_ID === 'string' && window.PAGE_ID.trim() !== '') {
+                    return 'member_access';
+                }
+                const qAccess = new URLSearchParams(window.location.search).get('access');
+                if (qAccess === 'member_access' || qAccess === 'free_access') {
+                    return qAccess;
+                }
+                return 'free_access';
+            },
+
+            cleanTitleSlug: function (rawTitle) {
+                if (!rawTitle) return '';
+                let decoded = String(rawTitle);
+                try {
+                    decoded = decodeURIComponent(decoded);
+                } catch (_) {}
+                return decoded.trim().replace(/\s+/g, '-');
+            },
+
+            resolveEpisodeTitle: function (epId, explicitTitle) {
+                if (explicitTitle && String(explicitTitle).trim() !== '') {
+                    return this.cleanTitleSlug(explicitTitle);
+                }
+                const slug = this.getPageSlug();
+                const metaTitle = (PAGE_METADATA_MAP[slug] && PAGE_METADATA_MAP[slug].title) || '';
+
+                if (epId !== null && epId !== undefined && String(epId).trim() !== '') {
+                    const targetId = String(epId).trim();
+                    if (window.currentEpData && String(window.currentEpData.id) === targetId && window.currentEpData.title) {
+                        return this.cleanTitleSlug(window.currentEpData.title);
+                    }
+                    if (Array.isArray(window.zvCurrentPlaylistData)) {
+                        const found = window.zvCurrentPlaylistData.find(item => item && String(item.id) === targetId);
+                        if (found && found.title) return this.cleanTitleSlug(found.title);
+                    }
+                    try {
+                        const items = document.querySelectorAll('.playlist-item');
+                        for (let i = 0; i < items.length; i++) {
+                            const itemEl = items[i];
+                            if (itemEl.dataset && String(itemEl.dataset.id) === targetId) {
+                                const tEl = itemEl.querySelector('.playlist-title');
+                                if (tEl && tEl.textContent && tEl.textContent.trim()) {
+                                    return this.cleanTitleSlug(tEl.textContent);
+                                }
+                            }
+                        }
+                    } catch (_) {}
+                    const mainTitleEl = document.getElementById('main-title');
+                    if (mainTitleEl && mainTitleEl.textContent && mainTitleEl.textContent.trim()) {
+                        return this.cleanTitleSlug(mainTitleEl.textContent);
+                    }
+                }
+
+                if (metaTitle) {
+                    return this.cleanTitleSlug(metaTitle);
+                }
+                const existingTitle = new URLSearchParams(window.location.search).get('title');
+                if (existingTitle) {
+                    return this.cleanTitleSlug(existingTitle);
+                }
+                return this.cleanTitleSlug(slug || 'Zone-Vault-Video');
+            },
+
+            buildVideoUrl: function (options) {
+                const opts = options || {};
+                const userCtx = this.readUserContext(opts);
+                const accessType = this.resolveAccessType();
+                const currentParams = new URLSearchParams(window.location.search);
+
+                let epId = '';
+                if (opts.clearEpisode) {
+                    epId = '';
+                } else if (opts.epId !== undefined && opts.epId !== null && String(opts.epId).trim() !== '') {
+                    epId = String(opts.epId).trim();
+                } else if (window.currentEpData && window.currentEpData.id) {
+                    epId = String(window.currentEpData.id).trim();
+                } else if (currentParams.get('v')) {
+                    epId = String(currentParams.get('v')).trim();
+                }
+
+                const titleSlug = this.resolveEpisodeTitle(epId, opts.title);
+
+                const parts = [];
+                if (userCtx.uid) parts.push(`uid=${encodeURIComponent(userCtx.uid)}`);
+                if (userCtx.token) parts.push(`token=${encodeURIComponent(userCtx.token)}`);
+                parts.push(`role=${encodeURIComponent(userCtx.role)}`);
+                parts.push(`status=${encodeURIComponent(userCtx.status)}`);
+                parts.push(`access=${encodeURIComponent(accessType)}`);
+                if (titleSlug) parts.push(`title=${encodeURIComponent(titleSlug)}`);
+                if (epId) parts.push(`v=${encodeURIComponent(epId)}`);
+
+                return `${window.location.pathname}?${parts.join('&')}`;
+            },
+
+            syncUrl: function (options) {
+                if (!this.isVideoCatalogPage()) return;
+                const opts = options || {};
+                const newUrl = this.buildVideoUrl(opts);
+                const currentState = window.history.state || (opts.epId ? { id: opts.epId } : {});
+                origReplaceState(currentState, '', newUrl);
+            },
+
+            getVideosBackUrl: function () {
+                const userCtx = this.readUserContext();
+                if (!userCtx.uid) return '/videos';
+                return `/videos?uid=${encodeURIComponent(userCtx.uid)}&token=${encodeURIComponent(userCtx.token)}&role=${encodeURIComponent(userCtx.role)}&status=${encodeURIComponent(userCtx.status)}`;
+            },
+
+            installHistoryHooks: function () {
+                const self = this;
+
+                window.history.pushState = function (state, unused, url) {
+                    if (!self.isVideoCatalogPage()) {
+                        return origPushState(state, unused, url);
+                    }
+                    let epId = state && state.id ? String(state.id) : '';
+                    let passedTitle = '';
+                    if (url) {
+                        try {
+                            const parsed = new URL(url, window.location.origin);
+                            if (!epId && parsed.searchParams.get('v')) {
+                                epId = parsed.searchParams.get('v');
+                            }
+                            if (parsed.searchParams.get('title')) {
+                                passedTitle = parsed.searchParams.get('title');
+                            }
+                        } catch (_) {}
+                    }
+                    const enrichedUrl = self.buildVideoUrl({
+                        epId: epId || null,
+                        title: passedTitle
+                    });
+                    const res = origPushState(state, unused, enrichedUrl);
+                    // Re-sync on next microtask once window.currentEpData = ep is assigned
+                    Promise.resolve().then(() => {
+                        if (window.currentEpData && (!epId || String(window.currentEpData.id) === String(epId))) {
+                            self.syncUrl({
+                                epId: window.currentEpData.id,
+                                title: window.currentEpData.title
+                            });
+                        }
+                    });
+                    return res;
+                };
+
+                window.history.replaceState = function (state, unused, url) {
+                    if (!self.isVideoCatalogPage()) {
+                        return origReplaceState(state, unused, url);
+                    }
+                    let epId = state && state.id ? String(state.id) : '';
+                    let passedTitle = '';
+                    if (url) {
+                        try {
+                            const parsed = new URL(url, window.location.origin);
+                            if (!epId && parsed.searchParams.get('v')) {
+                                epId = parsed.searchParams.get('v');
+                            }
+                            if (parsed.searchParams.get('title')) {
+                                passedTitle = parsed.searchParams.get('title');
+                            }
+                        } catch (_) {}
+                    }
+                    const enrichedUrl = self.buildVideoUrl({
+                        epId: epId || null,
+                        title: passedTitle
+                    });
+                    return origReplaceState(state, unused, enrichedUrl);
+                };
+
+                window.addEventListener('popstate', (event) => {
+                    if (!self.isVideoCatalogPage()) return;
+                    if (event.state && event.state.id) {
+                        setTimeout(() => {
+                            self.syncUrl({ epId: event.state.id });
+                        }, 30);
+                    } else {
+                        window.currentEpData = null;
+                        self.syncUrl({ clearEpisode: true });
+                    }
+                });
+            },
+
+            attachFirebaseAuthSync: function () {
+                const self = this;
+                if (!this.isVideoCatalogPage()) return;
+
+                let attempts = 0;
+                const tryAttach = () => {
+                    attempts++;
+                    if (
+                        window.firebase &&
+                        typeof window.firebase.auth === 'function' &&
+                        window.firebase.apps &&
+                        window.firebase.apps.length > 0
+                    ) {
+                        try {
+                            window.firebase.auth().onAuthStateChanged((user) => {
+                                if (!user) return;
+                                self.userState.uid = user.uid;
+                                self.syncUrl({ uid: user.uid });
+
+                                if (typeof window.firebase.database === 'function') {
+                                    window.firebase
+                                        .database()
+                                        .ref('users/' + user.uid)
+                                        .once('value')
+                                        .then((snap) => {
+                                            const uData = (snap && snap.val()) || {};
+                                            const role = self.normalizeRole(uData.role);
+                                            const status = String(uData.status || 'approved').toLowerCase().trim() || 'approved';
+                                            self.userState.uid = user.uid;
+                                            self.userState.role = role;
+                                            self.userState.status = status;
+
+                                            try {
+                                                const rawCache = sessionStorage.getItem('zv_user_cache') || localStorage.getItem('zv_user_cache');
+                                                const prevCache = rawCache ? JSON.parse(rawCache) : {};
+                                                const merged = Object.assign({}, prevCache, {
+                                                    uid: user.uid,
+                                                    role: role,
+                                                    status: status,
+                                                    name: uData.name || uData.username || prevCache.name || 'Vault Member'
+                                                });
+                                                sessionStorage.setItem('zv_user_cache', JSON.stringify(merged));
+                                                localStorage.setItem('zv_user_cache', JSON.stringify(merged));
+                                            } catch (_) {}
+
+                                            self.syncUrl({ uid: user.uid, role: role, status: status });
+                                        })
+                                        .catch(() => {});
+                                }
+                            });
+                        } catch (_) {}
+                        return;
+                    }
+                    if (attempts < 25) {
+                        setTimeout(tryAttach, 150);
+                    }
+                };
+                tryAttach();
+            },
+
+            upgradeBackNavigation: function () {
+                const self = this;
+                if (!this.isVideoCatalogPage()) return;
+
+                window.goBackSafe = function () {
+                    window.location.href = self.getVideosBackUrl();
+                };
+                window.goBack = function () {
+                    window.location.href = self.getVideosBackUrl();
+                };
+            },
+
+            init: function () {
+                if (!this.isVideoCatalogPage()) return;
+                this.installHistoryHooks();
+                this.syncUrl();
+
+                const onDomReady = () => {
+                    this.syncUrl();
+                    this.upgradeBackNavigation();
+                    this.attachFirebaseAuthSync();
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', onDomReady);
+                } else {
+                    onDomReady();
+                }
+            }
+        };
+
+        window.ZoneVaultPageUrlManager = urlManager;
+        window.updateZoneVideoPageUrl = function (ep, overrides) {
+            urlManager.syncUrl(
+                Object.assign({}, overrides || {}, {
+                    epId: ep && ep.id ? ep.id : null,
+                    title: ep && ep.title ? ep.title : ''
+                })
+            );
+        };
+        urlManager.init();
+    }
+
     // Global keyboard shortcuts (once per page)
     if (!window.__zonePlayerShortcutsAttached) {
         window.__zonePlayerShortcutsAttached = true;
@@ -1892,4 +2311,5 @@
     }
 
 })();
+
 

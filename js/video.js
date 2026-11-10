@@ -1,4 +1,4 @@
-import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches, updateDynamicURL, normalizeUserRole, hydrateDynamicUrlFromCacheOrQuery } from "./firebase-init.js";
+import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches, updateDynamicURL, normalizeUserRole, hydrateDynamicUrlFromCacheOrQuery, buildVideoNavigationUrl } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, get, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -99,7 +99,9 @@ window.handleWatchClick = function(itemId) {
     if (!item) return;
     if (hasVideoAccess(item)) {
         if (item.link && item.link !== '#') {
-            window.location.href = item.link;
+            const accessType = item.pageAccessId ? 'member_access' : 'free_access';
+            const roleStr = isAdminUser ? 'admin' : 'member';
+            window.location.href = buildVideoNavigationUrl(item.link, accessType, item.title, userId, roleStr, 'approved');
         }
     } else {
         openRestrictedVideoModal(item);

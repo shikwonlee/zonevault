@@ -868,9 +868,15 @@
         const artInstance = new Artplayer(artOptions);
         window.art = artInstance;
 
+        const CONTROL_AUTO_HIDE_MS = 3000;
         let fsCardsToggleBtn = null;
         let fsCardsListEl = null;
         let isControlsVisible = true;
+        let desktopPointerIdleTimer = null;
+        let allowControlHide = false;
+        let isRecoveringControlState = false;
+        let lastControlWakeTime = Date.now();
+        let lastTouchActivityTime = 0;
 
         // Sync progress slider visibility with Artplayer control show/hide state
         // so the slider never drops to the bottom or gets accidentally tapped when controls hide
@@ -897,9 +903,97 @@
             }
         };
 
+        const hideControlsNow = () => {
+            if (desktopPointerIdleTimer) {
+                clearTimeout(desktopPointerIdleTimer);
+                desktopPointerIdleTimer = null;
+            }
+            allowControlHide = true;
+            isControlsVisible = false;
+            try {
+                artInstance.controls.show = false;
+            } catch (_) {}
+            const pEl = artInstance && artInstance.template && artInstance.template.$player;
+            if (pEl) {
+                pEl.classList.remove('art-control-show');
+            }
+            syncProgressVisibility(false);
+        };
+
+        const scheduleControlsAutoHide = (delayMs = CONTROL_AUTO_HIDE_MS) => {
+            if (desktopPointerIdleTimer) {
+                clearTimeout(desktopPointerIdleTimer);
+            }
+            desktopPointerIdleTimer = setTimeout(() => {
+                const isDrawerOpen = Boolean(fsCardsListEl && fsCardsListEl.classList.contains('is-open'));
+                const isSettingsOpen = Boolean(artInstance && artInstance.setting && artInstance.setting.show);
+                let isHoveringControlsOrDrawer = false;
+                try {
+                    const controlsEl = artInstance && artInstance.template && artInstance.template.$controls;
+                    const settingEl = artInstance && artInstance.template && artInstance.template.$setting;
+                    isHoveringControlsOrDrawer = Boolean(
+                        (fsCardsToggleBtn && fsCardsToggleBtn.matches(':hover')) ||
+                        (fsCardsListEl && fsCardsListEl.matches(':hover')) ||
+                        (controlsEl && controlsEl.matches(':hover')) ||
+                        (settingEl && settingEl.matches(':hover'))
+                    );
+                } catch (_) {}
+
+                if (isDrawerOpen || isSettingsOpen || isHoveringControlsOrDrawer || (artInstance && !artInstance.playing)) {
+                    scheduleControlsAutoHide(CONTROL_AUTO_HIDE_MS);
+                    return;
+                }
+                hideControlsNow();
+            }, delayMs);
+        };
+
+        const onDesktopPointerWakeUp = () => {
+            allowControlHide = false;
+            isControlsVisible = true;
+            lastControlWakeTime = Date.now();
+            try {
+                artInstance.controls.show = true;
+            } catch (_) {}
+            const pEl = artInstance && artInstance.template && artInstance.template.$player;
+            if (pEl) {
+                pEl.classList.add('art-control-show');
+                pEl.classList.remove('art-hide-cursor');
+            }
+            syncProgressVisibility(true);
+            scheduleControlsAutoHide(CONTROL_AUTO_HIDE_MS);
+        };
+
         artInstance.on('control', (state) => {
-            isControlsVisible = Boolean(state);
-            syncProgressVisibility(isControlsVisible);
+            if (isRecoveringControlState) return;
+            if (!state && !allowControlHide) {
+                // Prevent Artplayer's internal mouseleave or short internal timer from hiding controls before 3 seconds
+                isRecoveringControlState = true;
+                try {
+                    artInstance.controls.show = true;
+                    const pEl = artInstance.template && artInstance.template.$player;
+                    if (pEl) {
+                        pEl.classList.add('art-control-show');
+                        pEl.classList.remove('art-hide-cursor');
+                    }
+                } catch (_) {}
+                isRecoveringControlState = false;
+                isControlsVisible = true;
+                syncProgressVisibility(true);
+                const elapsed = Date.now() - lastControlWakeTime;
+                const remaining = Math.max(400, CONTROL_AUTO_HIDE_MS - elapsed);
+                scheduleControlsAutoHide(remaining);
+                return;
+            }
+            if (state) {
+                allowControlHide = false;
+                isControlsVisible = true;
+                lastControlWakeTime = Date.now();
+                syncProgressVisibility(true);
+                scheduleControlsAutoHide(CONTROL_AUTO_HIDE_MS);
+            } else {
+                isControlsVisible = false;
+                syncProgressVisibility(false);
+            }
         });
 
         artInstance.on('lock', (isLocked) => {
@@ -915,28 +1009,6 @@
 
         let setDrawerOpen = () => {};
         let renderFullscreenCards = () => {};
-        let desktopPointerIdleTimer = null;
-
-        const onDesktopPointerWakeUp = () => {
-            isControlsVisible = true;
-            try { artInstance.controls.show = true; } catch (_) {}
-            syncProgressVisibility(true);
-            if (desktopPointerIdleTimer) clearTimeout(desktopPointerIdleTimer);
-            desktopPointerIdleTimer = setTimeout(() => {
-                const isDrawerOpen = Boolean(fsCardsListEl && fsCardsListEl.classList.contains('is-open'));
-                let isHoveringDrawerOrBtn = false;
-                try {
-                    isHoveringDrawerOrBtn = Boolean(
-                        (fsCardsToggleBtn && fsCardsToggleBtn.matches(':hover')) ||
-                        (fsCardsListEl && fsCardsListEl.matches(':hover'))
-                    );
-                } catch (_) {}
-                if (!isDrawerOpen && !isHoveringDrawerOrBtn && artInstance && artInstance.playing) {
-                    isControlsVisible = false;
-                    syncProgressVisibility(false);
-                }
-            }, 2800);
-        };
 
         const mountFullscreenCardsOverlay = () => {
             const playerEl = artInstance && artInstance.template && artInstance.template.$player;
@@ -1183,10 +1255,15 @@
             playerEl.appendChild(fsCardsToggleBtn);
             renderFullscreenCards();
 
-            // Wake up controls on desktop/laptop mouse movement and hover
-            playerEl.addEventListener('mousemove', onDesktopPointerWakeUp, { passive: true });
-            playerEl.addEventListener('pointermove', onDesktopPointerWakeUp, { passive: true });
-            playerEl.addEventListener('mouseenter', onDesktopPointerWakeUp, { passive: true });
+            // Wake up controls on desktop/laptop mouse movement and hover (ignoring synthetic touch-mouse events)
+            const handleMousePointerWake = (ev) => {
+                if (ev && ev.pointerType === 'touch') return;
+                if (Date.now() - lastTouchActivityTime < 550) return;
+                onDesktopPointerWakeUp();
+            };
+            playerEl.addEventListener('mousemove', handleMousePointerWake, { passive: true });
+            playerEl.addEventListener('pointermove', handleMousePointerWake, { passive: true });
+            playerEl.addEventListener('mouseenter', handleMousePointerWake, { passive: true });
 
             // Observe #playlist-items so dynamic active-card updates (like nanatour.html auto-switching) sync automatically
             const domPlaylistContainer = document.getElementById('playlist-items');
@@ -1303,6 +1380,7 @@
 
             mountFullscreenCardsOverlay();
             renderFullscreenCards();
+            onDesktopPointerWakeUp();
 
             // Restore fullscreenWeb or native fullscreen class if episode was switched while in fullscreen
             if (prevWasFullscreenWeb) {
@@ -1334,8 +1412,13 @@
                 }
             }, true);
 
+            playerEl.addEventListener('touchstart', () => {
+                lastTouchActivityTime = Date.now();
+            }, { passive: true });
+
             // Prevent screen touch-sliding gestures on video, while allowing touch scrolling inside Settings/Quality and Fullscreen Video Cards
             playerEl.addEventListener('touchmove', (e) => {
+                lastTouchActivityTime = Date.now();
                 if (
                     e.target.closest('.art-settings') ||
                     e.target.closest('.art-setting') ||
@@ -1343,12 +1426,15 @@
                     e.target.closest('.zv-fs-cards-list') ||
                     e.target.closest('.zv-fs-cards-toggle')
                 ) {
+                    onDesktopPointerWakeUp();
                     return;
                 }
-                if (!e.target.closest('.art-control-progress') || !isControlsVisible) {
-                    e.preventDefault();
-                    e.stopPropagation();
+                if (isControlsVisible && e.target.closest('.art-control-progress')) {
+                    onDesktopPointerWakeUp();
+                    return;
                 }
+                e.preventDefault();
+                e.stopPropagation();
             }, { passive: false });
 
             let lastTapTime = 0;
@@ -1358,6 +1444,7 @@
             const processTapLogic = (clientX) => {
                 if (fsCardsListEl && fsCardsListEl.classList.contains('is-open')) {
                     setDrawerOpen(false);
+                    onDesktopPointerWakeUp();
                     return;
                 }
                 const rect = playerEl.getBoundingClientRect();
@@ -1383,10 +1470,16 @@
                         artInstance.toggle();
                         triggerCustomAnimation(artInstance.playing ? 'play' : 'pause', 'center');
                     }
+                    onDesktopPointerWakeUp();
                 } else {
-                    // SINGLE TAP DETECTED: Toggle controls
+                    // SINGLE TAP DETECTED: Show controls for 3 seconds (or hide if already visible > 450ms)
+                    const wasAlreadyVisible = isControlsVisible && (now - lastControlWakeTime > 450);
                     singleTapTimer = setTimeout(() => {
-                        artInstance.controls.toggle();
+                        if (wasAlreadyVisible) {
+                            hideControlsNow();
+                        } else {
+                            onDesktopPointerWakeUp();
+                        }
                     }, 300);
                 }
                 lastTapTime = now;
@@ -1394,6 +1487,7 @@
 
             playerEl.addEventListener('touchend', (e) => {
                 lastTouchEndTime = Date.now();
+                lastTouchActivityTime = lastTouchEndTime;
                 if (
                     e.target.closest('.art-controls') ||
                     e.target.closest('.art-settings') ||
@@ -1404,6 +1498,7 @@
                     e.target.closest('.zv-fs-cards-toggle') ||
                     (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
+                    onDesktopPointerWakeUp();
                     return;
                 }
                 e.preventDefault();
@@ -1424,6 +1519,7 @@
                     e.target.closest('.zv-fs-cards-toggle') ||
                     (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
+                    onDesktopPointerWakeUp();
                     return;
                 }
                 if (Date.now() - lastTouchEndTime < 450) return;

@@ -608,16 +608,6 @@
                 }
             }
 
-            if (window.ZoneVaultPageUrlManager && typeof window.ZoneVaultPageUrlManager.syncUrl === 'function') {
-                window.zvCurrentPlaylistData = Array.isArray(playlistData) ? playlistData : [];
-                window.ZoneVaultPageUrlManager.syncUrl({
-                    uid: userUid,
-                    role: userRole,
-                    epId: (ep && ep.id) || null,
-                    title: (ep && ep.title) || (data && data.title) || ''
-                });
-            }
-
             const ticketResult = await fetchStreamTicket({
                 epId: (ep && ep.id) || 'video',
                 uid: userUid,
@@ -868,15 +858,9 @@
         const artInstance = new Artplayer(artOptions);
         window.art = artInstance;
 
-        const CONTROL_AUTO_HIDE_MS = 3000;
         let fsCardsToggleBtn = null;
         let fsCardsListEl = null;
         let isControlsVisible = true;
-        let desktopPointerIdleTimer = null;
-        let allowControlHide = false;
-        let isRecoveringControlState = false;
-        let lastControlWakeTime = Date.now();
-        let lastTouchActivityTime = 0;
 
         // Sync progress slider visibility with Artplayer control show/hide state
         // so the slider never drops to the bottom or gets accidentally tapped when controls hide
@@ -903,97 +887,9 @@
             }
         };
 
-        const hideControlsNow = () => {
-            if (desktopPointerIdleTimer) {
-                clearTimeout(desktopPointerIdleTimer);
-                desktopPointerIdleTimer = null;
-            }
-            allowControlHide = true;
-            isControlsVisible = false;
-            try {
-                artInstance.controls.show = false;
-            } catch (_) {}
-            const pEl = artInstance && artInstance.template && artInstance.template.$player;
-            if (pEl) {
-                pEl.classList.remove('art-control-show');
-            }
-            syncProgressVisibility(false);
-        };
-
-        const scheduleControlsAutoHide = (delayMs = CONTROL_AUTO_HIDE_MS) => {
-            if (desktopPointerIdleTimer) {
-                clearTimeout(desktopPointerIdleTimer);
-            }
-            desktopPointerIdleTimer = setTimeout(() => {
-                const isDrawerOpen = Boolean(fsCardsListEl && fsCardsListEl.classList.contains('is-open'));
-                const isSettingsOpen = Boolean(artInstance && artInstance.setting && artInstance.setting.show);
-                let isHoveringControlsOrDrawer = false;
-                try {
-                    const controlsEl = artInstance && artInstance.template && artInstance.template.$controls;
-                    const settingEl = artInstance && artInstance.template && artInstance.template.$setting;
-                    isHoveringControlsOrDrawer = Boolean(
-                        (fsCardsToggleBtn && fsCardsToggleBtn.matches(':hover')) ||
-                        (fsCardsListEl && fsCardsListEl.matches(':hover')) ||
-                        (controlsEl && controlsEl.matches(':hover')) ||
-                        (settingEl && settingEl.matches(':hover'))
-                    );
-                } catch (_) {}
-
-                if (isDrawerOpen || isSettingsOpen || isHoveringControlsOrDrawer || (artInstance && !artInstance.playing)) {
-                    scheduleControlsAutoHide(CONTROL_AUTO_HIDE_MS);
-                    return;
-                }
-                hideControlsNow();
-            }, delayMs);
-        };
-
-        const onDesktopPointerWakeUp = () => {
-            allowControlHide = false;
-            isControlsVisible = true;
-            lastControlWakeTime = Date.now();
-            try {
-                artInstance.controls.show = true;
-            } catch (_) {}
-            const pEl = artInstance && artInstance.template && artInstance.template.$player;
-            if (pEl) {
-                pEl.classList.add('art-control-show');
-                pEl.classList.remove('art-hide-cursor');
-            }
-            syncProgressVisibility(true);
-            scheduleControlsAutoHide(CONTROL_AUTO_HIDE_MS);
-        };
-
         artInstance.on('control', (state) => {
-            if (isRecoveringControlState) return;
-            if (!state && !allowControlHide) {
-                // Prevent Artplayer's internal mouseleave or short internal timer from hiding controls before 3 seconds
-                isRecoveringControlState = true;
-                try {
-                    artInstance.controls.show = true;
-                    const pEl = artInstance.template && artInstance.template.$player;
-                    if (pEl) {
-                        pEl.classList.add('art-control-show');
-                        pEl.classList.remove('art-hide-cursor');
-                    }
-                } catch (_) {}
-                isRecoveringControlState = false;
-                isControlsVisible = true;
-                syncProgressVisibility(true);
-                const elapsed = Date.now() - lastControlWakeTime;
-                const remaining = Math.max(400, CONTROL_AUTO_HIDE_MS - elapsed);
-                scheduleControlsAutoHide(remaining);
-                return;
-            }
-            if (state) {
-                allowControlHide = false;
-                isControlsVisible = true;
-                lastControlWakeTime = Date.now();
-                syncProgressVisibility(true);
-                scheduleControlsAutoHide(CONTROL_AUTO_HIDE_MS);
-            } else {
-                isControlsVisible = false;
-                syncProgressVisibility(false);
-            }
+            isControlsVisible = Boolean(state);
+            syncProgressVisibility(isControlsVisible);
         });
 
         artInstance.on('lock', (isLocked) => {
@@ -1009,6 +905,28 @@
 
         let setDrawerOpen = () => {};
         let renderFullscreenCards = () => {};
+        let desktopPointerIdleTimer = null;
+
+        const onDesktopPointerWakeUp = () => {
+            isControlsVisible = true;
+            try { artInstance.controls.show = true; } catch (_) {}
+            syncProgressVisibility(true);
+            if (desktopPointerIdleTimer) clearTimeout(desktopPointerIdleTimer);
+            desktopPointerIdleTimer = setTimeout(() => {
+                const isDrawerOpen = Boolean(fsCardsListEl && fsCardsListEl.classList.contains('is-open'));
+                let isHoveringDrawerOrBtn = false;
+                try {
+                    isHoveringDrawerOrBtn = Boolean(
+                        (fsCardsToggleBtn && fsCardsToggleBtn.matches(':hover')) ||
+                        (fsCardsListEl && fsCardsListEl.matches(':hover'))
+                    );
+                } catch (_) {}
+                if (!isDrawerOpen && !isHoveringDrawerOrBtn && artInstance && artInstance.playing) {
+                    isControlsVisible = false;
+                    syncProgressVisibility(false);
+                }
+            }, 2800);
+        };
 
         const mountFullscreenCardsOverlay = () => {
             const playerEl = artInstance && artInstance.template && artInstance.template.$player;
@@ -1029,12 +947,10 @@
                 const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
                 if (!cards.length) return;
                 const clampedIdx = Math.max(0, Math.min(cards.length - 1, idx));
-                const targetCard = cards[clampedIdx];
-                const listHeight = fsCardsListEl.clientHeight || (targetCard.offsetHeight * 3);
-                const targetTop = Math.max(
-                    0,
-                    targetCard.offsetTop - (listHeight / 2) + (targetCard.offsetHeight / 2)
-                );
+                const stride = cards.length > 1
+                    ? (cards[1].offsetTop - cards[0].offsetTop)
+                    : (cards[0].offsetHeight + 8);
+                const targetTop = Math.max(0, clampedIdx * stride);
                 try {
                     fsCardsListEl.scrollTo({
                         top: targetTop,
@@ -1045,83 +961,46 @@
                 }
             };
 
-            // Continuously interpolate scale & opacity using true container center for silky-smooth 60/120fps mobile scrolling
+            // Continuously interpolate scale & opacity for silky-smooth 60/120fps scrolling
             let scrollRafId = null;
             let scrollSnapSettleTimer = null;
-            let isTouchingCardsList = false;
-            let currentClosestCardIdx = 0;
-
-            const scheduleSnapToClosestCard = (delayMs = 110) => {
-                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
-                scrollSnapSettleTimer = setTimeout(() => {
-                    if (isTouchingCardsList || !fsCardsListEl) return;
-                    const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
-                    if (cards.length > 1) {
-                        const clampedIdx = Math.max(0, Math.min(cards.length - 1, currentClosestCardIdx));
-                        const targetCard = cards[clampedIdx];
-                        const listHeight = fsCardsListEl.clientHeight || (targetCard.offsetHeight * 3);
-                        const idealTop = Math.max(
-                            0,
-                            targetCard.offsetTop - (listHeight / 2) + (targetCard.offsetHeight / 2)
-                        );
-                        if (Math.abs(fsCardsListEl.scrollTop - idealTop) > 2) {
-                            scrollCardIndexToCenter(clampedIdx, true);
-                        }
-                    }
-                }, delayMs);
-            };
-
             const updateCenterCardScale = () => {
                 if (!fsCardsListEl) return;
                 const cards = Array.from(fsCardsListEl.querySelectorAll('.zv-fs-card-item'));
                 if (cards.length === 0) return;
 
-                const listHeight = fsCardsListEl.clientHeight;
-                if (listHeight > 0) {
-                    const listCenterY = fsCardsListEl.scrollTop + (listHeight / 2);
-                    const firstCard = cards[0];
-                    const secondCard = cards[1];
-                    const stride = secondCard
-                        ? Math.max(1, secondCard.offsetTop - firstCard.offsetTop)
-                        : Math.max(1, (firstCard ? firstCard.offsetHeight : 60) + 8);
+                const firstCard = cards[0];
+                const secondCard = cards[1];
+                const stride = secondCard
+                    ? (secondCard.offsetTop - firstCard.offsetTop)
+                    : (firstCard ? firstCard.offsetHeight : 0);
 
-                    let closestIdx = 0;
-                    let minAbsDist = Infinity;
-
-                    const distances = cards.map((card, idx) => {
-                        const cardCenterY = card.offsetTop + (card.offsetHeight / 2);
-                        const d = Math.abs(cardCenterY - listCenterY) / stride;
-                        if (d < minAbsDist) {
-                            minAbsDist = d;
-                            closestIdx = idx;
-                        }
-                        return d;
-                    });
-                    currentClosestCardIdx = closestIdx;
+                if (stride > 0) {
+                    const fractionalIdx = fsCardsListEl.scrollTop / stride;
+                    const closestIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fractionalIdx)));
 
                     cards.forEach((card, idx) => {
-                        const dist = distances[idx];
+                        const dist = Math.abs(idx - fractionalIdx);
                         const clampedT = Math.max(0, 1 - Math.min(1, dist));
                         const smoothT = clampedT * clampedT * (3 - 2 * clampedT);
-                        const scale = dist > 1.35
-                            ? 0.78
-                            : (0.85 + (0.19 * smoothT));
-                        const opacity = dist > 1.35
-                            ? Math.max(0.22, 0.58 - ((dist - 1) * 0.42))
-                            : (0.58 + (0.42 * smoothT));
+                        const scale = dist > 1.2
+                            ? 0.76
+                            : (0.84 + (0.20 * smoothT));
+                        const opacity = dist > 1.2
+                            ? Math.max(0.16, 0.56 - ((dist - 1) * 0.45))
+                            : (0.56 + (0.44 * smoothT));
 
                         card.style.setProperty('--zv-card-scale', scale.toFixed(3));
                         card.style.setProperty('--zv-card-opacity', opacity.toFixed(3));
                         card.classList.toggle('is-center-card', idx === closestIdx);
-                        card.classList.toggle('is-far-card', dist > 1.45);
+                        card.classList.toggle('is-far-card', dist > 1.35);
                     });
                 } else {
                     const activeIdx = Math.max(0, cards.findIndex(c => c.classList.contains('active')));
-                    currentClosestCardIdx = activeIdx;
                     cards.forEach((card, idx) => {
                         const isCenter = idx === activeIdx;
-                        card.style.setProperty('--zv-card-scale', isCenter ? '1.04' : '0.85');
-                        card.style.setProperty('--zv-card-opacity', isCenter ? '1' : '0.58');
+                        card.style.setProperty('--zv-card-scale', isCenter ? '1.04' : '0.84');
+                        card.style.setProperty('--zv-card-opacity', isCenter ? '1' : '0.56');
                         card.classList.toggle('is-center-card', isCenter);
                         card.classList.toggle('is-far-card', Math.abs(idx - activeIdx) > 1);
                     });
@@ -1270,38 +1149,20 @@
             fsCardsListEl.addEventListener('scroll', () => {
                 if (scrollRafId) cancelAnimationFrame(scrollRafId);
                 scrollRafId = requestAnimationFrame(updateCenterCardScale);
-                if (!isTouchingCardsList) {
-                    scheduleSnapToClosestCard(110);
-                }
-            }, { passive: true });
-
-            // Allow native mobile touch scrolling inside the cards list without outer player interference, then auto-center on release
-            fsCardsListEl.addEventListener('touchstart', (ev) => {
-                isTouchingCardsList = true;
                 if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
-                lastTouchActivityTime = Date.now();
-                onDesktopPointerWakeUp();
-                ev.stopPropagation();
+                scrollSnapSettleTimer = setTimeout(() => {
+                    const cards = fsCardsListEl.querySelectorAll('.zv-fs-card-item');
+                    if (cards.length > 1) {
+                        const stride = cards[1].offsetTop - cards[0].offsetTop;
+                        if (stride > 0) {
+                            const nearestIdx = Math.max(0, Math.min(cards.length - 1, Math.round(fsCardsListEl.scrollTop / stride)));
+                            if (Math.abs(fsCardsListEl.scrollTop - (nearestIdx * stride)) > 2) {
+                                scrollCardIndexToCenter(nearestIdx, true);
+                            }
+                        }
+                    }
+                }, 140);
             }, { passive: true });
-
-            fsCardsListEl.addEventListener('touchmove', (ev) => {
-                isTouchingCardsList = true;
-                if (scrollSnapSettleTimer) clearTimeout(scrollSnapSettleTimer);
-                lastTouchActivityTime = Date.now();
-                onDesktopPointerWakeUp();
-                ev.stopPropagation();
-            }, { passive: true });
-
-            const onCardsTouchRelease = (ev) => {
-                isTouchingCardsList = false;
-                lastTouchActivityTime = Date.now();
-                onDesktopPointerWakeUp();
-                scheduleSnapToClosestCard(120);
-                ev.stopPropagation();
-            };
-
-            fsCardsListEl.addEventListener('touchend', onCardsTouchRelease, { passive: true });
-            fsCardsListEl.addEventListener('touchcancel', onCardsTouchRelease, { passive: true });
 
             // Stop wheel events from bubbling out of the scrollable cards list
             fsCardsListEl.addEventListener('wheel', (ev) => {
@@ -1312,15 +1173,10 @@
             playerEl.appendChild(fsCardsToggleBtn);
             renderFullscreenCards();
 
-            // Wake up controls on desktop/laptop mouse movement and hover (ignoring synthetic touch-mouse events)
-            const handleMousePointerWake = (ev) => {
-                if (ev && ev.pointerType === 'touch') return;
-                if (Date.now() - lastTouchActivityTime < 550) return;
-                onDesktopPointerWakeUp();
-            };
-            playerEl.addEventListener('mousemove', handleMousePointerWake, { passive: true });
-            playerEl.addEventListener('pointermove', handleMousePointerWake, { passive: true });
-            playerEl.addEventListener('mouseenter', handleMousePointerWake, { passive: true });
+            // Wake up controls on desktop/laptop mouse movement and hover
+            playerEl.addEventListener('mousemove', onDesktopPointerWakeUp, { passive: true });
+            playerEl.addEventListener('pointermove', onDesktopPointerWakeUp, { passive: true });
+            playerEl.addEventListener('mouseenter', onDesktopPointerWakeUp, { passive: true });
 
             // Observe #playlist-items so dynamic active-card updates (like nanatour.html auto-switching) sync automatically
             const domPlaylistContainer = document.getElementById('playlist-items');
@@ -1437,7 +1293,6 @@
 
             mountFullscreenCardsOverlay();
             renderFullscreenCards();
-            onDesktopPointerWakeUp();
 
             // Restore fullscreenWeb or native fullscreen class if episode was switched while in fullscreen
             if (prevWasFullscreenWeb) {
@@ -1469,13 +1324,8 @@
                 }
             }, true);
 
-            playerEl.addEventListener('touchstart', () => {
-                lastTouchActivityTime = Date.now();
-            }, { passive: true });
-
             // Prevent screen touch-sliding gestures on video, while allowing touch scrolling inside Settings/Quality and Fullscreen Video Cards
             playerEl.addEventListener('touchmove', (e) => {
-                lastTouchActivityTime = Date.now();
                 if (
                     e.target.closest('.art-settings') ||
                     e.target.closest('.art-setting') ||
@@ -1483,15 +1333,12 @@
                     e.target.closest('.zv-fs-cards-list') ||
                     e.target.closest('.zv-fs-cards-toggle')
                 ) {
-                    onDesktopPointerWakeUp();
                     return;
                 }
-                if (isControlsVisible && e.target.closest('.art-control-progress')) {
-                    onDesktopPointerWakeUp();
-                    return;
+                if (!e.target.closest('.art-control-progress') || !isControlsVisible) {
+                    e.preventDefault();
+                    e.stopPropagation();
                 }
-                e.preventDefault();
-                e.stopPropagation();
             }, { passive: false });
 
             let lastTapTime = 0;
@@ -1501,7 +1348,6 @@
             const processTapLogic = (clientX) => {
                 if (fsCardsListEl && fsCardsListEl.classList.contains('is-open')) {
                     setDrawerOpen(false);
-                    onDesktopPointerWakeUp();
                     return;
                 }
                 const rect = playerEl.getBoundingClientRect();
@@ -1527,16 +1373,10 @@
                         artInstance.toggle();
                         triggerCustomAnimation(artInstance.playing ? 'play' : 'pause', 'center');
                     }
-                    onDesktopPointerWakeUp();
                 } else {
-                    // SINGLE TAP DETECTED: Show controls for 3 seconds (or hide if already visible > 450ms)
-                    const wasAlreadyVisible = isControlsVisible && (now - lastControlWakeTime > 450);
+                    // SINGLE TAP DETECTED: Toggle controls
                     singleTapTimer = setTimeout(() => {
-                        if (wasAlreadyVisible) {
-                            hideControlsNow();
-                        } else {
-                            onDesktopPointerWakeUp();
-                        }
+                        artInstance.controls.toggle();
                     }, 300);
                 }
                 lastTapTime = now;
@@ -1544,7 +1384,6 @@
 
             playerEl.addEventListener('touchend', (e) => {
                 lastTouchEndTime = Date.now();
-                lastTouchActivityTime = lastTouchEndTime;
                 if (
                     e.target.closest('.art-controls') ||
                     e.target.closest('.art-settings') ||
@@ -1555,7 +1394,6 @@
                     e.target.closest('.zv-fs-cards-toggle') ||
                     (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
-                    onDesktopPointerWakeUp();
                     return;
                 }
                 e.preventDefault();
@@ -1576,7 +1414,6 @@
                     e.target.closest('.zv-fs-cards-toggle') ||
                     (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
-                    onDesktopPointerWakeUp();
                     return;
                 }
                 if (Date.now() - lastTouchEndTime < 450) return;
@@ -2013,415 +1850,6 @@
         window.ZoneVaultCaptureShield = shieldModule;
     }
 
-    // =========================================
-    // ZONE VAULT — 2021–2026 Video Page URL Manager
-    // Syncs uid, token, role, status, access (member_access | free_access), video title, and episode v
-    // across all member_access and free_access video pages.
-    // =========================================
-    if (!window.ZoneVaultPageUrlManager) {
-        const PAGE_METADATA_MAP = {
-            'inthesoop2-N12X5R25-74K2': { access: 'free_access', title: 'IN THE SOOP SEVENTEEN ver. Season2' },
-            '8th_caratland': { access: 'free_access', title: 'SEVENTEEN IN CARAT LAND 2024 SVT 8TH FAN MEETING' },
-            'magichour': { access: 'free_access', title: 'Magic Hour, The Seventeen' },
-            'rightheregoyang': { access: 'free_access', title: "SEVENTEEN 'RIGHT HERE' WORLD TOUR IN GOYANG" },
-            '9th_caratland': { access: 'free_access', title: 'SEVENTEEN IN CARAT LAND 2025 SVT 9TH FAN MEETING' },
-            'fukuokanewtour': { access: 'member_access', title: 'SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Fukuoka Show' },
-            'hxwfanconcert': { access: 'free_access', title: "HOSHIXWOOZI FAN CONCERT 'WARNING' IN SEOUL" },
-            'hxwingwangju': { access: 'free_access', title: "HOSHIXWOOZI FAN CONCERT 'WARNING' IN GWANGJU" },
-            'japannewtour': { access: 'member_access', title: 'SEVENTEEN WORLD TOUR [NEW_] IN JAPAN Osaka Show' },
-            'nanabnb': { access: 'free_access', title: 'NANA bnb with SEVENTEEN' },
-            'newtour': { access: 'free_access', title: 'SEVENTEEN WORLD TOUR [NEW_] IN INCHEON' },
-            'ourchapterS17N-111025-6B4': { access: 'free_access', title: 'SEVENTEEN: OUR CHAPTER' },
-            'svtholiday': { access: 'free_access', title: "SEVENTEEN 2025 JAPAN FAN MEETING 'HOLIDAY" },
-            'svtreaming1': { access: 'free_access', title: "[Let's SVTreaming Day]" },
-            'the-shadows-edge': { access: 'free_access', title: "The Shadow's Edge" },
-            'bethesun': { access: 'free_access', title: 'TOUR-ING : SEVENTEEN WORLD TOUR <BE THE SUN>' },
-            'cxm_in_incheon': { access: 'member_access', title: 'CxM [DOUBLE UP] LIVE PARTY in INCHEON' },
-            'cxminjapan': { access: 'free_access', title: 'CxM [DOUBLE UP] LIVE PARTY in JAPAN' },
-            'dinoxpicheolin': { access: 'member_access', title: '2026 DINO X PICHEOLIN 吉BOARD SHOW' },
-            'dxs_on_stage': { access: 'member_access', title: 'DxS [Serenade] ON STAGE - INCHEON' },
-            'jxj_into_dreaming': { access: 'member_access', title: 'JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON' },
-            'nanatour': { access: 'free_access', title: 'NANA TOUR with SEVENTEEN' },
-            'new_encore': { access: 'member_access', title: 'SEVENTEEN WORLD TOUR [NEW_] ENCORE' },
-            'svt_2026_fanmeeting_yakusoku': { access: 'member_access', title: "SEVENTEEN 2026 JAPAN FANMEETING'YAKUSOKU' Osaka" },
-            'svt_in_carat_land_2026': { access: 'member_access', title: '2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND' },
-            'svtreaming_2026': { access: 'free_access', title: "SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day]" },
-            'vernon_the8_v8': { access: 'member_access', title: '2026 VERNON THE 8 [V8] LIVE - GOYANG' },
-            'arenatour': { access: 'free_access', title: "SEVENTEEN 2018 JAPAN ARENA TOUR 'SVT'" },
-            'svtjapanconcert': { access: 'free_access', title: '17 JAPAN CONCERT Say the name #SEVENTEEN' },
-            'touragain': { access: 'free_access', title: 'SEVENTEEN TOUR AGAIN DISNEY+' }
-        };
-
-        const origPushState = window.history.pushState.bind(window.history);
-        const origReplaceState = window.history.replaceState.bind(window.history);
-
-        const urlManager = {
-            userState: {
-                uid: '',
-                token: '',
-                role: '',
-                status: ''
-            },
-
-            getPageSlug: function () {
-                const seg = (window.location.pathname || '').split('/').filter(Boolean).pop() || '';
-                return seg.replace(/\.html$/i, '');
-            },
-
-            isVideoCatalogPage: function () {
-                const path = window.location.pathname || '';
-                if (/^\/(2021|2024|2025|2026|random)\//i.test(path)) return true;
-                const slug = this.getPageSlug();
-                return Boolean(PAGE_METADATA_MAP[slug]);
-            },
-
-            getOrCreateToken: function (queryParams) {
-                try {
-                    let tok =
-                        (queryParams && queryParams.get('token')) ||
-                        this.userState.token ||
-                        sessionStorage.getItem('urlToken') ||
-                        localStorage.getItem('urlToken');
-                    if (!tok) {
-                        tok = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-                    }
-                    sessionStorage.setItem('urlToken', tok);
-                    localStorage.setItem('urlToken', tok);
-                    this.userState.token = tok;
-                    return tok;
-                } catch (_) {
-                    return this.userState.token || 'zvsession';
-                }
-            },
-
-            normalizeRole: function (roleStr) {
-                const r = String(roleStr || '').toLowerCase().trim();
-                if (r === 'admin') return 'admin';
-                if (sessionStorage.getItem('isAdmin') === 'true') return 'admin';
-                return 'member';
-            },
-
-            readUserContext: function (overrides) {
-                const ov = overrides || {};
-                const queryParams = new URLSearchParams(window.location.search);
-                let cached = null;
-                try {
-                    const raw = sessionStorage.getItem('zv_user_cache') || localStorage.getItem('zv_user_cache');
-                    if (raw) cached = JSON.parse(raw);
-                } catch (_) {}
-
-                let fbUid = '';
-                try {
-                    if (window.firebase && typeof window.firebase.auth === 'function' && window.firebase.apps && window.firebase.apps.length > 0) {
-                        const cu = window.firebase.auth().currentUser;
-                        if (cu && cu.uid) fbUid = cu.uid;
-                    }
-                } catch (_) {}
-
-                const uid = ov.uid || this.userState.uid || fbUid || (cached && cached.uid) || queryParams.get('uid') || '';
-                const token = this.getOrCreateToken(queryParams);
-                const rawRole = ov.role || this.userState.role || window.currentUserRole || (cached && cached.role) || queryParams.get('role') || 'member';
-                const role = this.normalizeRole(rawRole);
-                const rawStatus = String(ov.status || this.userState.status || (cached && cached.status) || queryParams.get('status') || 'approved').toLowerCase().trim();
-                const status = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
-
-                if (uid) this.userState.uid = uid;
-                if (role) this.userState.role = role;
-                if (status) this.userState.status = status;
-
-                return { uid, token, role, status };
-            },
-
-            resolveAccessType: function () {
-                const slug = this.getPageSlug();
-                if (PAGE_METADATA_MAP[slug] && PAGE_METADATA_MAP[slug].access) {
-                    return PAGE_METADATA_MAP[slug].access;
-                }
-                if (typeof window.PAGE_ID === 'string' && window.PAGE_ID.trim() !== '') {
-                    return 'member_access';
-                }
-                const qAccess = new URLSearchParams(window.location.search).get('access');
-                if (qAccess === 'member_access' || qAccess === 'free_access') {
-                    return qAccess;
-                }
-                return 'free_access';
-            },
-
-            cleanTitleSlug: function (rawTitle) {
-                if (!rawTitle) return '';
-                let decoded = String(rawTitle);
-                try {
-                    decoded = decodeURIComponent(decoded);
-                } catch (_) {}
-                return decoded.trim().replace(/\s+/g, '-');
-            },
-
-            resolveEpisodeTitle: function (epId, explicitTitle) {
-                if (explicitTitle && String(explicitTitle).trim() !== '') {
-                    return this.cleanTitleSlug(explicitTitle);
-                }
-                const slug = this.getPageSlug();
-                const metaTitle = (PAGE_METADATA_MAP[slug] && PAGE_METADATA_MAP[slug].title) || '';
-
-                if (epId !== null && epId !== undefined && String(epId).trim() !== '') {
-                    const targetId = String(epId).trim();
-                    if (window.currentEpData && String(window.currentEpData.id) === targetId && window.currentEpData.title) {
-                        return this.cleanTitleSlug(window.currentEpData.title);
-                    }
-                    if (Array.isArray(window.zvCurrentPlaylistData)) {
-                        const found = window.zvCurrentPlaylistData.find(item => item && String(item.id) === targetId);
-                        if (found && found.title) return this.cleanTitleSlug(found.title);
-                    }
-                    try {
-                        const items = document.querySelectorAll('.playlist-item');
-                        for (let i = 0; i < items.length; i++) {
-                            const itemEl = items[i];
-                            if (itemEl.dataset && String(itemEl.dataset.id) === targetId) {
-                                const tEl = itemEl.querySelector('.playlist-title');
-                                if (tEl && tEl.textContent && tEl.textContent.trim()) {
-                                    return this.cleanTitleSlug(tEl.textContent);
-                                }
-                            }
-                        }
-                    } catch (_) {}
-                    const mainTitleEl = document.getElementById('main-title');
-                    if (mainTitleEl && mainTitleEl.textContent && mainTitleEl.textContent.trim()) {
-                        return this.cleanTitleSlug(mainTitleEl.textContent);
-                    }
-                }
-
-                if (metaTitle) {
-                    return this.cleanTitleSlug(metaTitle);
-                }
-                const existingTitle = new URLSearchParams(window.location.search).get('title');
-                if (existingTitle) {
-                    return this.cleanTitleSlug(existingTitle);
-                }
-                return this.cleanTitleSlug(slug || 'Zone-Vault-Video');
-            },
-
-            buildVideoUrl: function (options) {
-                const opts = options || {};
-                const userCtx = this.readUserContext(opts);
-                const accessType = this.resolveAccessType();
-                const currentParams = new URLSearchParams(window.location.search);
-
-                let epId = '';
-                if (opts.clearEpisode) {
-                    epId = '';
-                } else if (opts.epId !== undefined && opts.epId !== null && String(opts.epId).trim() !== '') {
-                    epId = String(opts.epId).trim();
-                } else if (window.currentEpData && window.currentEpData.id) {
-                    epId = String(window.currentEpData.id).trim();
-                } else if (currentParams.get('v')) {
-                    epId = String(currentParams.get('v')).trim();
-                }
-
-                const titleSlug = this.resolveEpisodeTitle(epId, opts.title);
-
-                const parts = [];
-                if (userCtx.uid) parts.push(`uid=${encodeURIComponent(userCtx.uid)}`);
-                if (userCtx.token) parts.push(`token=${encodeURIComponent(userCtx.token)}`);
-                parts.push(`role=${encodeURIComponent(userCtx.role)}`);
-                parts.push(`status=${encodeURIComponent(userCtx.status)}`);
-                parts.push(`access=${encodeURIComponent(accessType)}`);
-                if (titleSlug) parts.push(`title=${encodeURIComponent(titleSlug)}`);
-                if (epId) parts.push(`v=${encodeURIComponent(epId)}`);
-
-                return `${window.location.pathname}?${parts.join('&')}`;
-            },
-
-            syncUrl: function (options) {
-                if (!this.isVideoCatalogPage()) return;
-                const opts = options || {};
-                const newUrl = this.buildVideoUrl(opts);
-                const currentState = window.history.state || (opts.epId ? { id: opts.epId } : {});
-                origReplaceState(currentState, '', newUrl);
-            },
-
-            getVideosBackUrl: function () {
-                const userCtx = this.readUserContext();
-                if (!userCtx.uid) return '/videos';
-                return `/videos?uid=${encodeURIComponent(userCtx.uid)}&token=${encodeURIComponent(userCtx.token)}&role=${encodeURIComponent(userCtx.role)}&status=${encodeURIComponent(userCtx.status)}`;
-            },
-
-            installHistoryHooks: function () {
-                const self = this;
-
-                window.history.pushState = function (state, unused, url) {
-                    if (!self.isVideoCatalogPage()) {
-                        return origPushState(state, unused, url);
-                    }
-                    let epId = state && state.id ? String(state.id) : '';
-                    let passedTitle = '';
-                    if (url) {
-                        try {
-                            const parsed = new URL(url, window.location.origin);
-                            if (!epId && parsed.searchParams.get('v')) {
-                                epId = parsed.searchParams.get('v');
-                            }
-                            if (parsed.searchParams.get('title')) {
-                                passedTitle = parsed.searchParams.get('title');
-                            }
-                        } catch (_) {}
-                    }
-                    const enrichedUrl = self.buildVideoUrl({
-                        epId: epId || null,
-                        title: passedTitle
-                    });
-                    const res = origPushState(state, unused, enrichedUrl);
-                    // Re-sync on next microtask once window.currentEpData = ep is assigned
-                    Promise.resolve().then(() => {
-                        if (window.currentEpData && (!epId || String(window.currentEpData.id) === String(epId))) {
-                            self.syncUrl({
-                                epId: window.currentEpData.id,
-                                title: window.currentEpData.title
-                            });
-                        }
-                    });
-                    return res;
-                };
-
-                window.history.replaceState = function (state, unused, url) {
-                    if (!self.isVideoCatalogPage()) {
-                        return origReplaceState(state, unused, url);
-                    }
-                    let epId = state && state.id ? String(state.id) : '';
-                    let passedTitle = '';
-                    if (url) {
-                        try {
-                            const parsed = new URL(url, window.location.origin);
-                            if (!epId && parsed.searchParams.get('v')) {
-                                epId = parsed.searchParams.get('v');
-                            }
-                            if (parsed.searchParams.get('title')) {
-                                passedTitle = parsed.searchParams.get('title');
-                            }
-                        } catch (_) {}
-                    }
-                    const enrichedUrl = self.buildVideoUrl({
-                        epId: epId || null,
-                        title: passedTitle
-                    });
-                    return origReplaceState(state, unused, enrichedUrl);
-                };
-
-                window.addEventListener('popstate', (event) => {
-                    if (!self.isVideoCatalogPage()) return;
-                    if (event.state && event.state.id) {
-                        setTimeout(() => {
-                            self.syncUrl({ epId: event.state.id });
-                        }, 30);
-                    } else {
-                        window.currentEpData = null;
-                        self.syncUrl({ clearEpisode: true });
-                    }
-                });
-            },
-
-            attachFirebaseAuthSync: function () {
-                const self = this;
-                if (!this.isVideoCatalogPage()) return;
-
-                let attempts = 0;
-                const tryAttach = () => {
-                    attempts++;
-                    if (
-                        window.firebase &&
-                        typeof window.firebase.auth === 'function' &&
-                        window.firebase.apps &&
-                        window.firebase.apps.length > 0
-                    ) {
-                        try {
-                            window.firebase.auth().onAuthStateChanged((user) => {
-                                if (!user) return;
-                                self.userState.uid = user.uid;
-                                self.syncUrl({ uid: user.uid });
-
-                                if (typeof window.firebase.database === 'function') {
-                                    window.firebase
-                                        .database()
-                                        .ref('users/' + user.uid)
-                                        .once('value')
-                                        .then((snap) => {
-                                            const uData = (snap && snap.val()) || {};
-                                            const role = self.normalizeRole(uData.role);
-                                            const status = String(uData.status || 'approved').toLowerCase().trim() || 'approved';
-                                            self.userState.uid = user.uid;
-                                            self.userState.role = role;
-                                            self.userState.status = status;
-
-                                            try {
-                                                const rawCache = sessionStorage.getItem('zv_user_cache') || localStorage.getItem('zv_user_cache');
-                                                const prevCache = rawCache ? JSON.parse(rawCache) : {};
-                                                const merged = Object.assign({}, prevCache, {
-                                                    uid: user.uid,
-                                                    role: role,
-                                                    status: status,
-                                                    name: uData.name || uData.username || prevCache.name || 'Vault Member'
-                                                });
-                                                sessionStorage.setItem('zv_user_cache', JSON.stringify(merged));
-                                                localStorage.setItem('zv_user_cache', JSON.stringify(merged));
-                                            } catch (_) {}
-
-                                            self.syncUrl({ uid: user.uid, role: role, status: status });
-                                        })
-                                        .catch(() => {});
-                                }
-                            });
-                        } catch (_) {}
-                        return;
-                    }
-                    if (attempts < 25) {
-                        setTimeout(tryAttach, 150);
-                    }
-                };
-                tryAttach();
-            },
-
-            upgradeBackNavigation: function () {
-                const self = this;
-                if (!this.isVideoCatalogPage()) return;
-
-                window.goBackSafe = function () {
-                    window.location.href = self.getVideosBackUrl();
-                };
-                window.goBack = function () {
-                    window.location.href = self.getVideosBackUrl();
-                };
-            },
-
-            init: function () {
-                if (!this.isVideoCatalogPage()) return;
-                this.installHistoryHooks();
-                this.syncUrl();
-
-                const onDomReady = () => {
-                    this.syncUrl();
-                    this.upgradeBackNavigation();
-                    this.attachFirebaseAuthSync();
-                };
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', onDomReady);
-                } else {
-                    onDomReady();
-                }
-            }
-        };
-
-        window.ZoneVaultPageUrlManager = urlManager;
-        window.updateZoneVideoPageUrl = function (ep, overrides) {
-            urlManager.syncUrl(
-                Object.assign({}, overrides || {}, {
-                    epId: ep && ep.id ? ep.id : null,
-                    title: ep && ep.title ? ep.title : ''
-                })
-            );
-        };
-        urlManager.init();
-    }
-
     // Global keyboard shortcuts (once per page)
     if (!window.__zonePlayerShortcutsAttached) {
         window.__zonePlayerShortcutsAttached = true;
@@ -2464,5 +1892,4 @@
     }
 
 })();
-
 

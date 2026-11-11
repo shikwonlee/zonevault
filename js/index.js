@@ -1,7 +1,7 @@
 // ==========================================
 // ZONE VAULT — Landing Page Controller (js/index.js)
 // ==========================================
-import { auth, db, getCachedUser, setCachedUser, cleanStaleCaches, buildAuthenticatedUrl, normalizeUserRole } from "./firebase-init.js";
+import { auth, db, getCachedUser, setCachedUser, cleanStaleCaches } from "./firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -11,10 +11,17 @@ const currentPath = window.location.pathname.toLowerCase();
 const loadingScreen = document.getElementById("auth-loading-screen");
 const mainContent = document.getElementById("main-app-content");
 
+let hasRevealedLanding = false;
+
 /**
- * Safely hides the loader and displays the landing page to guest visitors
+ * Safely hides the loader and triggers the staggered fade-in animation on the Welcome section
  */
 function revealLandingPage() {
+  if (hasRevealedLanding) return;
+  hasRevealedLanding = true;
+
+  document.body.classList.remove("auth-checking");
+
   if (loadingScreen) {
     loadingScreen.style.opacity = "0";
     loadingScreen.style.visibility = "hidden";
@@ -25,14 +32,36 @@ function revealLandingPage() {
   if (mainContent) {
     mainContent.style.visibility = "visible";
     mainContent.style.opacity = "1";
+    mainContent.classList.add("is-revealed");
   }
+}
+
+// Register Service Worker for offline landing page capability & faster loads on slow networks
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then((registration) => {
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              newWorker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
+      .catch(() => {});
+  });
 }
 
 // --- 1. INSTANT CACHE CHECK (0ms Instant Redirect) ---
 const cached = getCachedUser();
 if (cached && cached.status === "approved" && cached.uid) {
+  const accessID = cached.accessID || cached.uid;
   if (!currentPath.includes("home")) {
-    window.location.replace(buildAuthenticatedUrl("home", cached.uid, cached.role || "member", "approved"));
+    window.location.replace(`home?access=${accessID}`);
   }
 }
 
@@ -47,14 +76,13 @@ onAuthStateChanged(auth, async (user) => {
         const data = userSnap.val();
         const userStatus = data.status || "approved";
         const userAccessID = data.accessID || user.uid;
-        const userRole = normalizeUserRole(data.role);
 
         setCachedUser({
           uid: user.uid,
           email: user.email,
           name: data.name || data.telegramUsername || "Vault Member",
           profilePicture: data.profilePicture || "https://via.placeholder.com/150",
-          role: userRole,
+          role: (data.role || "member").toLowerCase(),
           status: userStatus,
           accessID: userAccessID,
           favorites: data.favorites || []
@@ -62,7 +90,7 @@ onAuthStateChanged(auth, async (user) => {
 
         if (userStatus === "approved") {
           if (!currentPath.includes("home")) {
-            window.location.replace(buildAuthenticatedUrl("home", user.uid, userRole, "approved"));
+            window.location.replace(`home?access=${userAccessID}`);
           }
         } else {
           if (!currentPath.includes("login")) {
@@ -75,20 +103,18 @@ onAuthStateChanged(auth, async (user) => {
         await set(userRef, {
           status: "approved",
           accessID: user.uid,
-          email: user.email || "No Email",
-          role: "member"
+          email: user.email || "No Email"
         });
 
         setCachedUser({
           uid: user.uid,
           email: user.email,
-          role: "member",
           status: "approved",
           accessID: user.uid
         });
 
         if (!currentPath.includes("home")) {
-          window.location.replace(buildAuthenticatedUrl("home", user.uid, "member", "approved"));
+          window.location.replace(`home?access=${user.uid}`);
         }
       }
     } catch (error) {

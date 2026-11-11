@@ -90,7 +90,7 @@
     }
   </style>
 </head>
-<body>
+<body class="auth-checking">
 
   <!-- Fullscreen Loading Screen (Prevents Landing Page Flash) -->
   <div id="auth-loading-screen">
@@ -107,8 +107,8 @@
 
     <header id="navbar">
       <div class="logo">
-        <img class="logo-img-desktop" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" alt="Zone Vault">
-        <img class="logo-img-mobile" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/2_nratjn.png" alt="Zone Vault">
+        <img class="logo-img-desktop" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784702135/DARK_THEME_t1uzij.png" onerror="this.onerror=null;this.src='new_logo.png';" alt="Zone Vault">
+        <img class="logo-img-mobile" src="https://res.cloudinary.com/rabnzafj/image/upload/v1784704346/2_nratjn.png" onerror="this.onerror=null;this.src='favicon-new.png';" alt="Zone Vault">
       </div>
       <div class="header-buttons">
         <button class="nav-link" onclick="openAbout()">About</button>
@@ -249,6 +249,38 @@
     </div>
 
   </div>
+
+  <!-- Offline & Slow-Network Resilience + Service Worker Registration -->
+  <script>
+    (function () {
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+        });
+      }
+      // Guarantee landing page reveals smoothly even if offline or CDN module script is delayed
+      var revealFallback = function () {
+        var loader = document.getElementById('auth-loading-screen');
+        var main = document.getElementById('main-app-content');
+        document.body.classList.remove('auth-checking');
+        if (loader && loader.style.display !== 'none') {
+          loader.style.opacity = '0';
+          loader.style.visibility = 'hidden';
+          setTimeout(function () { loader.style.display = 'none'; }, 400);
+        }
+        if (main) {
+          main.style.visibility = 'visible';
+          main.style.opacity = '1';
+          main.classList.add('is-revealed');
+        }
+      };
+      if (!navigator.onLine) {
+        setTimeout(revealFallback, 150);
+      } else {
+        setTimeout(revealFallback, 2000);
+      }
+    })();
+  </script>
 
   <!-- Modular Page Controller -->
   <script type="module" src="js/index.js"></script>

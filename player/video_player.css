@@ -286,35 +286,35 @@ body:has(#player-container:fullscreen) {
    - Separated pseudo-class rules so Firefox, Chrome, Edge, and Safari all parse them cleanly
    ========================================= */
 .art-video-player {
-    --zv-card-h: clamp(58px, 13.5vmin, 86px);
-    --zv-card-w: clamp(225px, 45vmin, 345px);
-    --zv-card-gap: clamp(8px, 1.8vmin, 13px);
-    --zv-thumb-w: clamp(68px, 15.5vmin, 104px);
-    --zv-title-size: clamp(12px, 2.3vmin, 14.5px);
-    --zv-toggle-size: clamp(38px, 7.6vmin, 48px);
+    --zv-card-h: clamp(54px, 13vmin, 74px);
+    --zv-card-w: clamp(210px, 42vmin, 305px);
+    --zv-card-gap: clamp(6px, 1.5vmin, 11px);
+    --zv-thumb-w: clamp(62px, 14.5vmin, 88px);
+    --zv-title-size: clamp(11px, 2.2vmin, 13px);
+    --zv-toggle-size: clamp(34px, 7vmin, 44px);
 }
 
-/* Compact mobile landscape / small viewport adaptation */
+/* Compact mobile landscape / small viewport adaptation (slightly larger cards for easy viewing) */
 @media (max-height: 460px), (max-width: 720px) {
     .art-video-player {
-        --zv-card-h: clamp(52px, 14.2vmin, 66px);
-        --zv-card-w: clamp(210px, 39vw, 270px);
-        --zv-card-gap: 8px;
-        --zv-thumb-w: clamp(62px, 15.5vmin, 80px);
-        --zv-title-size: clamp(11px, 2.4vmin, 13px);
-        --zv-toggle-size: clamp(34px, 8vmin, 42px);
+        --zv-card-h: clamp(50px, 14.5vmin, 62px);
+        --zv-card-w: clamp(198px, 38vw, 252px);
+        --zv-card-gap: 7px;
+        --zv-thumb-w: clamp(58px, 15.5vmin, 74px);
+        --zv-title-size: clamp(11px, 2.5vmin, 12.5px);
+        --zv-toggle-size: clamp(34px, 8vmin, 40px);
     }
 }
 
 /* Large desktop monitor fullscreen adaptation */
 @media (min-width: 1440px) and (min-height: 800px) {
     .art-video-player {
-        --zv-card-h: 86px;
-        --zv-card-w: 345px;
-        --zv-card-gap: 13px;
-        --zv-thumb-w: 104px;
-        --zv-title-size: 14.5px;
-        --zv-toggle-size: 48px;
+        --zv-card-h: 74px;
+        --zv-card-w: 304px;
+        --zv-card-gap: 11px;
+        --zv-thumb-w: 88px;
+        --zv-title-size: 13px;
+        --zv-toggle-size: 44px;
     }
 }
 
@@ -386,7 +386,7 @@ body:has(#player-container:fullscreen) {
     justify-content: center !important;
     cursor: pointer !important;
     z-index: 130 !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65) !important;
+    box-shadow: none !important;
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
@@ -396,8 +396,7 @@ body:has(#player-container:fullscreen) {
         visibility 0.24s ease,
         background-color 0.2s ease,
         color 0.2s ease,
-        border-color 0.2s ease,
-        box-shadow 0.2s ease !important;
+        border-color 0.2s ease !important;
     will-change: transform, opacity !important;
     padding: 0 !important;
     outline: none !important;
@@ -437,23 +436,20 @@ body:has(#player-container:fullscreen) {
     pointer-events: auto !important;
 }
 
-/* Frameless 3-card vertical carousel drawer (NO outer box, NO panel background, smooth momentum scroll) */
+/* Frameless 3-card vertical carousel drawer (NO outer box, NO panel background, NO shadow, smooth momentum scroll) */
 .zv-fs-cards-list {
     position: absolute !important;
     top: 50% !important;
     bottom: auto !important;
     right: clamp(10px, 2vmin, 18px) !important;
-    width: calc(var(--zv-card-w) + 24px) !important;
-    height: calc((var(--zv-card-h) * 3) + (var(--zv-card-gap) * 2) + 16px) !important;
+    width: calc(var(--zv-card-w) + 22px) !important;
+    height: calc((var(--zv-card-h) * 3) + (var(--zv-card-gap) * 2) + 12px) !important;
     max-height: 86dvh !important;
     background: transparent !important;
-    background-color: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
     border: none !important;
     box-shadow: none !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+    padding-top: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
+    padding-bottom: calc(var(--zv-card-h) + var(--zv-card-gap)) !important;
     padding-left: 16px !important;
     padding-right: 6px !important;
     margin: 0 !important;
@@ -463,14 +459,12 @@ body:has(#player-container:fullscreen) {
     gap: var(--zv-card-gap) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    scroll-snap-type: y mandatory !important;
+    scroll-snap-type: y proximity !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain !important;
     touch-action: pan-y !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%) !important;
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%) !important;
     z-index: 129 !important;
     opacity: 0 !important;
     visibility: hidden !important;
@@ -482,18 +476,6 @@ body:has(#player-container:fullscreen) {
         transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
         visibility 0.32s ease !important;
     will-change: scroll-position, transform, opacity !important;
-}
-
-/* Guaranteed explicit top & bottom flex spacers so the first and very last video card always snap to the exact center on mobile */
-.zv-fs-cards-list::before,
-.zv-fs-cards-list::after {
-    content: "" !important;
-    display: block !important;
-    width: 100% !important;
-    height: calc(var(--zv-card-h) + 8px) !important;
-    min-height: calc(var(--zv-card-h) + 8px) !important;
-    flex-shrink: 0 !important;
-    pointer-events: none !important;
 }
 
 .zv-fs-cards-list.is-open {
@@ -514,25 +496,24 @@ body:has(#player-container:fullscreen) {
 }
 
 /* Individual floating video card:
-   - Completely transparent background (no dark/black card box)
-   - Instant rAF-driven scale & opacity via --zv-card-scale and --zv-card-opacity for zero-lag mobile scrolling */
+   - Pure video card only with zero black drop-shadow
+   - Smoothly interpolated scale & opacity via --zv-card-scale and --zv-card-opacity */
 .zv-fs-card-item {
-    --zv-card-scale: 0.85;
-    --zv-card-opacity: 0.58;
+    --zv-card-scale: 0.84;
+    --zv-card-opacity: 0.56;
     display: flex !important;
     align-items: center !important;
-    gap: clamp(9px, 1.8vmin, 14px) !important;
+    gap: clamp(8px, 1.6vmin, 12px) !important;
     width: var(--zv-card-w) !important;
     height: var(--zv-card-h) !important;
     min-height: var(--zv-card-h) !important;
     max-height: var(--zv-card-h) !important;
-    padding: clamp(6px, 1.4vmin, 10px) !important;
+    padding: clamp(5px, 1.3vmin, 9px) !important;
     border-radius: clamp(10px, 2vmin, 14px) !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    border: none !important;
+    background: rgba(18, 18, 24, 0.78) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
     box-shadow: none !important;
     cursor: pointer !important;
     flex-shrink: 0 !important;
@@ -540,7 +521,11 @@ body:has(#player-container:fullscreen) {
     transform-origin: right center !important;
     transform: translate3d(0, 0, 0) scale(var(--zv-card-scale)) !important;
     opacity: var(--zv-card-opacity) !important;
-    transition: none !important;
+    transition:
+        transform 0.14s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.14s cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 0.2s ease,
+        border-color 0.2s ease !important;
     will-change: transform, opacity !important;
     color: #fcfcfc !important;
     text-align: left !important;
@@ -556,26 +541,21 @@ body:has(#player-container:fullscreen) {
 .zv-fs-card-item.is-center-card {
     --zv-card-scale: 1.04;
     --zv-card-opacity: 1;
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important;
+    background: rgba(28, 28, 38, 0.92) !important;
+    border-color: rgba(255, 255, 255, 0.44) !important;
     box-shadow: none !important;
     z-index: 2 !important;
 }
 
 .zv-fs-card-item.active {
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important;
+    background: rgba(42, 42, 56, 0.94) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.72) !important;
     box-shadow: none !important;
 }
 
 .zv-fs-card-item:hover {
     opacity: 1 !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+    border-color: rgba(255, 255, 255, 0.52) !important;
 }
 
 .zv-fs-card-thumb {
@@ -585,12 +565,8 @@ body:has(#player-container:fullscreen) {
     border-radius: clamp(5px, 1.3vmin, 8px) !important;
     overflow: hidden !important;
     flex-shrink: 0 !important;
-    background: transparent !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55) !important;
-}
-
-.zv-fs-card-item.active .zv-fs-card-thumb {
-    border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+    background: #111 !important;
+    box-shadow: none !important;
 }
 
 .zv-fs-card-thumb img {
@@ -605,7 +581,6 @@ body:has(#player-container:fullscreen) {
     flex-direction: column !important;
     flex: 1 !important;
     min-width: 0 !important;
-    background: transparent !important;
 }
 
 .zv-fs-card-title {
@@ -614,10 +589,6 @@ body:has(#player-container:fullscreen) {
     font-weight: 600 !important;
     color: #fcfcfc !important;
     line-height: 1.3 !important;
-    text-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.95),
-        0 2px 8px rgba(0, 0, 0, 0.9),
-        0 0 12px rgba(0, 0, 0, 0.75) !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
@@ -648,7 +619,6 @@ body:has(#player-container:fullscreen) {
     height: clamp(8px, 2vmin, 11px) !important;
     background: #ffffff !important;
     border-radius: 2px !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
     animation: sound 1s ease-in-out infinite !important;
 }
 

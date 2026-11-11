@@ -72,94 +72,11 @@ export function getCachedUser() {
   }
 }
 
-export function getOrCreateUrlToken() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    let token = params.get('token') || sessionStorage.getItem('urlToken') || localStorage.getItem('urlToken');
-    if (!token) {
-      token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-    }
-    sessionStorage.setItem('urlToken', token);
-    localStorage.setItem('urlToken', token);
-    return token;
-  } catch (e) {
-    return Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-  }
-}
-
-export function normalizeUserRole(role) {
-  const r = String(role || 'member').toLowerCase().trim();
-  return r === 'admin' ? 'admin' : 'member';
-}
-
-export function buildAuthenticatedUrl(basePath, uid, role, status) {
-  if (!uid) return basePath;
-  const token = getOrCreateUrlToken();
-  const cleanRole = normalizeUserRole(role);
-  const rawStatus = String(status || 'approved').toLowerCase().trim();
-  const cleanStatus = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
-  const cleanPath = String(basePath || '').split('?')[0];
-  return `${cleanPath}?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
-}
-
-export function buildVideoNavigationUrl(basePath, accessType, videoTitle, uid, role, status) {
-  const cached = getCachedUser();
-  const params = new URLSearchParams(window.location.search);
-  const resolvedUid = uid || (cached && cached.uid) || params.get('uid') || '';
-  const token = getOrCreateUrlToken();
-  const cleanRole = normalizeUserRole(role || (cached && cached.role) || params.get('role') || 'member');
-  const rawStatus = String(status || (cached && cached.status) || params.get('status') || 'approved').toLowerCase().trim();
-  const cleanStatus = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
-  const cleanAccess = accessType === 'member_access' ? 'member_access' : 'free_access';
-  const cleanTitle = String(videoTitle || '').trim().replace(/\s+/g, '-');
-  const cleanPath = String(basePath || '').split('?')[0];
-
-  const parts = [];
-  if (resolvedUid) parts.push(`uid=${encodeURIComponent(resolvedUid)}`);
-  if (token) parts.push(`token=${encodeURIComponent(token)}`);
-  parts.push(`role=${encodeURIComponent(cleanRole)}`);
-  parts.push(`status=${encodeURIComponent(cleanStatus)}`);
-  parts.push(`access=${encodeURIComponent(cleanAccess)}`);
-  if (cleanTitle) parts.push(`title=${encodeURIComponent(cleanTitle)}`);
-  return `${cleanPath}?${parts.join('&')}`;
-}
-
-export function updateDynamicURL(uid, role, status) {
-  if (!uid) return;
-  const token = getOrCreateUrlToken();
-  const cleanRole = normalizeUserRole(role);
-  const rawStatus = String(status || 'approved').toLowerCase().trim();
-  const cleanStatus = (!rawStatus || rawStatus === 'none') ? 'approved' : rawStatus;
-  const queryStr = `?uid=${encodeURIComponent(uid)}&token=${encodeURIComponent(token)}&role=${encodeURIComponent(cleanRole)}&status=${encodeURIComponent(cleanStatus)}`;
-  const newUrl = `${window.location.pathname}${queryStr}`;
-  window.history.replaceState({ path: newUrl }, '', newUrl);
-
-  const targetPages = ['home', 'videos', 'collection', 'profile', 'home.html', 'videos.html', 'collection.html', 'profile.html'];
-  document.querySelectorAll('a[href]').forEach(a => {
-    const rawHref = a.getAttribute('href');
-    if (!rawHref || rawHref.startsWith('javascript:') || rawHref.startsWith('#') || rawHref.startsWith('http')) return;
-    const baseHref = rawHref.split('?')[0];
-    const cleanName = baseHref.replace(/^\//, '').toLowerCase();
-    if (targetPages.includes(cleanName)) {
-      a.setAttribute('href', `${baseHref}${queryStr}`);
-    }
-  });
-
-  document.querySelectorAll('.sidebar-user').forEach(el => {
-    el.onclick = () => {
-      window.location.href = `profile${queryStr}`;
-    };
-  });
-}
-
 export function setCachedUser(data) {
   try {
     if (!data) return;
     const current = getCachedUser() || {};
     const updated = { ...current, ...data, cachedAt: Date.now() };
-    if (updated.role) {
-      updated.role = normalizeUserRole(updated.role);
-    }
     const serialized = JSON.stringify(updated);
     sessionStorage.setItem(USER_CACHE_KEY, serialized);
     localStorage.setItem(USER_CACHE_KEY, serialized);
@@ -178,35 +95,26 @@ export function clearCachedUser() {
     localStorage.removeItem(USER_CACHE_KEY);
     sessionStorage.removeItem('internalAccess');
     sessionStorage.removeItem('isAdmin');
-    sessionStorage.removeItem('urlToken');
     localStorage.removeItem('internalAccess');
-    localStorage.removeItem('urlToken');
   } catch (e) {
     // Ignore
   }
 }
 
-// Auto-cleanup stale service workers and obsolete caches
+// Auto-cleanup obsolete caches while preserving the active Zone Vault Service Worker (/sw.js)
 export function cleanStaleCaches() {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
       for (const reg of registrations) {
-        reg.unregister().catch(() => {});
+        const scriptURL = (reg.active && reg.active.scriptURL) || (reg.installing && reg.installing.scriptURL) || (reg.waiting && reg.waiting.scriptURL) || '';
+        if (scriptURL && !scriptURL.endsWith('/sw.js')) {
+          reg.unregister().catch(() => {});
+        } else {
+          reg.update().catch(() => {});
+        }
       }
-    });
+    }).catch(() => {});
   }
-}
-
-export function hydrateDynamicUrlFromCacheOrQuery() {
-  try {
-    const cached = getCachedUser();
-    const params = new URLSearchParams(window.location.search);
-    const uid = (cached && cached.uid) || params.get('uid');
-    if (!uid) return;
-    const role = (cached && cached.role) || params.get('role') || 'member';
-    const status = (cached && cached.status) || params.get('status') || 'approved';
-    updateDynamicURL(uid, role, status);
-  } catch (_) {}
 }
 
 // Run cleanup proactively

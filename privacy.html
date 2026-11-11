@@ -114,48 +114,52 @@
 <div class="bg-gradient"></div>
 <div class="noise-overlay"></div>
 
-<a href="register.html" id="back-btn" title="Go Back">
+<a href="register.html" id="back-btn" title="Go Back" onclick="if (window.history.length > 1) { event.preventDefault(); window.history.back(); }">
   <i class="fas fa-arrow-left"></i>
 </a>
 
 <div class="glass-card">
   
   <h1>Privacy Policy for Zone Vault</h1>
-  <p class="last-updated"><strong>Last Updated:</strong> March 15, 2026</p>
+  <p class="last-updated"><strong>Last Updated:</strong> November 10, 2026</p>
 
-  <p>Welcome to <strong>Zone Vault</strong>. Your privacy is critically important to us. This Privacy Policy outlines how we collect, use, and protect your personal data when you register and interact with our application. We respect your privacy and do not actively track your device, screen size, or platform information.</p>
+  <p>Welcome to <strong>Zone Vault</strong>. This page explains what information we collect when you sign up and watch streams on our site, why we need it, and how it is handled. We keep things simple and only collect what is needed to run the site and keep our streams private.</p>
 
   <h2>1. Information We Collect</h2>
-  <p>When you create an account and use Zone Vault, we collect the following minimum information required for the service to function:</p>
+  <p>When you create an account and use Zone Vault, we store the following details:</p>
   <ul>
-    <li><strong>Account Data:</strong> Your email address, encrypted password (or Google Authentication token), and your Telegram username (<code>@username</code>).</li>
-    <li><strong>Content History:</strong> We record your "watch history" or interactions with the video content provided on the platform to personalize your experience and track engagement.</li>
+    <li><strong>Account Details:</strong> Your email address, login credentials (or Google Sign-In token), display name/username, profile avatar, and your Telegram handle (<code>@username</code>).</li>
+    <li><strong>Watch History & Playback Progress:</strong> When you watch VODs or concert replays, we save the episode ID and your last playback timestamp so you can pick up right where you left off.</li>
+    <li><strong>Live Chat & Community Posts:</strong> If you join a live stream chat or submit a message on community pages (like birthday boards), your username and message are visible to other logged-in members.</li>
+    <li><strong>Stream Session Tokens:</strong> When you play a video, our server generates a temporary stream token tied to your account ID, username, and IP address to verify that you are an approved member watching directly on <code>zonevault.live</code>.</li>
   </ul>
 
   <h2>2. How We Use Your Information</h2>
-  <p>We do not sell your personal data. Your information is used strictly for the following operational purposes:</p>
+  <p>We never sell, rent, or trade your personal information. Everything we collect is used strictly to run Zone Vault:</p>
   <ul>
-    <li><strong>Authentication & Access Control:</strong> To verify your identity, process your "Access Request," and determine if an admin has approved your entry into the vault.</li>
-    <li><strong>Security:</strong> To detect unauthorized access and block malicious "ghost sessions" from entering restricted areas.</li>
-    <li><strong>Communication:</strong> Your Telegram username is collected specifically to allow admins to contact you regarding your pending access requests or platform updates.</li>
+    <li><strong>Account Approval & Access Control:</strong> To check your membership status, process your join request, and make sure only approved accounts can open video pages and live broadcasts.</li>
+    <li><strong>Stream & Content Protection:</strong> To block external downloaders, browser scraping extensions, unauthorized hotlinking, and screen-recording tools from ripping videos or subtitles.</li>
+    <li><strong>Saved Progress & Preferences:</strong> We use your browser's local storage (<code>localStorage</code> and <code>sessionStorage</code>) to remember your dark/light theme setting and keep your session active when you refresh a page or switch episodes.</li>
+    <li><strong>Admin Updates:</strong> Your Telegram username is used by admins to reach out if there is an issue with your access request or account.</li>
   </ul>
 
   <h2>3. Data Storage & Security</h2>
-  <p>Your data is securely stored using <strong>Google Firebase Realtime Database and Authentication</strong>.</p>
+  <p>Account profiles, watch history, and live chat data are stored through <strong>Google Firebase (Authentication and Realtime Database)</strong>.</p>
   <ul>
-    <li><strong>Encryption:</strong> Passwords are encrypted by Google's backend. Zone Vault administrators cannot see your actual password.</li>
-    <li><strong>Database Rules:</strong> Our database relies on strict security rules. Your data is isolated, meaning other regular users cannot read your personal profile information or watch history. Only authorized administrators have access to view join requests.</li>
+    <li><strong>Passwords:</strong> Your password is handled directly by Google Firebase Authentication. Zone Vault admins cannot view or recover your raw password.</li>
+    <li><strong>Encrypted Stream Delivery:</strong> Video manifests and subtitle files are loaded in memory inside the player and are locked to active member sessions.</li>
+    <li><strong>Account Isolation:</strong> Your private profile details and watch history are restricted to your account. Other regular members cannot view your watch history or email address.</li>
   </ul>
 
   <h2>4. Third-Party Services</h2>
-  <p>We use <strong>Google Firebase</strong> for hosting, database, and authentication. By signing in with Google, you are subject to Google's standard data privacy policies regarding the transfer of your email and authentication status to our app.</p>
+  <p>We rely on <strong>Google Firebase</strong> for sign-in and database storage, and <strong>Cloudflare</strong> to deliver pages and protect streams from automated scraping. If you choose to sign in with Google, Google shares your basic account identifier and email with our login system under their standard privacy terms.</p>
 
-  <h2>5. Contact</h2>
-  <p>If you have questions regarding this policy or wish to request the deletion of your account and associated profile data, please reach out to our admin directly on Telegram at <strong>@Hoskwi_17</strong>.</p>
+  <h2>5. Contact & Account Deletion</h2>
+  <p>If you have any questions about this policy or want to have your account and watch history deleted, message our admin directly on Telegram at <strong>@Hoskwi_17</strong>.</p>
 
   <hr>
   
-  <p class="disclaimer">By registering for an account at Zone Vault, you acknowledge that you have read, understood, and agree to the collection and use of your data as described in this policy.</p>
+  <p class="disclaimer">By registering and using Zone Vault, you agree to the practices described on this page.</p>
 
 </div>
 

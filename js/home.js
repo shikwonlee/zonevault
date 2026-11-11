@@ -1,12 +1,11 @@
 // ==========================================
 // 1. FIREBASE AUTHENTICATION & DATABASE SYNC
 // ==========================================
-import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches, updateDynamicURL, normalizeUserRole, hydrateDynamicUrlFromCacheOrQuery } from "./firebase-init.js";
+import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 cleanStaleCaches();
-hydrateDynamicUrlFromCacheOrQuery();
 
 // --- INSTANT SKELETON-FREE HYDRATION FROM CACHE (0ms) ---
 const initialCached = getCachedUser();
@@ -19,7 +18,7 @@ if (initialCached) {
     pic.onerror = () => { pic.src = "https://via.placeholder.com/150"; };
   }
   if (document.getElementById("status-text-pc")) {
-    document.getElementById("status-text-pc").innerText = normalizeUserRole(initialCached.role) === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
+    document.getElementById("status-text-pc").innerText = initialCached.role === 'admin' ? "ADMIN ACCESS" : "MEMBER ACCESS";
   }
 }
 
@@ -82,11 +81,6 @@ onAuthStateChanged(auth, async (user) => {
             }
 
             const data = snapshot.val();
-            const userRole = normalizeUserRole(data.role);
-            const userStatus = (data.status || "approved").toLowerCase();
-
-            // Update URL immediately with uid, token, role (admin/member), and status
-            updateDynamicURL(user.uid, userRole, userStatus);
 
             // Check approval status directly from Firebase
             if (data.status !== "approved") {
@@ -99,13 +93,13 @@ onAuthStateChanged(auth, async (user) => {
 
             // Restore local access flag for compatibility
             localStorage.setItem("internalAccess", "true");
-            sessionStorage.setItem("internalAccess", "true");
 
             initNotifications();
 
             const userEmail = user.email || "";
             const userName = data.name || data.telegramUsername || "Vault Member";
             const userPic = data.profilePicture || "https://via.placeholder.com/150";
+            const userRole = (data.role || "member").toLowerCase();
 
             // Cache immediately to eliminate lag across subsequent page switches
             setCachedUser({
@@ -210,12 +204,18 @@ function initializeUI() {
     }, 1000);
 
     const slideData = [
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", title: "DXS [SERENADE ON STAGE] ICHEON" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png", title: "SEVENTEEN WORLD TOUR [NEW] ENCORE" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg", title: "MAGIC HOUR THE SEVENTEEN" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png", title: "SEVENTEEN IN CARATLAND 2025 SVT 9TH FAN MEETING" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png", title: "SEVENTEEN IN CARATLAND 2024 SVT 8TH FAN MEETING" },
-        { src: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png", title: "CXM DOUBLE UP PARTY" }
+        { src: "https://res.cloudinary.com/sanuqblh/image/upload/v1794147667/4b6235c1b197562dd1089def4be17a76_rxdh27.png", title: "DK & JEONGHAN'S NO-CLUE TRIP", category: "VARIETY" },
+        { src: "https://res.cloudinary.com/sanuqblh/image/upload/v1794122542/cf49fd9d-308c-4334-a64d-105ee07f9f69_a00ec4.png", title: "NANA TOUR with SEVENTEEN", category: "VARIETY" },
+        { src: "https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png", title: "TOUR-ING : SEVENTEEN WORLD TOUR <BE THE SUN>", category: "CONCERT" },
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png", title: "JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON", category: "CONCERT" },
+        { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg", title: "SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day]", category: "SPECIAL" },
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", title: "2026 DINO X PICHEOLIN 吉BOARD SHOW", category: "CONCERT" },
+        { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp", title: "2026 VERNON THE 8 [V8] LIVE - GOYANG", category: "CONCERT" },
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", title: "2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", category: "FAN MEET" },
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png", title: "SEVENTEEN 2026 JAPAN FANMEETING 'YAKUSOKU' Osaka", category: "FAN MEET" },
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", title: "DxS [Serenade] ON STAGE - INCHEON", category: "CONCERT" },
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png", title: "SEVENTEEN WORLD TOUR [NEW_] ENCORE", category: "CONCERT" },
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg", title: "CxM [DOUBLE UP] LIVE PARTY in JAPAN", category: "CONCERT" }
     ];
 
     const thumbnailBoxes = document.querySelectorAll('.thumb-btn');
@@ -226,6 +226,7 @@ function initializeUI() {
         let current = 0;
 
         function switchImageByIndex(index) {
+            if (!slideData[index]) return;
             mainImage.style.opacity = '0';
             if (heroTitle) heroTitle.style.opacity = '0';
             
@@ -254,12 +255,29 @@ function initializeUI() {
 
     const scroller = document.getElementById('recentlyAddedScroller');
     if (scroller) {
+        // Strip any click handlers on Recently Added cards so they only slide
+        Array.from(scroller.querySelectorAll('.swipe-card')).forEach(card => {
+            card.removeAttribute('onclick');
+            card.onclick = null;
+        });
+
         const originalCards = Array.from(scroller.children);
-        const gap = window.innerWidth <= 900 ? 18 : 24;
+        const gap = window.innerWidth <= 900 ? 16 : 20;
         let originalWidth = 0;
         
         originalCards.forEach(card => { originalWidth += card.offsetWidth + gap; });
-        originalCards.forEach(card => scroller.appendChild(card.cloneNode(true)));
+        originalCards.forEach(card => {
+            const clone = card.cloneNode(true);
+            clone.removeAttribute('onclick');
+            clone.onclick = null;
+            scroller.appendChild(clone);
+        });
+
+        // Prevent click navigation on Recently Added cards; allow smooth sliding only
+        scroller.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, true);
 
         let isDown = false;
         let isHovered = false;
@@ -269,8 +287,14 @@ function initializeUI() {
 
         function continuousScroll() {
             if (!isDown && !isHovered) {
+                if (originalWidth <= 0 && originalCards.length > 0) {
+                    const currentGap = window.innerWidth <= 900 ? 16 : 20;
+                    originalWidth = originalCards.reduce((sum, card) => sum + card.offsetWidth + currentGap, 0);
+                }
                 currentScroll += speed;
-                if (currentScroll >= originalWidth) currentScroll -= originalWidth;
+                if (originalWidth > 0 && currentScroll >= originalWidth) {
+                    currentScroll -= originalWidth;
+                }
                 scroller.scrollLeft = currentScroll;
             } else {
                 currentScroll = scroller.scrollLeft;

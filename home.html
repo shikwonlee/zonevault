@@ -219,13 +219,14 @@
     .hero-content-box { position: relative; z-index: 2; padding: 0 60px; width: 100%; max-width: 850px; }
     .hero-content-box h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 15px; color: #fff; transition: opacity 0.3s ease; }
     
-    .thumbnails-floating { display: flex; gap: 12px; margin-top: 10px; }
+    .thumbnails-floating { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
     .thumb-btn { 
-        width: 70px; height: 44px; border-radius: 8px; overflow: hidden; 
+        width: 68px; height: 42px; border-radius: 8px; overflow: hidden; 
         cursor: pointer; transition: all 0.2s ease; 
         border: 1px solid var(--border-color);
+        flex-shrink: 0;
     }
-    .thumb-btn.active { transform: scale(1.15) translateY(-5px); border: 2px solid var(--text-main); z-index: 10; box-shadow: var(--shadow-float); }
+    .thumb-btn.active { transform: scale(1.12) translateY(-4px); border: 2px solid var(--text-main); z-index: 10; box-shadow: var(--shadow-float); }
     .thumb-btn img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; opacity: 0.6; }
     .thumb-btn.active img, .thumb-btn:hover img { opacity: 1; }
 
@@ -246,17 +247,14 @@
         border: 1px solid var(--border-color);
         border-radius: 16px; overflow: hidden; transition: all 0.2s ease; user-select: none; 
         box-shadow: var(--shadow-subtle);
+        cursor: grab;
     }
-    .swipe-card:hover { transform: translateY(-5px); background: var(--hover-bg); box-shadow: var(--shadow-float); }
+    .swipe-scroller.active .swipe-card { cursor: grabbing; }
     
     .swipe-thumbnail { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-bottom: 1px solid var(--border-color); }
-    .swipe-thumbnail img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: 0.9; transition: opacity 0.2s; }
-    .swipe-card:hover .swipe-thumbnail img { opacity: 1; }
+    .swipe-thumbnail img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: 0.95; transition: opacity 0.2s; }
     
-    .play-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.2s ease; font-size: 36px; color: #fff; }
-    .swipe-card:hover .play-overlay { opacity: 1; }
-    .play-overlay i { transform: scale(0.8); transition: 0.2s ease; }
-    .swipe-card:hover .play-overlay i { transform: scale(1); }
+    .play-overlay { display: none !important; }
     
     .duration-badge { position: absolute; bottom: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); color: #ffffff; font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; letter-spacing: 0.5px; z-index: 2; border: 1px solid rgba(255,255,255,0.2); }
     
@@ -526,19 +524,22 @@
 <div class="main-wrapper fade-in">
     <div class="hero-container skeleton" id="hero-box">
         <div class="hero-bg-image">
-             <img id="mainDisplay" src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Main" loading="eager">
+             <img id="mainDisplay" src="https://res.cloudinary.com/sanuqblh/image/upload/v1794147667/4b6235c1b197562dd1089def4be17a76_rxdh27.png" alt="Main" loading="eager">
         </div>
         <div class="hero-overlay"></div>
         <div class="hero-content-box">
-            <h1 id="heroTitle">DXS [SERENADE ON STAGE] ICHEON</h1>
+            <h1 id="heroTitle">DK &amp; JEONGHAN'S NO-CLUE TRIP</h1>
             
-            <div class="thumbnails-floating">
-                <div class="thumb-btn active" onclick="switchImage(0)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(1)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(2)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(3)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(4)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1772085168/This_live_event_has_ended._svopgf.png" loading="lazy"></div>
-                <div class="thumb-btn" onclick="switchImage(5)"><img src="https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/CXM.png" loading="lazy"></div>
+            <div class="thumbnails-floating" id="heroThumbnails">
+                <div class="thumb-btn active" onclick="switchImage(0)"><img src="https://res.cloudinary.com/sanuqblh/image/upload/v1794147667/4b6235c1b197562dd1089def4be17a76_rxdh27.png" alt="DK &amp; JEONGHAN'S NO-CLUE TRIP" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(1)"><img src="https://res.cloudinary.com/sanuqblh/image/upload/v1794122542/cf49fd9d-308c-4334-a64d-105ee07f9f69_a00ec4.png" alt="NANA TOUR with SEVENTEEN" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(2)"><img src="https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png" alt="TOUR-ING : SEVENTEEN WORLD TOUR &lt;BE THE SUN&gt;" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(3)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png" alt="JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(4)"><img src="https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg" alt="SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day]" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(5)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg" alt="2026 DINO X PICHEOLIN 吉BOARD SHOW" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(6)"><img src="https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp" alt="2026 VERNON THE 8 [V8] LIVE - GOYANG" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(7)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png" alt="2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND" loading="lazy"></div>
+                <div class="thumb-btn" onclick="switchImage(8)"><img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png" alt="SEVENTEEN 2026 JAPAN FANMEETING 'YAKUSOKU' Osaka" loading="lazy"></div>
             </div>
         </div>
     </div>
@@ -549,50 +550,95 @@
 
     <div class="swipe-scroller drag-scrollable" id="recentlyAddedScroller">
         
-        <div class="swipe-card skeleton" onclick="window.location.href='2025/dxs_icheon'">
+        <div class="swipe-card skeleton">
             <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
+                <img src="https://res.cloudinary.com/sanuqblh/image/upload/v1794147667/4b6235c1b197562dd1089def4be17a76_rxdh27.png" alt="DK &amp; JEONGHAN'S NO-CLUE TRIP" loading="lazy">
+                <span class="duration-badge">VARIETY</span>
             </div>
             <div class="swipe-info">
-                <h4>DXS [SERENADE ON STAGE] ICHEON</h4>
+                <h4>DK &amp; JEONGHAN'S NO-CLUE TRIP</h4>
             </div>
         </div>
 
-        <div class="swipe-card skeleton" onclick="window.location.href='2025/svt_new_encore'">
+        <div class="swipe-card skeleton">
             <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
+                <img src="https://res.cloudinary.com/sanuqblh/image/upload/v1794122542/cf49fd9d-308c-4334-a64d-105ee07f9f69_a00ec4.png" alt="NANA TOUR with SEVENTEEN" loading="lazy">
+                <span class="duration-badge">VARIETY</span>
             </div>
             <div class="swipe-info">
-                <h4>SEVENTEEN WORLD TOUR [NEW] ENCORE</h4>
+                <h4>NANA TOUR with SEVENTEEN</h4>
             </div>
         </div>
 
-        <div class="swipe-card skeleton" onclick="window.location.href='2025/magic_hour'">
+        <div class="swipe-card skeleton">
             <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1774046072/Magic_Hour_The_Seventeen_nsiakx.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
+                <img src="https://res.cloudinary.com/sanuqblh/image/upload/v1793851172/03e68a354749c45a891071b13f659608_yj7ysf.png" alt="TOUR-ING : SEVENTEEN WORLD TOUR &lt;BE THE SUN&gt;" loading="lazy">
                 <span class="duration-badge">CONCERT</span>
             </div>
             <div class="swipe-info">
-                <h4>MAGIC HOUR THE SEVENTEEN</h4>
-            </div>
-        </div>
-        
-        <div class="swipe-card skeleton" onclick="window.location.href='2025/cxminjapan'">
-            <div class="swipe-thumbnail">
-                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg" alt="Video" loading="lazy">
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <span class="duration-badge">CONCERT</span>
-            </div>
-            <div class="swipe-info">
-                <h4>CxM [DOUBLE UP] LIVE PARTY in JAPAN</h4>
+                <h4>TOUR-ING : SEVENTEEN WORLD TOUR &lt;BE THE SUN&gt;</h4>
             </div>
         </div>
 
+        <div class="swipe-card skeleton">
+            <div class="swipe-thumbnail">
+                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1793260518/ftmmyrqjkpsd0vjgsnnu.png" alt="JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON" loading="lazy">
+                <span class="duration-badge">CONCERT</span>
+            </div>
+            <div class="swipe-info">
+                <h4>JEONGHAN X JOSHUA JOURNEY INTO [DREAMING] - INCHEON</h4>
+            </div>
+        </div>
+
+        <div class="swipe-card skeleton">
+            <div class="swipe-thumbnail">
+                <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1791539307/photo_2026-10-09_17-43-33_nexpcj.jpg" alt="SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day]" loading="lazy">
+                <span class="duration-badge">SPECIAL</span>
+            </div>
+            <div class="swipe-info">
+                <h4>SEVENTEEN CONCERT LIVE STREAMING [Let's SVTreaming Day]</h4>
+            </div>
+        </div>
+
+        <div class="swipe-card skeleton">
+            <div class="swipe-thumbnail">
+                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg" alt="2026 DINO X PICHEOLIN 吉BOARD SHOW" loading="lazy">
+                <span class="duration-badge">CONCERT</span>
+            </div>
+            <div class="swipe-info">
+                <h4>2026 DINO X PICHEOLIN 吉BOARD SHOW</h4>
+            </div>
+        </div>
+
+        <div class="swipe-card skeleton">
+            <div class="swipe-thumbnail">
+                <img src="https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp" alt="2026 VERNON THE 8 [V8] LIVE - GOYANG" loading="lazy">
+                <span class="duration-badge">CONCERT</span>
+            </div>
+            <div class="swipe-info">
+                <h4>2026 VERNON THE 8 [V8] LIVE - GOYANG</h4>
+            </div>
+        </div>
+
+        <div class="swipe-card skeleton">
+            <div class="swipe-thumbnail">
+                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png" alt="2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND" loading="lazy">
+                <span class="duration-badge">FAN MEET</span>
+            </div>
+            <div class="swipe-info">
+                <h4>2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND</h4>
+            </div>
+        </div>
+
+        <div class="swipe-card skeleton">
+            <div class="swipe-thumbnail">
+                <img src="https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png" alt="SEVENTEEN 2026 JAPAN FANMEETING 'YAKUSOKU' Osaka" loading="lazy">
+                <span class="duration-badge">FAN MEET</span>
+            </div>
+            <div class="swipe-info">
+                <h4>SEVENTEEN 2026 JAPAN FANMEETING 'YAKUSOKU' Osaka</h4>
+            </div>
+        </div>
     </div>
 
     <div class="section-header">

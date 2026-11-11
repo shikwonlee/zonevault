@@ -1,9 +1,8 @@
-import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches, updateDynamicURL, normalizeUserRole, hydrateDynamicUrlFromCacheOrQuery, buildVideoNavigationUrl } from "./firebase-init.js";
+import { auth, db, getCachedUser, setCachedUser, clearCachedUser, cleanStaleCaches } from "./firebase-init.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, onValue, get, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 cleanStaleCaches();
-hydrateDynamicUrlFromCacheOrQuery();
 
 console.log("✅ Videos.js successfully loaded!");
 
@@ -24,6 +23,19 @@ onValue(maintenanceRef, (snapshot) => {
         window.location.href = returnUrl; 
     }
 });
+
+// ==========================================
+// 2. DYNAMIC URL PARAMETERS LOGIC
+// ==========================================
+function updateDynamicURL(uid, role, status) {
+  let token = sessionStorage.getItem('urlToken');
+  if (!token) {
+      token = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
+      sessionStorage.setItem('urlToken', token);
+  }
+  const newUrl = `${window.location.pathname}?uid=${uid}&token=${token}&role=${role}&status=${status}`;
+  window.history.pushState({ path: newUrl }, '', newUrl);
+}
 
 // ==========================================
 // 3. GLOBALS & DATA
@@ -99,9 +111,7 @@ window.handleWatchClick = function(itemId) {
     if (!item) return;
     if (hasVideoAccess(item)) {
         if (item.link && item.link !== '#') {
-            const accessType = item.pageAccessId ? 'member_access' : 'free_access';
-            const roleStr = isAdminUser ? 'admin' : 'member';
-            window.location.href = buildVideoNavigationUrl(item.link, accessType, item.title, userId, roleStr, 'approved');
+            window.location.href = item.link;
         }
     } else {
         openRestrictedVideoModal(item);
@@ -416,7 +426,6 @@ if (initialCachedUser && initialCachedUser.uid) {
     if (initialCachedUser.role && initialCachedUser.role.toLowerCase() === 'admin') {
         isAdminUser = true;
     }
-    updateDynamicURL(initialCachedUser.uid, initialCachedUser.role || 'member', initialCachedUser.status || 'approved');
     subscribeToPageAccess(initialCachedUser.uid);
 }
 
@@ -480,7 +489,6 @@ window.toggleNotifModal = function() {
 // ==========================================
 window.logout = function() {
     if(confirm("Are you sure you want to log out?")) {
-        clearCachedUser();
         signOut(auth).then(() => window.location.replace("index"));
     }
 }
@@ -519,7 +527,7 @@ onAuthStateChanged(auth, user => {
             if (unEl) unEl.textContent = currentUserUsername;
             if (uidEl) uidEl.textContent = user.uid;
             const pic = data.profilePicture || "https://via.placeholder.com/150";
-            const role = normalizeUserRole(data.role);
+            const role = (data.role || "member").toLowerCase();
             const isAdm = role === 'admin';
             if (isAdminUser !== isAdm) {
                 isAdminUser = isAdm;
@@ -552,14 +560,10 @@ onAuthStateChanged(auth, user => {
                 sessionStorage.setItem('internalAccess', 'true'); 
             }
 
-            if (data.status === "approved") {
-                updateDynamicURL(user.uid, role, "approved");
-            } else {
-                get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {
-                    const reqStatus = reqSnap.val() || data.status || 'approved';
-                    updateDynamicURL(user.uid, role, reqStatus);
-                });
-            }
+            get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {
+                const reqStatus = reqSnap.val() || 'none';
+                updateDynamicURL(user.uid, role, reqStatus);
+            });
         });
     } else {
         if (!isIndexPagePath && !window.isKickedOut) {

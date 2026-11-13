@@ -212,10 +212,7 @@ function initializeUI() {
         { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1787284496/jve8riqvoof8haxadmf2.jpg", title: "2026 DINO X PICHEOLIN 吉BOARD SHOW", category: "CONCERT" },
         { src: "https://res.cloudinary.com/rabnzafj/image/upload/v1783661220/v8_live_goyang_zbmriz.webp", title: "2026 VERNON THE 8 [V8] LIVE - GOYANG", category: "CONCERT" },
         { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1782052754/cl2026_omm6dn.png", title: "2026 SVT 10TH FAN MEETING SEVENTEEN in CARAT LAND", category: "FAN MEET" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png", title: "SEVENTEEN 2026 JAPAN FANMEETING 'YAKUSOKU' Osaka", category: "FAN MEET" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1775580154/DXS_iltda7.png", title: "DxS [Serenade] ON STAGE - INCHEON", category: "CONCERT" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1774264277/10_vdbvfi.png", title: "SEVENTEEN WORLD TOUR [NEW_] ENCORE", category: "CONCERT" },
-        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1771257326/cxm_qjoyfa.jpg", title: "CxM [DOUBLE UP] LIVE PARTY in JAPAN", category: "CONCERT" }
+        { src: "https://res.cloudinary.com/dp6x9xmku/image/upload/v1779505888/yakusoku_fiv99n.png", title: "SEVENTEEN 2026 JAPAN FANMEETING 'YAKUSOKU' Osaka", category: "FAN MEET" }
     ];
 
     const thumbnailBoxes = document.querySelectorAll('.thumb-btn');

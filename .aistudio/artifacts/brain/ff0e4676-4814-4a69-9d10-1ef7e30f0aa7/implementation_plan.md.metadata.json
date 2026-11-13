@@ -1,6 +1,0 @@
-{
-  "summary":  "Implementation plan for adding a Fullscreen & Landscape In-Player Video Card Selector on the middle-right edge of the shared Zone Vault player (/player/video_player.js and /player/video_player.css) that displays floating scrollable video cards without an outer container box while keeping the regular right-side playlist unchanged.",
-  "updatedAt":  "2026-11-09T17:12:36.990756238Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}

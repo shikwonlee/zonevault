@@ -259,6 +259,79 @@ body:has(#player-container:fullscreen) {
     box-sizing: border-box !important;
 }
 
+/* Remove thumbnail enlargement on hover/click, remove poster/thumbnail backdrops & oval pill shape across all video pages */
+#poster-container,
+#poster-container:hover,
+#poster-container:active {
+    transform: none !important;
+    box-shadow: none !important;
+    transition: none !important;
+}
+
+#player-container {
+    box-shadow: none !important;
+}
+
+#poster-container::after,
+#poster-container:hover::after {
+    display: none !important;
+    background: none !important;
+    opacity: 0 !important;
+}
+
+#poster-container.has-overlay-text::after,
+#poster-container:has(#poster-overlay:not(:empty))::after {
+    display: block !important;
+    background: rgba(0, 0, 0, 0.65) !important;
+    opacity: 1 !important;
+}
+
+#poster-overlay,
+#poster-container:hover #poster-overlay {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 24px !important;
+    transform: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: clamp(16px, 2.4vw, 24px) !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+}
+
+#poster-overlay:empty {
+    display: none !important;
+}
+
+.playlist-img-wrapper {
+    box-shadow: none !important;
+}
+
+.playlist-img-wrapper::after,
+.playlist-item:hover .playlist-img-wrapper::after {
+    display: none !important;
+    opacity: 0 !important;
+    background: none !important;
+    content: none !important;
+}
+
+.playlist-item,
+.playlist-item:hover,
+.playlist-item:active,
+.playlist-item img,
+.playlist-item:hover img,
+.playlist-item:active img {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+
 /* Fix mobile landscape mode so #player-container fills viewport without 16/9 horizontal overflow */
 @media (hover: none) and (pointer: coarse) and (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
     html,

@@ -151,16 +151,25 @@
         background-image: url("https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/japan-concert.png"); 
         display: flex; align-items: center; justify-content: center; cursor: pointer;
         position: relative; border-radius: 12px;
-        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.3);
+        box-shadow: none;
+    }
+
+    #poster-container::after {
+        content: ""; position: absolute; inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 1; display: none;
+    }
+    #poster-container.has-overlay-text::after,
+    #poster-container:has(#poster-overlay:not(:empty))::after {
+        display: block;
     }
 
     #poster-overlay {
-        background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 15px 30px; border-radius: 50px;
-        color: white; font-weight: 600; font-size: 16px;
-        pointer-events: none; text-transform: uppercase; letter-spacing: 1px;
+        background: transparent; border: none; padding: 0 24px; border-radius: 0;
+        color: #ffffff; font-weight: 600; font-size: clamp(16px, 2.4vw, 24px);
+        pointer-events: none; z-index: 2; box-shadow: none; text-align: center; max-width: 90%; line-height: 1.4;
     }
+    #poster-overlay:empty { display: none; }
 
     /* ARTPLAYER CONTAINER */
     #player-container { 
@@ -170,7 +179,7 @@
         border-radius: 12px; 
         overflow: hidden; 
         position: relative;
-        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5);
+        box-shadow: none;
         touch-action: none;
     }
       
@@ -211,11 +220,10 @@
     }
     .playlist-item:hover { 
         background: var(--playlist-hover); 
-        transform: translateY(-2px); 
     }
     .playlist-item.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
-    .playlist-item img { width: 100px; height: 56px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .playlist-item img { width: 100px; height: 56px; object-fit: cover; border-radius: 6px; box-shadow: none; }
     .playlist-text { display: flex; flex-direction: column; }
     .playlist-title { font-size: 13px; font-weight: 500; color: var(--text-main); line-height: 1.4; }
     .playlist-status { font-size: 10px; font-weight: 700; color: #ff4444; margin-top: 4px; letter-spacing: 0.5px; }
@@ -312,7 +320,7 @@
     <div class="glass-card video-card-container" style="padding: 0;">
         
         <div id="poster-container">
-          <div id="poster-overlay">Select an Episode</div>
+          <div id="poster-overlay"></div>
         </div>
 
         <div id="player-container">

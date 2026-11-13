@@ -79,30 +79,29 @@
     justify-content: center;
     cursor: pointer;
     position: relative;
-    box-shadow: var(--glass-shadow);
+    box-shadow: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   #poster-overlay {
-    background: rgba(0, 0, 0, 0.5); 
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 15px 25px;
-    border-radius: 50px;
+    background: transparent;
+    border: none;
+    padding: 0 24px;
+    border-radius: 0;
     color: white;
-    font-weight: bold;
+    font-weight: 600;
     font-size: 18px;
     pointer-events: none; 
-    text-shadow: var(--text-shadow);
+    box-shadow: none;
   }
+  #poster-overlay:empty { display: none; }
 
   /* --- ARTPLAYER CONTAINER --- */
   #player-container {
     display: none; 
     width: 100%;
     aspect-ratio: 16/9;
-    box-shadow: var(--glass-shadow);
+    box-shadow: none;
     position: relative; 
     background: transparent; 
   }
@@ -440,7 +439,7 @@
   <div class="video-wrapper-left">
       
     <div id="poster-container">
-      <div id="poster-overlay">Select the Live to Watch</div>
+      <div id="poster-overlay"></div>
     </div>
 
     <div id="player-container">

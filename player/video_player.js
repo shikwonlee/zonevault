@@ -12,6 +12,27 @@
     window.art = window.art || null;
     window.currentSubtitleUrls = window.currentSubtitleUrls || [];
 
+    // Ensure default "Play Stream" / "Play Episode" / "Select an Episode" text is stripped on all video pages
+    function sanitizePosterOverlay() {
+        const overlay = document.getElementById('poster-overlay');
+        const poster = document.getElementById('poster-container');
+        if (!overlay) return;
+        const rawText = (overlay.textContent || '').trim();
+        if (/^(play\s+(stream|episode)|select\s+(an\s+episode|the\s+live\s+to\s+watch))$/i.test(rawText)) {
+            overlay.textContent = '';
+        }
+        if (poster) {
+            const hasText = (overlay.textContent || '').trim().length > 0;
+            poster.classList.toggle('has-overlay-text', hasText);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', sanitizePosterOverlay);
+    } else {
+        sanitizePosterOverlay();
+    }
+
     /**
      * Clean up existing player and HLS streams
      */

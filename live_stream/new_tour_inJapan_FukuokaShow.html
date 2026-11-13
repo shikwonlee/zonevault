@@ -105,36 +105,31 @@
     justify-content: center;
     cursor: pointer;
     position: relative;
-    box-shadow: var(--glass-shadow);
+    box-shadow: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* --- GLASSMORPHISM POSTER OVERLAY --- */
+  /* --- POSTER OVERLAY --- */
   #poster-overlay {
-    background: rgba(0, 0, 0, 0.5); 
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-top: 1px solid rgba(255, 255, 255, 0.5);
-    padding: 15px 25px;
-    border-radius: 50px;
+    background: transparent;
+    border: none;
+    padding: 0 24px;
+    border-radius: 0;
     color: white;
-    font-weight: bold;
+    font-weight: 600;
     font-size: 18px;
     pointer-events: none; 
     max-width: 90%;
     text-align: center;
     margin: 0 auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    text-shadow: var(--text-shadow);
-    transform: translateZ(0);
-    will-change: transform, backdrop-filter;
+    box-shadow: none;
   }
+  #poster-overlay:empty { display: none; }
 
   #player-container {
     display: none; 
     width: 100%;
-    box-shadow: var(--glass-shadow);
+    box-shadow: none;
     position: relative; 
   }
 
@@ -169,9 +164,9 @@
     }
     #poster-overlay { 
         font-size: 14px; 
-        padding: 10px 15px;
-        border-radius: 35px;
-        border-width: 1px;
+        padding: 0 15px;
+        border-radius: 0;
+        border: none;
     }
     .center-logo { margin-top: 15px; }
     .center-logo img { width: 40px; }
@@ -894,7 +889,7 @@
   <div class="video-wrapper-left">
       
     <div id="poster-container">
-      <div id="poster-overlay">Select the Live to Watch</div>
+      <div id="poster-overlay"></div>
     </div>
 
     <div id="player-container">

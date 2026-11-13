@@ -11,8 +11,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <link rel="stylesheet" href="/player/video_player.css?v=20261113">
-  <script src="/player/video_player.js?v=20261113"></script>
+  <link rel="stylesheet" href="/player/video_player.css?v=20261114">
+  <script src="/player/video_player.js?v=20261114"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -192,34 +192,31 @@
         background-image: url("https://res.cloudinary.com/dp6x9xmku/image/upload/v1773207084/Screenshot_2026-03-11_132939_z4bwn6.png"); 
         display: flex; align-items: center; justify-content: center; cursor: pointer;
         position: relative; border-radius: 20px;
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+        box-shadow: none;
         overflow: hidden;
         transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     #poster-container::after {
-        content: ''; position: absolute; inset: 0;
-        background: radial-gradient(circle at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%);
-        z-index: 1; transition: opacity 0.3s;
+        content: ""; position: absolute; inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 1; display: none;
     }
-    #poster-container:hover { transform: scale(1.02); }
-    #poster-container:hover::after { opacity: 0.8; }
+    #poster-container.has-overlay-text::after,
+    #poster-container:has(#poster-overlay:not(:empty))::after {
+        display: block;
+    }
 
     #poster-overlay {
-        background: rgba(255, 255, 255, 0.1); 
-        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 18px 40px; border-radius: 50px;
-        color: white; font-weight: 700; font-size: 14px;
-        pointer-events: none; text-transform: uppercase; letter-spacing: 3px;
-        z-index: 2; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        transform: translateY(0); transition: transform 0.3s;
+        background: transparent; border: none; padding: 0 24px; border-radius: 0;
+        color: #ffffff; font-weight: 600; font-size: clamp(16px, 2.4vw, 24px); pointer-events: none;
+        z-index: 2; box-shadow: none; text-align: center; max-width: 90%; line-height: 1.4;
     }
-    #poster-container:hover #poster-overlay { transform: translateY(-5px) scale(1.05); }
+    #poster-overlay:empty { display: none; }
 
     #player-container { 
         display: none; width: 100%; aspect-ratio: 16/9; border-radius: 20px; 
-        overflow: hidden; position: relative; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.7);
+        overflow: hidden; position: relative; box-shadow: none;
         touch-action: manipulation; background: #000; border: var(--glass-border);
     }
     .art-video-player { width: 100%; height: 100%; }
@@ -295,22 +292,16 @@
         background: transparent; border: 1px solid transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
         cursor: pointer; position: relative;
     }
-    .playlist-item:hover { background: var(--playlist-hover); transform: scale(1.02); }
+    .playlist-item:hover { background: var(--playlist-hover); }
     .playlist-item.active { background: var(--active-episode); border: 1px solid var(--active-border); }
     .playlist-item.locked { opacity: 0.3; filter: grayscale(100%); cursor: not-allowed; pointer-events: none; }
 
     .playlist-img-wrapper {
         position: relative; width: clamp(80px, 25%, 110px); aspect-ratio: 16/9; flex-shrink: 0;
-        border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        border-radius: 8px; overflow: hidden; box-shadow: none;
     }
-    .playlist-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-    .playlist-item:hover img { transform: scale(1.1); }
-    .playlist-img-wrapper::after {
-        content: '▶'; position: absolute; inset: 0; background: rgba(0,0,0,0.5); color: white;
-        display: flex; align-items: center; justify-content: center; font-size: 18px; opacity: 0; transition: opacity 0.3s;
-    }
-    .playlist-item:hover .playlist-img-wrapper::after { opacity: 1; }
-    .playlist-item.active .playlist-img-wrapper::after { display: none; }
+    .playlist-item img { width: 100%; height: 100%; object-fit: cover; }
+    .playlist-img-wrapper::after { display: none; }
 
     .playlist-text { display: flex; flex-direction: column; flex: 1; min-width: 0; justify-content: center; }
     .playlist-title { 
@@ -380,7 +371,7 @@
 
     <div class="video-wrapper-left">
       <div id="poster-container">
-        <div id="poster-overlay">Play Episode</div>
+        <div id="poster-overlay"></div>
       </div>
 
       <div id="player-container">

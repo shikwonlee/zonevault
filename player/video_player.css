@@ -58,6 +58,9 @@
     margin: 0 auto !important;
     text-align: center !important;
     font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
     transition: font-size 0.2s ease;
 }
 
@@ -72,6 +75,8 @@
     -webkit-backdrop-filter: none !important;
     width: 100% !important;
     max-width: 100% !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
 }
 
 /* Each subtitle line gets the user's selected design & font size */
@@ -107,6 +112,9 @@
     font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
     box-decoration-break: clone !important;
     -webkit-box-decoration-break: clone !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
 }
 
 /* Hide empty subtitle lines so no empty black box ever renders */

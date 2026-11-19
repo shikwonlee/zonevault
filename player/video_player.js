@@ -935,8 +935,22 @@
         let setDrawerOpen = () => {};
         let renderFullscreenCards = () => {};
         let desktopPointerIdleTimer = null;
+        let lastPointerX = -1;
+        let lastPointerY = -1;
 
-        const onDesktopPointerWakeUp = () => {
+        const onDesktopPointerWakeUp = (ev) => {
+            if (ev && ev.target && ev.target.closest && ev.target.closest('.art-subtitle')) {
+                return;
+            }
+            if (ev && (ev.type === 'mousemove' || ev.type === 'pointermove')) {
+                const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
+                const cy = typeof ev.clientY === 'number' ? ev.clientY : -1;
+                if (lastPointerX !== -1 && lastPointerY !== -1 && Math.abs(cx - lastPointerX) < 3 && Math.abs(cy - lastPointerY) < 3) {
+                    return;
+                }
+                lastPointerX = cx;
+                lastPointerY = cy;
+            }
             isControlsVisible = true;
             try { artInstance.controls.show = true; } catch (_) {}
             syncProgressVisibility(true);
@@ -952,6 +966,7 @@
                 } catch (_) {}
                 if (!isDrawerOpen && !isHoveringDrawerOrBtn && artInstance && artInstance.playing) {
                     isControlsVisible = false;
+                    try { artInstance.controls.show = false; } catch (_) {}
                     syncProgressVisibility(false);
                 }
             }, 2800);
@@ -1202,10 +1217,9 @@
             playerEl.appendChild(fsCardsToggleBtn);
             renderFullscreenCards();
 
-            // Wake up controls on desktop/laptop mouse movement and hover
+            // Wake up controls on desktop/laptop mouse movement only when pointer genuinely moves
             playerEl.addEventListener('mousemove', onDesktopPointerWakeUp, { passive: true });
             playerEl.addEventListener('pointermove', onDesktopPointerWakeUp, { passive: true });
-            playerEl.addEventListener('mouseenter', onDesktopPointerWakeUp, { passive: true });
 
             // Observe #playlist-items so dynamic active-card updates (like nanatour.html auto-switching) sync automatically
             const domPlaylistContainer = document.getElementById('playlist-items');
@@ -1221,7 +1235,9 @@
                 });
             }
 
-            const syncDesktopAndMobileFullscreenClass = (forcedState) => {
+            const syncDesktopAndMobileFullscreenClass = (forcedState, syncOpts) => {
+                const isSubtitleOnly = Boolean(syncOpts && syncOpts.subtitleOnly);
+                const wasInFs = playerEl.classList.contains('zv-is-fullscreen');
                 const outerContainer = document.getElementById('player-container');
                 const artContainer = artInstance && artInstance.template && artInstance.template.$container;
                 const playlistEl = document.getElementById('playlist');
@@ -1256,9 +1272,11 @@
                         isMobileLandscapeFullscreen
                     );
 
-                playerEl.classList.toggle('zv-is-fullscreen', inFs);
-                if (artContainer) artContainer.classList.toggle('zv-is-fullscreen', inFs);
-                if (outerContainer) outerContainer.classList.toggle('zv-is-fullscreen', inFs);
+                if (!isSubtitleOnly) {
+                    playerEl.classList.toggle('zv-is-fullscreen', inFs);
+                    if (artContainer) artContainer.classList.toggle('zv-is-fullscreen', inFs);
+                    if (outerContainer) outerContainer.classList.toggle('zv-is-fullscreen', inFs);
+                }
 
                 // Ensure rounded subtitle Google Font & global style tag are injected at the end of <head> across all 2021-2026 pages
                 if (!document.getElementById('zv-subtitle-font-link')) {
@@ -1314,6 +1332,9 @@
                             margin: 0 auto !important;
                             text-align: center !important;
                             font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
+                            pointer-events: none !important;
+                            user-select: none !important;
+                            box-sizing: border-box !important;
                         }
                         .art-video-player .art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span),
                         .art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span) {
@@ -1325,6 +1346,8 @@
                             -webkit-backdrop-filter: none !important;
                             width: 100% !important;
                             max-width: 100% !important;
+                            box-sizing: border-box !important;
+                            pointer-events: none !important;
                         }
                         .art-video-player .art-subtitle p,
                         .art-video-player .art-subtitle .art-subtitle-line,
@@ -1358,6 +1381,9 @@
                             font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
                             box-decoration-break: clone !important;
                             -webkit-box-decoration-break: clone !important;
+                            pointer-events: none !important;
+                            user-select: none !important;
+                            box-sizing: border-box !important;
                         }
                         .art-video-player .art-subtitle:empty,
                         .art-subtitle:empty,
@@ -1460,7 +1486,7 @@
                     try {
                         localStorage.setItem(LOCAL_SUBTITLE_PREFS_KEY, JSON.stringify(updated));
                     } catch (_) {}
-                    syncDesktopAndMobileFullscreenClass();
+                    syncDesktopAndMobileFullscreenClass(undefined, { subtitleOnly: true });
                     return updated;
                 };
                 window.zvSaveUserSubtitlePrefs = saveUserSubtitlePrefs;
@@ -1523,6 +1549,9 @@
                         return;
                     }
                     containerEl.style.setProperty('display', 'flex', 'important');
+                    containerEl.style.setProperty('pointer-events', 'none', 'important');
+                    containerEl.style.setProperty('user-select', 'none', 'important');
+                    containerEl.style.setProperty('box-sizing', 'border-box', 'important');
 
                     const children = Array.from(containerEl.children);
                     const allWrappedCleanly =
@@ -1569,6 +1598,9 @@
                             return;
                         }
                         child.style.setProperty('display', 'inline-block', 'important');
+                        child.style.setProperty('pointer-events', 'none', 'important');
+                        child.style.setProperty('user-select', 'none', 'important');
+                        child.style.setProperty('box-sizing', 'border-box', 'important');
                         child.style.setProperty('font-size', `${sizePx}px`, 'important');
                         child.style.setProperty('color', textColor, 'important');
                         child.style.setProperty('background', designPreset.bg, 'important');
@@ -1593,6 +1625,11 @@
                     styleSubtitleContainerAndLines(subEl, targetSubSize, activeDesign, activeColor);
                 }
 
+                // If called only for a subtitle cue update, never wake up controls or touch fullscreen drawer state
+                if (isSubtitleOnly) {
+                    return;
+                }
+
                 if (fsCardsToggleBtn && fsCardsListEl) {
                     if (inFs) {
                         fsCardsToggleBtn.style.setProperty('display', 'flex', 'important');
@@ -1603,15 +1640,16 @@
                     }
                 }
 
-                if (inFs) {
+                // Only wake up controls when transitioning into fullscreen, and close drawer when exiting fullscreen
+                if (inFs && !wasInFs) {
                     onDesktopPointerWakeUp();
-                } else {
+                } else if (!inFs && wasInFs) {
                     setDrawerOpen(false);
                 }
             };
-            window.zvSyncSubtitleSize = () => syncDesktopAndMobileFullscreenClass();
+            window.zvSyncSubtitleSize = () => syncDesktopAndMobileFullscreenClass(undefined, { subtitleOnly: true });
 
-            // Observe subtitle cue updates and wrap artInstance.subtitle.switch so every cue across all 2021-2026 pages keeps the exact style
+            // Observe subtitle cue updates and wrap artInstance.subtitle.switch so every cue across all 2021-2026 pages keeps the exact style without waking up player controls
             const subContainerEl = (artInstance.template && artInstance.template.$subtitle) || playerEl.querySelector('.art-subtitle');
             if (subContainerEl && typeof MutationObserver !== 'undefined') {
                 let isApplyingSubStyle = false;
@@ -1619,28 +1657,30 @@
                     if (isApplyingSubStyle) return;
                     isApplyingSubStyle = true;
                     try {
-                        syncDesktopAndMobileFullscreenClass();
+                        syncDesktopAndMobileFullscreenClass(undefined, { subtitleOnly: true });
                     } finally {
-                        isApplyingSubStyle = false;
+                        Promise.resolve().then(() => {
+                            isApplyingSubStyle = false;
+                        });
                     }
                 });
                 subObserver.observe(subContainerEl, { childList: true, subtree: true, characterData: true });
             }
 
             artInstance.on('subtitleUpdate', () => {
-                syncDesktopAndMobileFullscreenClass();
+                syncDesktopAndMobileFullscreenClass(undefined, { subtitleOnly: true });
             });
             artInstance.on('subtitleLoad', () => {
-                syncDesktopAndMobileFullscreenClass();
+                syncDesktopAndMobileFullscreenClass(undefined, { subtitleOnly: true });
             });
 
             if (artInstance.subtitle && typeof artInstance.subtitle.switch === 'function' && !artInstance.subtitle.__zvWrapped) {
                 const origSubSwitch = artInstance.subtitle.switch.bind(artInstance.subtitle);
                 artInstance.subtitle.switch = function (...args) {
                     const res = origSubSwitch(...args);
-                    requestAnimationFrame(() => syncDesktopAndMobileFullscreenClass());
+                    requestAnimationFrame(() => syncDesktopAndMobileFullscreenClass(undefined, { subtitleOnly: true }));
                     Promise.resolve(res).then(() => {
-                        requestAnimationFrame(() => syncDesktopAndMobileFullscreenClass());
+                        requestAnimationFrame(() => syncDesktopAndMobileFullscreenClass(undefined, { subtitleOnly: true }));
                     }).catch(() => {});
                     return res;
                 };

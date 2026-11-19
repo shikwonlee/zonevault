@@ -498,9 +498,9 @@
     }
 
     // =========================================
-    // CONTROL & SETTING PANEL AUTO-HIDE (MOBILE & DESKTOP)
+    // CONTROL & SETTING PANEL 3-SECOND AUTO-HIDE (MOBILE & DESKTOP)
     // =========================================
-    const LIVE_CONTROL_HIDE_DELAY_MS = 4000;
+    const LIVE_CONTROL_HIDE_DELAY_MS = 3000;
     function attachLiveArtplayerAutoHide(artInst) {
         if (!artInst || artInst.__zvAutoHideManaged || artInst.__zvStandaloneAutoHideAttached) return;
         artInst.__zvStandaloneAutoHideAttached = true;
@@ -561,69 +561,70 @@
             }, LIVE_CONTROL_HIDE_DELAY_MS);
         };
 
+        const showControls = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) return;
+            try {
+                if (artInst.controls) {
+                    artInst.controls.timer = Date.now();
+                    artInst.controls.show = true;
+                }
+                if (artInst.layers && !artInst.layers.show) {
+                    artInst.layers.show = true;
+                }
+            } catch (_) {}
+            try {
+                const playerNode = artInst.template && artInst.template.$player;
+                if (playerNode) {
+                    playerNode.classList.add('art-control-show', 'art-layer-show');
+                    playerNode.classList.remove('art-hide-cursor');
+                }
+            } catch (_) {}
+            scheduleHide();
+        };
+
         const bindDom = () => {
             if (!artInst || artInst.__zvAutoHideManaged) return;
             const playerNode = artInst.template && artInst.template.$player;
             if (!playerNode || playerNode.__zvStandaloneBound) return;
             playerNode.__zvStandaloneBound = true;
 
-            if (!document.getElementById('zv-autohide-core-style')) {
-                const st = document.createElement('style');
-                st.id = 'zv-autohide-core-style';
-                st.textContent = `
-                    .art-video-player:not(.art-control-show) .art-bottom {
-                        opacity: 0 !important;
-                        visibility: hidden !important;
-                        pointer-events: none !important;
-                    }
-                    .art-video-player:not(.art-control-show) .art-bottom .art-controls,
-                    .art-video-player:not(.art-control-show) .art-bottom .art-progress {
-                        transform: translateY(var(--art-bottom-offset, 20px)) !important;
-                        pointer-events: none !important;
-                    }
-                    .art-video-player:not(.art-setting-show) .art-settings,
-                    .art-video-player:not(.art-control-show) .art-settings {
-                        display: none !important;
-                        opacity: 0 !important;
-                        visibility: hidden !important;
-                        pointer-events: none !important;
-                    }
-                `;
-                (document.head || document.documentElement).appendChild(st);
-            }
+            playerNode.addEventListener('mouseenter', () => {
+                if (artInst.__zvAutoHideManaged) return;
+                if ((Date.now() - lastTouchAt) < 800) return;
+                showControls();
+            }, true);
 
             playerNode.addEventListener('mousemove', (ev) => {
                 if (artInst.__zvAutoHideManaged) return;
-                if ((Date.now() - lastTouchAt) < 1200) {
+                if ((Date.now() - lastTouchAt) < 800) {
                     ev.stopImmediatePropagation();
                     return;
                 }
                 if (ev.buttons > 0) {
-                    scheduleHide();
+                    showControls();
                     return;
                 }
                 const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
                 const cy = typeof ev.clientY === 'number' ? ev.clientY : -1;
                 const dx = hasMousePos ? Math.abs(cx - lastMouseX) : 999;
                 const dy = hasMousePos ? Math.abs(cy - lastMouseY) : 999;
-                if (hasMousePos && dx < 4 && dy < 4) {
+                if (hasMousePos && dx < 2 && dy < 2) {
                     ev.stopImmediatePropagation();
                     return;
                 }
-                if ((Date.now() - lastAutoHideAt) < 350 && (!hasMousePos || (dx < 8 && dy < 8))) {
+                if ((Date.now() - lastAutoHideAt) < 300 && hasMousePos && dx < 5 && dy < 5) {
                     ev.stopImmediatePropagation();
                     return;
                 }
                 lastMouseX = cx;
                 lastMouseY = cy;
                 hasMousePos = true;
-                try { artInst.controls.show = true; } catch (_) {}
-                scheduleHide();
+                showControls();
             }, true);
 
             const onTouchOrPointer = (ev) => {
                 if (artInst.__zvAutoHideManaged) return;
-                if (ev.type.startsWith('touch') || ev.pointerType === 'touch') {
+                if (ev.type.startsWith('touch')) {
                     lastTouchAt = Date.now();
                 }
                 if (ev.type === 'touchstart' || ev.type === 'pointerdown') {
@@ -631,16 +632,26 @@
                 } else if (ev.type === 'touchend' || ev.type === 'touchcancel' || ev.type === 'pointerup' || ev.type === 'pointercancel') {
                     isDragging = false;
                 }
-                scheduleHide();
+                showControls();
             };
 
-            ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
+            ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
                 playerNode.addEventListener(evt, onTouchOrPointer, { passive: true, capture: true });
             });
 
             scheduleHide();
         };
 
+        artInst.on('click', () => {
+            if (artInst.__zvAutoHideManaged) return;
+            showControls();
+        });
+        artInst.on('hover', (state) => {
+            if (artInst.__zvAutoHideManaged) return;
+            if (state && (Date.now() - lastTouchAt) >= 800) {
+                showControls();
+            }
+        });
         artInst.on('control', (state) => {
             if (artInst.__zvAutoHideManaged) return;
             if (state) {
@@ -660,9 +671,10 @@
         artInst.on('setting', (state) => {
             if (artInst.__zvAutoHideManaged) return;
             if (state) {
-                try { artInst.controls.show = true; } catch (_) {}
+                showControls();
+            } else {
+                scheduleHide();
             }
-            scheduleHide();
         });
         artInst.on('play', scheduleHide);
         artInst.on('pause', scheduleHide);

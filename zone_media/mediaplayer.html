@@ -576,41 +576,41 @@
             document.getElementById('player-wrapper').classList.remove('controls-visible');
         }
         function toggleControls() {
-            if (document.getElementById('player-wrapper').classList.contains('controls-visible') || isSettingsOpen) hideControls();
-            else showControls();
+            showControls();
         }
         function resetControlsTimer() {
             clearTimeout(controlsTimeout);
-            controlsTimeout = setTimeout(hideControls, 4000);
+            controlsTimeout = setTimeout(hideControls, 3000);
         }
 
         function handleGlobalClick(e) {
             if (isSettingsOpen) {
-                hideControls();
-                return;
+                isSettingsOpen = false;
+                const menu = document.getElementById('settings-menu');
+                if (menu) menu.classList.remove('active');
             }
-            toggleControls();
+            showControls();
         }
 
         let lastLocalMouseX = -1;
         let lastLocalMouseY = -1;
         let lastLocalTouchTime = 0;
         const playerWrapperEl = document.getElementById('player-wrapper');
+        playerWrapperEl.addEventListener('mouseenter', () => {
+            if (Date.now() - lastLocalTouchTime < 800) return;
+            showControls();
+        });
         playerWrapperEl.addEventListener('touchstart', () => {
             lastLocalTouchTime = Date.now();
-            if (playerWrapperEl.classList.contains('controls-visible') || isSettingsOpen) {
-                resetControlsTimer();
-            }
+            showControls();
         }, { passive: true, capture: true });
         playerWrapperEl.addEventListener('touchend', () => {
             lastLocalTouchTime = Date.now();
-            if (playerWrapperEl.classList.contains('controls-visible') || isSettingsOpen) {
-                resetControlsTimer();
-            }
+            showControls();
         }, { passive: true, capture: true });
         playerWrapperEl.addEventListener('mousemove', (e) => {
-            if (Date.now() - lastLocalTouchTime < 1200) return;
-            if (lastLocalMouseX !== -1 && lastLocalMouseY !== -1 && Math.abs(e.clientX - lastLocalMouseX) < 4 && Math.abs(e.clientY - lastLocalMouseY) < 4) {
+            if (Date.now() - lastLocalTouchTime < 800) return;
+            if (lastLocalMouseX !== -1 && lastLocalMouseY !== -1 && Math.abs(e.clientX - lastLocalMouseX) < 2 && Math.abs(e.clientY - lastLocalMouseY) < 2) {
                 return;
             }
             lastLocalMouseX = e.clientX;
@@ -633,9 +633,7 @@
                 triggerAnim('anim-left');
                 showControls();
             } else {
-                singleTapTimerLeft = setTimeout(() => {
-                    toggleControls(); 
-                }, 300);
+                showControls();
             }
             lastTapLeft = now;
         });
@@ -649,9 +647,7 @@
                 triggerAnim('anim-right');
                 showControls();
             } else {
-                singleTapTimerRight = setTimeout(() => {
-                    toggleControls();
-                }, 300);
+                showControls();
             }
             lastTapRight = now;
         });

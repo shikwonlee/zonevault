@@ -304,8 +304,21 @@ function loadPlayer(index) {
                     artInst.controls.timer = Date.now();
                     artInst.controls.isHover = false;
                 }
-                hideTimer = setTimeout(hideBoth, 4000);
+                hideTimer = setTimeout(hideBoth, 3000);
             };
+            const showControls = () => {
+                try {
+                    if (artInst.controls) artInst.controls.show = true;
+                    const p = artInst.template && artInst.template.$player;
+                    if (p) {
+                        p.classList.add('art-control-show', 'art-layer-show');
+                        p.classList.remove('art-hide-cursor');
+                    }
+                } catch (_) {}
+                schedule();
+            };
+            artInst.on('click', showControls);
+            artInst.on('hover', (st) => { if (st && Date.now() - lastTouchAt >= 800) showControls(); });
             artInst.on('control', (st) => {
                 if (st) schedule();
                 else {
@@ -315,21 +328,25 @@ function loadPlayer(index) {
                     } catch (_) {}
                 }
             });
-            artInst.on('setting', schedule);
+            artInst.on('setting', showControls);
             artInst.on('play', schedule);
             artInst.on('pause', schedule);
             artInst.on('ready', () => {
                 const p = artInst.template && artInst.template.$player;
                 if (!p) return;
                 ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
-                    p.addEventListener(evt, (e) => {
+                    p.addEventListener(evt, () => {
                         if (evt.startsWith('touch')) lastTouchAt = Date.now();
-                        schedule();
+                        showControls();
                     }, { passive: true, capture: true });
                 });
+                p.addEventListener('mouseenter', () => {
+                    if (Date.now() - lastTouchAt < 800) return;
+                    showControls();
+                }, true);
                 p.addEventListener('mousemove', (e) => {
-                    if (Date.now() - lastTouchAt < 1200) { e.stopImmediatePropagation(); return; }
-                    schedule();
+                    if (Date.now() - lastTouchAt < 800) { e.stopImmediatePropagation(); return; }
+                    showControls();
                 }, true);
                 schedule();
             });

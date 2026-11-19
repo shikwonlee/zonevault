@@ -8,12 +8,12 @@
 (function () {
     'use strict';
 
-    // Global artplayer reference & 4-second control + setting panel auto-hide default
-    const CONTROL_HIDE_DELAY_MS = 4000;
+    // Global artplayer reference & 3-second control + setting panel auto-hide default
+    const CONTROL_HIDE_DELAY_MS = 3000;
     window.art = window.art || null;
     window.currentSubtitleUrls = window.currentSubtitleUrls || [];
 
-    // Universal auto-hide controller for standalone Artplayer instances (e.g. /random/*, /live_stream/*, /special_gift/*)
+    // Universal 3-second auto-hide controller for standalone Artplayer instances (e.g. /random/*, /live_stream/*, /special_gift/*)
     function attachStandaloneArtplayerAutoHide(artInst) {
         if (!artInst || artInst.__zvAutoHideManaged || artInst.__zvStandaloneAutoHideAttached) return;
         artInst.__zvStandaloneAutoHideAttached = true;
@@ -76,69 +76,70 @@
             }, CONTROL_HIDE_DELAY_MS);
         };
 
+        const showControls = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) return;
+            try {
+                if (artInst.controls) {
+                    artInst.controls.timer = Date.now();
+                    artInst.controls.show = true;
+                }
+                if (artInst.layers && !artInst.layers.show) {
+                    artInst.layers.show = true;
+                }
+            } catch (_) {}
+            try {
+                const playerNode = artInst.template && artInst.template.$player;
+                if (playerNode) {
+                    playerNode.classList.add('art-control-show', 'art-layer-show');
+                    playerNode.classList.remove('art-hide-cursor');
+                }
+            } catch (_) {}
+            scheduleHide();
+        };
+
         const bindDom = () => {
             if (!artInst || artInst.__zvAutoHideManaged) return;
             const playerNode = artInst.template && artInst.template.$player;
             if (!playerNode || playerNode.__zvStandaloneBound) return;
             playerNode.__zvStandaloneBound = true;
 
-            if (!document.getElementById('zv-autohide-core-style')) {
-                const st = document.createElement('style');
-                st.id = 'zv-autohide-core-style';
-                st.textContent = `
-                    .art-video-player:not(.art-control-show) .art-bottom {
-                        opacity: 0 !important;
-                        visibility: hidden !important;
-                        pointer-events: none !important;
-                    }
-                    .art-video-player:not(.art-control-show) .art-bottom .art-controls,
-                    .art-video-player:not(.art-control-show) .art-bottom .art-progress {
-                        transform: translateY(var(--art-bottom-offset, 20px)) !important;
-                        pointer-events: none !important;
-                    }
-                    .art-video-player:not(.art-setting-show) .art-settings,
-                    .art-video-player:not(.art-control-show) .art-settings {
-                        display: none !important;
-                        opacity: 0 !important;
-                        visibility: hidden !important;
-                        pointer-events: none !important;
-                    }
-                `;
-                (document.head || document.documentElement).appendChild(st);
-            }
+            playerNode.addEventListener('mouseenter', () => {
+                if (artInst.__zvAutoHideManaged) return;
+                if ((Date.now() - lastTouchAt) < 800) return;
+                showControls();
+            }, true);
 
             playerNode.addEventListener('mousemove', (ev) => {
                 if (artInst.__zvAutoHideManaged) return;
-                if ((Date.now() - lastTouchAt) < 1200) {
+                if ((Date.now() - lastTouchAt) < 800) {
                     ev.stopImmediatePropagation();
                     return;
                 }
                 if (ev.buttons > 0) {
-                    scheduleHide();
+                    showControls();
                     return;
                 }
                 const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
                 const cy = typeof ev.clientY === 'number' ? ev.clientY : -1;
                 const dx = hasMousePos ? Math.abs(cx - lastMouseX) : 999;
                 const dy = hasMousePos ? Math.abs(cy - lastMouseY) : 999;
-                if (hasMousePos && dx < 4 && dy < 4) {
+                if (hasMousePos && dx < 2 && dy < 2) {
                     ev.stopImmediatePropagation();
                     return;
                 }
-                if ((Date.now() - lastAutoHideAt) < 350 && (!hasMousePos || (dx < 8 && dy < 8))) {
+                if ((Date.now() - lastAutoHideAt) < 300 && hasMousePos && dx < 5 && dy < 5) {
                     ev.stopImmediatePropagation();
                     return;
                 }
                 lastMouseX = cx;
                 lastMouseY = cy;
                 hasMousePos = true;
-                try { artInst.controls.show = true; } catch (_) {}
-                scheduleHide();
+                showControls();
             }, true);
 
             const onTouchOrPointer = (ev) => {
                 if (artInst.__zvAutoHideManaged) return;
-                if (ev.type.startsWith('touch') || ev.pointerType === 'touch') {
+                if (ev.type.startsWith('touch')) {
                     lastTouchAt = Date.now();
                 }
                 if (ev.type === 'touchstart' || ev.type === 'pointerdown') {
@@ -146,16 +147,26 @@
                 } else if (ev.type === 'touchend' || ev.type === 'touchcancel' || ev.type === 'pointerup' || ev.type === 'pointercancel') {
                     isDragging = false;
                 }
-                scheduleHide();
+                showControls();
             };
 
-            ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
+            ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
                 playerNode.addEventListener(evt, onTouchOrPointer, { passive: true, capture: true });
             });
 
             scheduleHide();
         };
 
+        artInst.on('click', () => {
+            if (artInst.__zvAutoHideManaged) return;
+            showControls();
+        });
+        artInst.on('hover', (state) => {
+            if (artInst.__zvAutoHideManaged) return;
+            if (state && (Date.now() - lastTouchAt) >= 800) {
+                showControls();
+            }
+        });
         artInst.on('control', (state) => {
             if (artInst.__zvAutoHideManaged) return;
             if (state) {
@@ -175,9 +186,10 @@
         artInst.on('setting', (state) => {
             if (artInst.__zvAutoHideManaged) return;
             if (state) {
-                try { artInst.controls.show = true; } catch (_) {}
+                showControls();
+            } else {
+                scheduleHide();
             }
-            scheduleHide();
         });
         artInst.on('play', scheduleHide);
         artInst.on('pause', scheduleHide);
@@ -1100,13 +1112,10 @@
         let lastTouchActivityAt = 0;
         let isPointerDragging = false;
 
-        // Sync progress slider, bottom control bar, and setting panel visibility with Artplayer control show/hide state
-        // so neither the control bar nor the setting panel ever stays stuck on mobile phone or desktop
+        // Sync progress slider and floating cards toggle visibility with Artplayer control show/hide state
         const syncProgressVisibility = (isControlShown) => {
             const shown = Boolean(isControlShown);
             const progressEl = artInstance.template && artInstance.template.$progress;
-            const bottomEl = artInstance.template && artInstance.template.$bottom;
-            const settingEl = artInstance.template && artInstance.template.$setting;
             if (progressEl) {
                 if (shown && !artInstance.lock) {
                     progressEl.style.opacity = '1';
@@ -1116,27 +1125,6 @@
                     progressEl.style.opacity = '0';
                     progressEl.style.visibility = 'hidden';
                     progressEl.style.pointerEvents = 'none';
-                }
-            }
-            if (bottomEl) {
-                if (shown && !artInstance.lock) {
-                    bottomEl.style.removeProperty('opacity');
-                    bottomEl.style.removeProperty('visibility');
-                    bottomEl.style.removeProperty('pointer-events');
-                } else {
-                    bottomEl.style.opacity = '0';
-                    bottomEl.style.visibility = 'hidden';
-                    bottomEl.style.pointerEvents = 'none';
-                }
-            }
-            if (settingEl && (!shown || artInstance.lock)) {
-                if (artInstance.setting && artInstance.setting.show) {
-                    try {
-                        artInstance.setting.show = false;
-                        if (typeof artInstance.setting.render === 'function') {
-                            artInstance.setting.render();
-                        }
-                    } catch (_) {}
                 }
             }
             if (fsCardsToggleBtn) {
@@ -1219,6 +1207,38 @@
             }, CONTROL_HIDE_DELAY_MS);
         };
 
+        const showControlsAndLayers = () => {
+            isControlsVisible = true;
+            try {
+                if (artInstance.controls) {
+                    artInstance.controls.timer = Date.now();
+                    artInstance.controls.show = true;
+                }
+                if (artInstance.layers && !artInstance.layers.show) {
+                    artInstance.layers.show = true;
+                }
+            } catch (_) {}
+            try {
+                const playerNode = artInstance.template && artInstance.template.$player;
+                if (playerNode) {
+                    playerNode.classList.add('art-control-show', 'art-layer-show');
+                    playerNode.classList.remove('art-hide-cursor');
+                }
+            } catch (_) {}
+            syncProgressVisibility(true);
+            scheduleControlsAutoHide();
+        };
+
+        artInstance.on('click', () => {
+            showControlsAndLayers();
+        });
+
+        artInstance.on('hover', (state) => {
+            if (state && (Date.now() - lastTouchActivityAt) >= 800) {
+                showControlsAndLayers();
+            }
+        });
+
         artInstance.on('control', (state) => {
             isControlsVisible = Boolean(state);
             syncProgressVisibility(isControlsVisible);
@@ -1243,12 +1263,7 @@
 
         artInstance.on('setting', (state) => {
             if (state) {
-                if (!isControlsVisible) {
-                    isControlsVisible = true;
-                    try { artInstance.controls.show = true; } catch (_) {}
-                    syncProgressVisibility(true);
-                }
-                scheduleControlsAutoHide();
+                showControlsAndLayers();
             } else if (isControlsVisible) {
                 scheduleControlsAutoHide();
             }
@@ -1271,45 +1286,11 @@
         let setDrawerOpen = () => {};
         let renderFullscreenCards = () => {};
 
-        const onDesktopPointerWakeUp = (ev) => {
-            if ((Date.now() - lastTouchActivityAt) < 1200) {
+        const onDesktopPointerWakeUp = () => {
+            if ((Date.now() - lastTouchActivityAt) < 800) {
                 return;
             }
-            if (ev) {
-                if (ev.pointerType && ev.pointerType !== 'mouse') {
-                    return;
-                }
-                if (ev.target && ev.target.closest && ev.target.closest('.art-subtitle')) {
-                    return;
-                }
-                if (ev.type === 'mousemove' || ev.type === 'pointermove') {
-                    const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
-                    const cy = typeof ev.clientY === 'number' ? ev.clientY : -1;
-                    const dx = hasRealMousePos ? Math.abs(cx - lastRealMouseX) : 999;
-                    const dy = hasRealMousePos ? Math.abs(cy - lastRealMouseY) : 999;
-                    const recentlyMutatedSub = (Date.now() - lastSubtitleMutationAt) < 260;
-                    const recentlyAutoHid = (Date.now() - lastAutoHideAt) < 350;
-
-                    if (ev.buttons === 0) {
-                        if (hasRealMousePos && dx < 4 && dy < 4) {
-                            return;
-                        }
-                        if ((recentlyMutatedSub || recentlyAutoHid) && (!hasRealMousePos || (dx < 8 && dy < 8))) {
-                            return;
-                        }
-                    }
-                    lastRealMouseX = cx;
-                    lastRealMouseY = cy;
-                    hasRealMousePos = true;
-                }
-            }
-            const playerNode = artInstance.template && artInstance.template.$player;
-            if (!isControlsVisible || (playerNode && !playerNode.classList.contains('art-control-show'))) {
-                isControlsVisible = true;
-                try { artInstance.controls.show = true; } catch (_) {}
-                syncProgressVisibility(true);
-            }
-            scheduleControlsAutoHide();
+            showControlsAndLayers();
         };
 
         const mountFullscreenCardsOverlay = () => {
@@ -1557,11 +1538,17 @@
             playerEl.appendChild(fsCardsToggleBtn);
             renderFullscreenCards();
 
-            // Capture-phase mousemove filter: blocks synthetic 0px mousemove events triggered
-            // when subtitle cues appear/disappear, when touch taps fire synthetic mousemove on mobile,
-            // or when controls/settings auto-hide underneath a stationary desktop cursor
+            // Capture-phase mouseenter & mousemove: shows controls immediately when moving mouse to the player,
+            // while blocking synthetic 0px mousemove events triggered by subtitle cue updates or touch taps
+            const onCaptureMouseEnter = () => {
+                if ((Date.now() - lastTouchActivityAt) < 800) {
+                    return;
+                }
+                showControlsAndLayers();
+            };
+
             const onCaptureMouseMove = (ev) => {
-                if ((Date.now() - lastTouchActivityAt) < 1200) {
+                if ((Date.now() - lastTouchActivityAt) < 800) {
                     ev.stopImmediatePropagation();
                     return;
                 }
@@ -1570,7 +1557,7 @@
                     return;
                 }
                 if (ev.buttons > 0) {
-                    scheduleControlsAutoHide();
+                    showControlsAndLayers();
                     return;
                 }
                 const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
@@ -1578,24 +1565,24 @@
                 const dx = hasRealMousePos ? Math.abs(cx - lastRealMouseX) : 999;
                 const dy = hasRealMousePos ? Math.abs(cy - lastRealMouseY) : 999;
                 const recentlyMutatedSub = (Date.now() - lastSubtitleMutationAt) < 260;
-                const recentlyAutoHid = (Date.now() - lastAutoHideAt) < 350;
+                const recentlyAutoHid = (Date.now() - lastAutoHideAt) < 300;
 
-                if (hasRealMousePos && dx < 4 && dy < 4) {
+                if (hasRealMousePos && dx < 2 && dy < 2) {
                     ev.stopImmediatePropagation();
                     return;
                 }
-                if ((recentlyMutatedSub || recentlyAutoHid) && (!hasRealMousePos || (dx < 8 && dy < 8))) {
+                if ((recentlyMutatedSub || recentlyAutoHid) && hasRealMousePos && dx < 5 && dy < 5) {
                     ev.stopImmediatePropagation();
                     return;
                 }
                 lastRealMouseX = cx;
                 lastRealMouseY = cy;
                 hasRealMousePos = true;
-                onDesktopPointerWakeUp();
+                showControlsAndLayers();
             };
 
             const onControlInteractionReset = (ev) => {
-                if (ev && (ev.type.startsWith('touch') || ev.pointerType === 'touch')) {
+                if (ev && ev.type.startsWith('touch')) {
                     lastTouchActivityAt = Date.now();
                 }
                 if (ev && (ev.type === 'pointerdown' || ev.type === 'touchstart')) {
@@ -1621,7 +1608,7 @@
                         ev.target.closest('.zv-fs-cards-list')
                     )
                 ) {
-                    scheduleControlsAutoHide();
+                    showControlsAndLayers();
                 }
             };
 
@@ -1629,6 +1616,7 @@
                 scheduleControlsAutoHide();
             };
 
+            playerEl.addEventListener('mouseenter', onCaptureMouseEnter, true);
             playerEl.addEventListener('mousemove', onCaptureMouseMove, true);
             playerEl.addEventListener('pointerdown', onControlInteractionReset, { passive: true, capture: true });
             playerEl.addEventListener('pointerup', onControlInteractionReset, { passive: true, capture: true });
@@ -1859,29 +1847,6 @@
                                (hover: none) and (pointer: coarse) and (orientation: landscape) {
                             .art-video-player { --zv-sub-auto-size: 14px; --art-subtitle-bottom: 16px; }
                             .art-video-player .art-subtitle, .art-subtitle { gap: 4px !important; }
-                        }
-                        .art-video-player:not(.art-control-show) .art-bottom {
-                            opacity: 0 !important;
-                            visibility: hidden !important;
-                            pointer-events: none !important;
-                        }
-                        .art-video-player:not(.art-control-show) .art-bottom .art-controls,
-                        .art-video-player:not(.art-control-show) .art-bottom .art-progress {
-                            transform: translateY(var(--art-bottom-offset, 20px)) !important;
-                            pointer-events: none !important;
-                        }
-                        .art-video-player:not(.art-setting-show) .art-settings,
-                        .art-video-player:not(.art-control-show) .art-settings {
-                            display: none !important;
-                            opacity: 0 !important;
-                            visibility: hidden !important;
-                            pointer-events: none !important;
-                        }
-                        .art-video-player:not(.art-control-show) .art-layer-lock {
-                            display: none !important;
-                            opacity: 0 !important;
-                            visibility: hidden !important;
-                            pointer-events: none !important;
                         }
                     `;
                     (document.head || document.documentElement).appendChild(globalSubStyleEl);
@@ -2146,6 +2111,7 @@
                     try { subObserver.disconnect(); } catch (_) {}
                     subObserver = null;
                 }
+                playerEl.removeEventListener('mouseenter', onCaptureMouseEnter, true);
                 playerEl.removeEventListener('mousemove', onCaptureMouseMove, true);
                 playerEl.removeEventListener('pointerdown', onControlInteractionReset, true);
                 playerEl.removeEventListener('pointerup', onControlInteractionReset, true);
@@ -2225,7 +2191,7 @@
                     scheduleControlsAutoHide();
                     return;
                 }
-                if (isControlsVisible && e.target.closest('.art-control-progress')) {
+                if (isControlsVisible && (e.target.closest('.art-control-progress') || e.target.closest('.art-progress'))) {
                     scheduleControlsAutoHide();
                     return;
                 }
@@ -2240,7 +2206,16 @@
             const processTapLogic = (clientX) => {
                 if (fsCardsListEl && fsCardsListEl.classList.contains('is-open')) {
                     setDrawerOpen(false);
+                    showControlsAndLayers();
                     return;
+                }
+                if (artInstance.setting && artInstance.setting.show) {
+                    try {
+                        artInstance.setting.show = false;
+                        if (typeof artInstance.setting.render === 'function') {
+                            artInstance.setting.render();
+                        }
+                    } catch (_) {}
                 }
                 const rect = playerEl.getBoundingClientRect();
                 const x = clientX - rect.left;
@@ -2265,28 +2240,10 @@
                         artInstance.toggle();
                         triggerCustomAnimation(artInstance.playing ? 'play' : 'pause', 'center');
                     }
-                    if (isControlsVisible) {
-                        scheduleControlsAutoHide();
-                    }
+                    showControlsAndLayers();
                 } else {
-                    // SINGLE TAP DETECTED: Toggle controls & setting panel
-                    singleTapTimer = setTimeout(() => {
-                        const isSettingOpen = Boolean(artInstance.setting && artInstance.setting.show);
-                        const isControlCurrentlyShown = Boolean(
-                            isControlsVisible ||
-                            isSettingOpen ||
-                            playerEl.classList.contains('art-control-show') ||
-                            playerEl.classList.contains('art-setting-show')
-                        );
-                        if (isControlCurrentlyShown) {
-                            hideControlsAndSettings();
-                        } else {
-                            isControlsVisible = true;
-                            try { artInstance.controls.show = true; } catch (_) {}
-                            syncProgressVisibility(true);
-                            scheduleControlsAutoHide();
-                        }
-                    }, 300);
+                    // SINGLE TAP / CLICK DETECTED: Show control layer immediately and auto-hide after 3 seconds
+                    showControlsAndLayers();
                 }
                 lastTapTime = now;
             };
@@ -2301,11 +2258,16 @@
                     e.target.closest('.art-setting') ||
                     e.target.closest('.art-setting-panel') ||
                     e.target.closest('.art-layer-lock') ||
+                    e.target.closest('.art-layer-nextEpLayer') ||
+                    e.target.closest('.art-layer-skipIntroLayer') ||
+                    e.target.closest('.next-ep-btn') ||
+                    e.target.closest('.skip-intro-btn') ||
+                    e.target.closest('.art-state') ||
                     e.target.closest('.zv-fs-cards-list') ||
                     e.target.closest('.zv-fs-cards-toggle') ||
-                    (isControlsVisible && e.target.closest('.art-control-progress'))
+                    (isControlsVisible && (e.target.closest('.art-control-progress') || e.target.closest('.art-progress')))
                 ) {
-                    scheduleControlsAutoHide();
+                    showControlsAndLayers();
                     return;
                 }
                 e.preventDefault();
@@ -2322,11 +2284,16 @@
                     e.target.closest('.art-setting') ||
                     e.target.closest('.art-setting-panel') ||
                     e.target.closest('.art-layer-lock') ||
+                    e.target.closest('.art-layer-nextEpLayer') ||
+                    e.target.closest('.art-layer-skipIntroLayer') ||
+                    e.target.closest('.next-ep-btn') ||
+                    e.target.closest('.skip-intro-btn') ||
+                    e.target.closest('.art-state') ||
                     e.target.closest('.zv-fs-cards-list') ||
                     e.target.closest('.zv-fs-cards-toggle') ||
-                    (isControlsVisible && e.target.closest('.art-control-progress'))
+                    (isControlsVisible && (e.target.closest('.art-control-progress') || e.target.closest('.art-progress')))
                 ) {
-                    scheduleControlsAutoHide();
+                    showControlsAndLayers();
                     return;
                 }
                 if (Date.now() - lastTouchEndTime < 450) return;

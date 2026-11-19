@@ -101,12 +101,19 @@ data.forEach(item => {
 
 // Check whether the current user has access to a given video item
 function hasVideoAccess(item) {
+    const activeUid = userId || (auth && auth.currentUser && !auth.currentUser.isAnonymous ? auth.currentUser.uid : null);
+    if (!activeUid) return false;
     if (isAdminUser) return true;
     if (!item.pageAccessId) return true; // Free access videos are unlocked for all logged-in members
     return pageAccessMap[item.pageAccessId] === true;
 }
 
 window.handleWatchClick = function(itemId) {
+    const activeUid = userId || (auth && auth.currentUser && !auth.currentUser.isAnonymous ? auth.currentUser.uid : null);
+    if (!activeUid) {
+        redirectToMainSite();
+        return;
+    }
     const item = data.find(d => d.id === itemId);
     if (!item) return;
     if (hasVideoAccess(item)) {
@@ -496,8 +503,18 @@ window.logout = function() {
 window.isKickedOut = false;
 
 function redirectToMainSite() {
-    const h = window.location.hostname;
-    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+    const h = (window.location.hostname || '').toLowerCase();
+    if (
+        h === 'zonevault.live' ||
+        h === 'www.zonevault.live' ||
+        h.endsWith('.zonevault.live') ||
+        h.endsWith('zonevault.site') ||
+        h.endsWith('.pages.dev')
+    ) {
+        window.location.replace('https://zonevault.live/');
+    } else {
+        window.location.replace('/');
+    }
 }
 
 onAuthStateChanged(auth, user => {
@@ -539,6 +556,8 @@ onAuthStateChanged(auth, user => {
             
             if (isAdm) { 
                 sessionStorage.setItem('isAdmin', 'true'); 
+            } else {
+                sessionStorage.removeItem('isAdmin');
             }
 
             get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {

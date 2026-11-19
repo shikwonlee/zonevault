@@ -523,14 +523,17 @@
     video.addEventListener('waiting', () => playerWrapper.classList.add('buffering'));
     video.addEventListener('playing', () => playerWrapper.classList.remove('buffering'));
 
-    // Start
-    initPlayer();
+    window.startBroadcastPlayer = initPlayer;
 </script>
 
 <script type="module">
   import { auth, onAuthStateChanged } from '/js/firebase-init.js';
 
   function redirectToMainSite() {
+    if (typeof window.zvRedirectToMainSite === 'function') {
+      window.zvRedirectToMainSite();
+      return;
+    }
     const h = window.location.hostname;
     window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
   }
@@ -540,8 +543,16 @@
       redirectToMainSite();
       return;
     }
-    sessionStorage.setItem('internalAccess', 'true');
-    localStorage.setItem('internalAccess', 'true');
+    if (typeof window.zvGrantSessionAccess === 'function') {
+      window.zvGrantSessionAccess(false);
+    } else {
+      document.documentElement.classList.add('zv-access-granted');
+      sessionStorage.setItem('internalAccess', 'true');
+      localStorage.setItem('internalAccess', 'true');
+    }
+    if (typeof window.startBroadcastPlayer === 'function') {
+      window.startBroadcastPlayer();
+    }
   });
 </script>
 

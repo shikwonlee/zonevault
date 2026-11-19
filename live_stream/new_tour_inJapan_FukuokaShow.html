@@ -301,13 +301,13 @@
 }
 
 .plyr__captions {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Asap Condensed', sans-serif !important;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500 !important;
   text-shadow: 0 0 4px black, 0 0 8px black;
   padding-bottom: 60px !important; 
 }
-.plyr__caption { background: transparent !important; }
+.plyr__caption { background: transparent !important; font-family: 'Asap Condensed', sans-serif !important; font-weight: 500 !important; }
 
   /* --- GLASSMORPHISM SEEK OVERLAY --- */
   .seek-overlay {
@@ -1101,33 +1101,9 @@ function smartGoBack() {
     }
 }
 
-// Function to show the denial screen
-function showAccessDeniedModal(message) {
-    if(typeof player !== 'undefined' && player) {
-        player.pause();
-        if(player.fullscreen.active) player.fullscreen.exit();
-    }
-    document.body.style.overflow = 'hidden';
-    if(document.querySelector('.access-denied-modal')) return;
-
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    modal.style.opacity = '1';
-    modal.style.animation = 'none';
-
-    modal.innerHTML = `
-        <strong style="color: #FF4444; font-size: 36px; margin-bottom: 20px;">Access Denied</strong>
-        <div style="margin-top: 15px; font-size: 18px; max-width: 90%; line-height: 1.4; text-shadow: var(--text-shadow);">
-            ${message}
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 30px; width: 80%; max-width: 300px;">
-            <button onclick="smartGoBack()" 
-                    style="background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.3); color: white;">
-                GO BACK
-            </button>
-        </div>
-    `;
-    document.body.appendChild(modal);
+// Function to redirect immediately instead of showing denial screen
+function showAccessDeniedModal() {
+    redirectToMainSite();
 }
 
 // Function to remove modal
@@ -1140,6 +1116,10 @@ function removeAccessDeniedModal() {
 }
 
 function redirectToMainSite() {
+    if (typeof window.zvRedirectToMainSite === 'function') {
+        window.zvRedirectToMainSite();
+        return;
+    }
     const h = window.location.hostname;
     window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
 }
@@ -1174,6 +1154,8 @@ auth.onAuthStateChanged(user => {
         const role = (userData.role || 'member').toLowerCase();
 
         if (role === 'admin') {
+            if (typeof window.zvGrantSessionAccess === 'function') window.zvGrantSessionAccess(true);
+            else document.documentElement.classList.add('zv-access-granted');
             sessionStorage.setItem('internalAccess', 'true');
             localStorage.setItem('internalAccess', 'true');
             sessionStorage.setItem('isAdmin', 'true');
@@ -1198,6 +1180,8 @@ auth.onAuthStateChanged(user => {
             // --- 2. HANDLE GLOBAL PAGE ACCESS ---
             if (isAllowed === true) {
                 console.log("Access Granted/Verified for:", user.uid);
+                if (typeof window.zvGrantSessionAccess === 'function') window.zvGrantSessionAccess(false);
+                else document.documentElement.classList.add('zv-access-granted');
                 sessionStorage.setItem('internalAccess', 'true');
                 localStorage.setItem('internalAccess', 'true');
                 removeAccessDeniedModal(); 
@@ -1230,13 +1214,7 @@ auth.onAuthStateChanged(user => {
                             document.getElementById('player-container').style.display = 'none';
                         }
 
-                        // Show blocking modal
-                        showAccessDeniedModal(
-                            "<span style='color: #ff4444; font-weight:bold;'>SESSION EXPIRED</span><br><br>" +
-                            "This account has been opened on another device.<br>" +
-                            "<small style='color:#ccc;'>Only 1 device is allowed at a time.</small><br><br>" +
-                            "<small>The other device is now the active one.</small>"
-                        );
+                        redirectToMainSite();
                     }
                 });
                 // ============================================================
@@ -1251,7 +1229,11 @@ auth.onAuthStateChanged(user => {
             } else {
                 redirectToMainSite();
             }
+        }, () => {
+            redirectToMainSite();
         });
+    }).catch(() => {
+        redirectToMainSite();
     });
 });
 // =========================================================================

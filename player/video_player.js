@@ -13,11 +13,52 @@
     window.art = window.art || null;
     window.currentSubtitleUrls = window.currentSubtitleUrls || [];
 
-    // Direct-link helpers: redirect unauthorized visitors to zonevault.live main page,
+    // Inject immediate auth-gate hiding & Asap Condensed Medium subtitle font before <body> renders
+    (function injectEarlyGateAndSubtitleFont() {
+        try {
+            const headEl = document.head || document.documentElement;
+            if (headEl && !document.getElementById('zv-auth-gate-inline-style')) {
+                const gateStyle = document.createElement('style');
+                gateStyle.id = 'zv-auth-gate-inline-style';
+                gateStyle.textContent = `
+                    html:not(.zv-access-granted),
+                    html:not(.zv-access-granted) body {
+                        background: #050505 !important;
+                        background-color: #050505 !important;
+                        overflow: hidden !important;
+                    }
+                    html:not(.zv-access-granted) body > * {
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                    }
+                `;
+                headEl.appendChild(gateStyle);
+            }
+            if (headEl && !document.getElementById('zv-subtitle-font-link')) {
+                const fontLink = document.createElement('link');
+                fontLink.id = 'zv-subtitle-font-link';
+                fontLink.rel = 'stylesheet';
+                fontLink.href = 'https://fonts.googleapis.com/css2?family=Asap+Condensed:wght@500;600;700&display=swap';
+                headEl.appendChild(fontLink);
+            }
+        } catch (_) {}
+    })();
+
+    // Direct-link helpers: redirect unauthorized visitors to zonevault.live main page immediately,
     // grant session access when verified, and resolve ?v= / ?title= deep links (including double-encoded URLs)
     window.zvRedirectToMainSite = function () {
+        try {
+            document.documentElement.classList.remove('zv-access-granted');
+        } catch (_) {}
         const host = (window.location.hostname || '').toLowerCase();
-        if (host === 'zonevault.live' || host === 'www.zonevault.live') {
+        if (
+            host === 'zonevault.live' ||
+            host === 'www.zonevault.live' ||
+            host.endsWith('.zonevault.live') ||
+            host.endsWith('zonevault.site') ||
+            host.endsWith('.pages.dev')
+        ) {
             window.location.replace('https://zonevault.live/');
         } else {
             window.location.replace('/');
@@ -26,12 +67,17 @@
 
     window.zvGrantSessionAccess = function (isAdmin) {
         try {
+            document.documentElement.classList.add('zv-access-granted');
             sessionStorage.setItem('internalAccess', 'true');
             localStorage.setItem('internalAccess', 'true');
             if (isAdmin) {
                 sessionStorage.setItem('isAdmin', 'true');
             }
-        } catch (_) {}
+        } catch (_) {
+            try {
+                document.documentElement.classList.add('zv-access-granted');
+            } catch (e) {}
+        }
     };
 
     window.zvResolveDeepLinkEpisode = function (list) {
@@ -659,38 +705,9 @@
 
         cleanupPlayer();
 
-        // Show persistent Access Restricted modal with user UID and Username (no auto redirect)
-        function showAccessRestrictedModal(name, id, reason) {
-            let existing = document.querySelector('.access-denied-modal');
-            if (existing) existing.remove();
-
-            const modal = document.createElement('div');
-            modal.className = 'access-denied-modal';
-            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,5,6,0.98);color:#fff;display:flex;align-items:center;justify-content:center;z-index:99999;flex-direction:column;text-align:center;backdrop-filter:blur(20px);padding:20px;';
-
-            modal.innerHTML = `
-                <strong style="color:#FF4444; font-size:28px; margin-bottom:15px; display:block;">Access Restricted</strong>
-                <div style="font-size:15px; margin-bottom:20px; line-height:1.5; max-width:480px; color:#eaeaea;">
-                    ${reason || "This content is restricted. Your account does not have permission to stream this video."}
-                </div>
-                
-                <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:16px 20px; margin-bottom:24px; text-align:left; max-width:440px; width:100%; box-sizing:border-box;">
-                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#8e8e99; margin-bottom:10px; font-weight:700;">Account Details</div>
-                    <div style="font-size:13px; color:#fcfcfc; margin-bottom:8px; display:flex; justify-content:space-between; gap:12px;">
-                        <span style="color:#a1a1aa;">Username:</span>
-                        <span style="font-weight:600; text-align:right;">${name || 'Guest / Unknown'}</span>
-                    </div>
-                    <div style="font-size:13px; color:#fcfcfc; display:flex; justify-content:space-between; gap:12px; word-break:break-all;">
-                        <span style="color:#a1a1aa; flex-shrink:0;">UID:</span>
-                        <code style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#d4d4d8; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px; user-select:all;">${id || 'Not logged in'}</code>
-                    </div>
-                </div>
-
-                <button onclick="window.location.href='/videos'" style="padding:14px 36px; border-radius:50px; background:#ffffff; color:#0a0a0c; border:none; cursor:pointer; font-weight:700; font-size:14px; letter-spacing:1px; text-transform:uppercase; transition:all 0.2s; box-shadow:0 8px 24px rgba(255,255,255,0.2);">
-                    <i class="fas fa-arrow-left" style="margin-right:8px;"></i> Back to Video
-                </button>
-            `;
-            document.body.appendChild(modal);
+        // Immediately redirect unauthorized/unauthenticated users to zonevault.live without showing page contents
+        function showAccessRestrictedModal() {
+            window.zvRedirectToMainSite();
         }
 
         // Resilient token fetcher with 6-hour session caching (avoids repeat Worker calls when switching episodes)
@@ -977,8 +994,8 @@
                     background: 'transparent',
                     backgroundColor: 'transparent',
                     textShadow: 'none',
-                    fontFamily: "'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif",
-                    fontWeight: '600'
+                    fontFamily: "'Asap Condensed', sans-serif",
+                    fontWeight: '500'
                 }
             },
             moreVideoAttr: {
@@ -1859,7 +1876,7 @@
                     const fontLink = document.createElement('link');
                     fontLink.id = 'zv-subtitle-font-link';
                     fontLink.rel = 'stylesheet';
-                    fontLink.href = 'https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Varela+Round&display=swap';
+                    fontLink.href = 'https://fonts.googleapis.com/css2?family=Asap+Condensed:wght@500;600;700&display=swap';
                     (document.head || document.documentElement).appendChild(fontLink);
                 }
 
@@ -1898,8 +1915,8 @@
                             -webkit-text-stroke: 0 !important;
                             backdrop-filter: none !important;
                             -webkit-backdrop-filter: none !important;
-                            font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
-                            font-weight: 600 !important;
+                            font-family: 'Asap Condensed', sans-serif !important;
+                            font-weight: 500 !important;
                             line-height: 1.4 !important;
                             letter-spacing: 0.01em !important;
                             flex-direction: column !important;
@@ -1951,8 +1968,8 @@
                             max-width: 92% !important;
                             display: inline-block !important;
                             text-align: center !important;
-                            font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
-                            font-weight: 600 !important;
+                            font-family: 'Asap Condensed', sans-serif !important;
+                            font-weight: 500 !important;
                             line-height: 1.4 !important;
                             font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
                             box-decoration-break: clone !important;

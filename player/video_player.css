@@ -3,7 +3,21 @@
    Location: /player/video_player.css
    ========================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Varela+Round&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Asap+Condensed:wght@500;600;700&family=Nunito:wght@700;800;900&family=Varela+Round&display=swap');
+
+/* Strict Auth & Page Access Gate — prevents any content flash before login and page_access are verified */
+html:not(.zv-access-granted),
+html:not(.zv-access-granted) body {
+    background: #050505 !important;
+    background-color: #050505 !important;
+    overflow: hidden !important;
+}
+
+html:not(.zv-access-granted) body > * {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
 
 /* Artplayer sizing */
 .art-video-player {
@@ -13,6 +27,7 @@
 
 /* =========================================
    CUSTOM SUBTITLE STYLING & LOCAL PREFERENCES
+   - Default Font: Asap Condensed Medium (500)
    - Default Design: Semi-transparent black box (rgba(0,0,0,0.72)) with curved ends (0.45em)
    - Default Responsive Auto Size: Desktop 25px | Phone Fullscreen/Landscape 14px | Smaller Screen 9px
    - Customizable locally via Player Settings (Size, Design, Text Color)
@@ -48,8 +63,8 @@
     -webkit-text-stroke: 0 !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    font-weight: 600 !important;
+    font-family: 'Asap Condensed', sans-serif !important;
+    font-weight: 500 !important;
     line-height: 1.4 !important;
     letter-spacing: 0.01em !important;
     flex-direction: column !important;
@@ -108,8 +123,8 @@
     max-width: 92% !important;
     display: inline-block !important;
     text-align: center !important;
-    font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    font-weight: 600 !important;
+    font-family: 'Asap Condensed', sans-serif !important;
+    font-weight: 500 !important;
     line-height: 1.4 !important;
     font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
     box-decoration-break: clone !important;
@@ -146,8 +161,8 @@ video::cue {
     background: rgba(0, 0, 0, 0.72) !important;
     background-color: rgba(0, 0, 0, 0.72) !important;
     color: #ffffff !important;
-    font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    font-weight: 600 !important;
+    font-family: 'Asap Condensed', sans-serif !important;
+    font-weight: 500 !important;
     text-shadow: none !important;
     border-radius: 8px !important;
 }

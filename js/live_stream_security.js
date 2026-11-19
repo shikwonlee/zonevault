@@ -5,6 +5,83 @@
 (function () {
     'use strict';
 
+    (function injectLiveGateAndSubtitleFont() {
+        try {
+            const headEl = document.head || document.documentElement;
+            if (headEl && !document.getElementById('zv-auth-gate-inline-style')) {
+                const gateStyle = document.createElement('style');
+                gateStyle.id = 'zv-auth-gate-inline-style';
+                gateStyle.textContent = `
+                    html:not(.zv-access-granted),
+                    html:not(.zv-access-granted) body {
+                        background: #050505 !important;
+                        background-color: #050505 !important;
+                        overflow: hidden !important;
+                    }
+                    html:not(.zv-access-granted) body > * {
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                    }
+                    .art-video-player .art-subtitle,
+                    .art-subtitle,
+                    .art-video-player .art-subtitle p,
+                    .art-video-player .art-subtitle .art-subtitle-line,
+                    .art-video-player .art-subtitle .zv-sub-line,
+                    .art-video-player .art-subtitle > div,
+                    .art-video-player .art-subtitle > span,
+                    .plyr__captions,
+                    .plyr__caption,
+                    video::cue {
+                        font-family: 'Asap Condensed', sans-serif !important;
+                        font-weight: 500 !important;
+                    }
+                `;
+                headEl.appendChild(gateStyle);
+            }
+            if (headEl && !document.getElementById('zv-subtitle-font-link')) {
+                const fontLink = document.createElement('link');
+                fontLink.id = 'zv-subtitle-font-link';
+                fontLink.rel = 'stylesheet';
+                fontLink.href = 'https://fonts.googleapis.com/css2?family=Asap+Condensed:wght@500;600;700&display=swap';
+                headEl.appendChild(fontLink);
+            }
+        } catch (_) {}
+    })();
+
+    window.zvRedirectToMainSite = window.zvRedirectToMainSite || function () {
+        try {
+            document.documentElement.classList.remove('zv-access-granted');
+        } catch (_) {}
+        const host = (window.location.hostname || '').toLowerCase();
+        if (
+            host === 'zonevault.live' ||
+            host === 'www.zonevault.live' ||
+            host.endsWith('.zonevault.live') ||
+            host.endsWith('zonevault.site') ||
+            host.endsWith('.pages.dev')
+        ) {
+            window.location.replace('https://zonevault.live/');
+        } else {
+            window.location.replace('/');
+        }
+    };
+
+    window.zvGrantSessionAccess = window.zvGrantSessionAccess || function (isAdmin) {
+        try {
+            document.documentElement.classList.add('zv-access-granted');
+            sessionStorage.setItem('internalAccess', 'true');
+            localStorage.setItem('internalAccess', 'true');
+            if (isAdmin) {
+                sessionStorage.setItem('isAdmin', 'true');
+            }
+        } catch (_) {
+            try {
+                document.documentElement.classList.add('zv-access-granted');
+            } catch (e) {}
+        }
+    };
+
     window.ZoneVaultLive = {
         ZV_PAYLOAD_KEY: 'zv-shield-2026-payload-cipher-key',
         activeToken: null,

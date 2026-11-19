@@ -732,6 +732,10 @@ function registerAndMonitorSession(uid) {
 }
 
 function redirectToMainSite() {
+    if (typeof window.zvRedirectToMainSite === 'function') {
+        window.zvRedirectToMainSite();
+        return;
+    }
     const h = window.location.hostname;
     window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
 }
@@ -760,6 +764,8 @@ auth.onAuthStateChanged(user => {
         // --- ADMIN (Bypass Everything) ---
         if (role === 'admin') {
             console.log("Admin access granted");
+            if (typeof window.zvGrantSessionAccess === 'function') window.zvGrantSessionAccess(true);
+            else document.documentElement.classList.add('zv-access-granted');
             sessionStorage.setItem('internalAccess', 'true');
             localStorage.setItem('internalAccess', 'true');
             sessionStorage.setItem('isAdmin', 'true');
@@ -794,6 +800,8 @@ auth.onAuthStateChanged(user => {
             renderPlaylist(isAllowed === true);
             
             if (isAllowed === true) {
+                if (typeof window.zvGrantSessionAccess === 'function') window.zvGrantSessionAccess(false);
+                else document.documentElement.classList.add('zv-access-granted');
                 sessionStorage.setItem('internalAccess', 'true');
                 localStorage.setItem('internalAccess', 'true');
                 const videoId = urlParams.get('v'); 
@@ -803,7 +811,11 @@ auth.onAuthStateChanged(user => {
             } else {
                  redirectToMainSite();
             }
+        }, () => {
+            redirectToMainSite();
         });
+    }).catch(() => {
+        redirectToMainSite();
     });
 });
 

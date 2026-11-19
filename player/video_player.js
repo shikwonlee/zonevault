@@ -1045,16 +1045,56 @@
 
                         hls.on(Hls.Events.MANIFEST_PARSED, function () {
                             const availableLevels = hls.levels || [];
-                            const targetResolutions = [1080, 720, 480, 270, 120];
-                            const qualityList = [];
+                            const getEffectiveHeight = (lvl) => {
+                                if (!lvl) return 0;
+                                const h = Number(lvl.height) || 0;
+                                const w = Number(lvl.width) || 0;
+                                if (h >= 2160 || w >= 3840) return Math.max(h, 2160);
+                                if (h >= 1440 || w >= 2560) return Math.max(h, 1440);
+                                if (h >= 1080 || w >= 1920) return Math.max(h, 1080);
+                                if (h >= 720 || w >= 1280) return Math.max(h, 720);
+                                return h || Math.round((w * 9) / 16);
+                            };
 
+                            const qualityList = [];
                             qualityList.push({ html: 'Auto', index: -1, default: true });
 
+                            // Add 4K (2160P) and 2K (1440P) only if available in the video stream
+                            const highResTiers = [
+                                { res: 2160, label: '2160P (4K)', minH: 1800, maxH: 4320 },
+                                { res: 1440, label: '1440P', minH: 1250, maxH: 1799 }
+                            ];
+
+                            highResTiers.forEach(tier => {
+                                let bestIdx = -1;
+                                let bestDiff = Infinity;
+                                let bestBitrate = -1;
+                                availableLevels.forEach((lvl, idx) => {
+                                    const effH = getEffectiveHeight(lvl);
+                                    if (effH >= tier.minH && effH <= tier.maxH) {
+                                        const diff = Math.abs(effH - tier.res);
+                                        const br = Number(lvl.bitrate) || 0;
+                                        if (diff < bestDiff || (diff === bestDiff && br > bestBitrate)) {
+                                            bestDiff = diff;
+                                            bestBitrate = br;
+                                            bestIdx = idx;
+                                        }
+                                    }
+                                });
+                                if (bestIdx !== -1) {
+                                    qualityList.push({
+                                        html: tier.label,
+                                        index: bestIdx
+                                    });
+                                }
+                            });
+
+                            const targetResolutions = [1080, 720, 480, 270, 120];
                             targetResolutions.forEach(res => {
-                                let matchIndex = availableLevels.findIndex(lvl => lvl.height === res);
+                                let matchIndex = availableLevels.findIndex(lvl => getEffectiveHeight(lvl) === res || lvl.height === res);
                                 if (matchIndex === -1 && availableLevels.length > 0) {
                                     matchIndex = availableLevels.reduce((prev, curr, idx) =>
-                                        Math.abs(curr.height - res) < Math.abs(availableLevels[prev].height - res) ? idx : prev, 0);
+                                        Math.abs(getEffectiveHeight(curr) - res) < Math.abs(getEffectiveHeight(availableLevels[prev]) - res) ? idx : prev, 0);
                                 }
                                 qualityList.push({
                                     html: `${res}P`,
@@ -1064,7 +1104,7 @@
 
                             instance.setting.update({
                                 name: 'quality',
-                                width: 150,
+                                width: 160,
                                 html: 'Quality',
                                 tooltip: 'Auto',
                                 selector: qualityList.map(item => ({

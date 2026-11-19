@@ -876,3 +876,67 @@ body:has(#player-container:fullscreen) {
     animation-delay: 0.24s !important;
     height: clamp(7px, 1.8vmin, 9px) !important;
 }
+
+/* =========================================
+   LIGHTWEIGHT MOBILE & LOW-END PHONE OPTIMIZATIONS
+   Applied across all 2021–2026 video pages
+   ========================================= */
+.art-video-player video {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.playlist-item:not(.active) {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 76px;
+}
+
+@media (max-width: 950px), (hover: none) and (pointer: coarse) {
+    /* Eliminate full-screen SVG feTurbulence fractalNoise GPU compositing overhead during video playback */
+    .noise-overlay {
+        display: none !important;
+    }
+
+    /* Avoid fixed full-viewport gradient repainting during scroll/video compositing on mobile GPUs */
+    .bg-gradient {
+        position: absolute !important;
+    }
+
+    /* Replace multi-pass GPU backdrop-filter blurs with lightweight solid/semi-opaque surfaces on mobile phones */
+    .art-video-player .art-settings,
+    .art-video-player .art-contextmenu,
+    .zv-fs-cards-toggle,
+    .zv-fs-card-item,
+    .next-ep-btn,
+    .skip-intro-btn,
+    .back-btn,
+    .user-chip,
+    #playlist,
+    .playlist-header {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    .art-video-player .art-settings {
+        background: rgba(14, 14, 18, 0.96) !important;
+    }
+
+    .zv-fs-card-item {
+        background: rgba(18, 18, 24, 0.92) !important;
+        will-change: auto !important;
+    }
+
+    .zv-fs-cards-list:not(.is-open),
+    .zv-fs-cards-toggle {
+        will-change: auto !important;
+    }
+
+    /* Stop continuous off-player glowing box-shadow pulse animations on mobile to save GPU frames for video */
+    .current-episode-label::before,
+    .playlist-header::before {
+        animation: none !important;
+        box-shadow: none !important;
+    }
+}
+

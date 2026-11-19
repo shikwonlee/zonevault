@@ -11,8 +11,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <link rel="stylesheet" href="/player/video_player.css?v=20261114">
-  <script src="/player/video_player.js?v=20261114"></script>
+  <link rel="stylesheet" href="/player/video_player.css?v=20261121">
+  <script src="/player/video_player.js?v=20261121"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -353,6 +353,72 @@
     .access-denied-modal strong {
         font-size: 32px; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, #8e8e99 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* --- SUBTITLE STYLING (Semi-Transparent Black Box with Curved Ends) --- */
+    .art-video-player .art-subtitle,
+    .art-subtitle {
+        color: var(--zv-sub-color, #ffffff) !important;
+        background: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+        background-color: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+        text-shadow: var(--zv-sub-shadow, none) !important;
+        -webkit-text-stroke: 0 !important;
+        border-radius: var(--zv-sub-radius, 0.45em) !important;
+        padding: var(--zv-sub-padding, 0.22em 0.65em) !important;
+        font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        width: fit-content !important;
+        max-width: 92% !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+    }
+    .art-video-player .art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span),
+    .art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span) {
+        background: transparent !important;
+        background-color: transparent !important;
+        padding: 0 16px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .art-video-player .art-subtitle p,
+    .art-video-player .art-subtitle .art-subtitle-line,
+    .art-video-player .art-subtitle .zv-sub-line,
+    .art-video-player .art-subtitle > div,
+    .art-video-player .art-subtitle > span {
+        color: var(--zv-sub-color, #ffffff) !important;
+        background: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+        background-color: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+        text-shadow: var(--zv-sub-shadow, none) !important;
+        -webkit-text-stroke: 0 !important;
+        border-radius: var(--zv-sub-radius, 0.45em) !important;
+        padding: var(--zv-sub-padding, 0.22em 0.65em) !important;
+        font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        width: fit-content !important;
+        max-width: 92% !important;
+        display: inline-block !important;
+        margin: 0 auto !important;
+    }
+    .art-video-player .art-subtitle:empty,
+    .art-video-player .art-subtitle p:empty,
+    .art-video-player .art-subtitle .art-subtitle-line:empty,
+    .art-video-player .art-subtitle .zv-sub-line:empty {
+        display: none !important;
+    }
+    @media (max-width: 950px) {
+        .art-video-player { --zv-sub-auto-size: 9px; }
+        .art-video-player.zv-is-fullscreen,
+        .art-video-player.art-fullscreen,
+        .art-video-player.art-fullscreen-web,
+        #player-container:fullscreen .art-video-player,
+        .art-video-player:fullscreen { --zv-sub-auto-size: 14px; }
+    }
+    @media (max-width: 950px) and (max-height: 520px) and (orientation: landscape),
+           (hover: none) and (pointer: coarse) and (orientation: landscape) {
+        .art-video-player { --zv-sub-auto-size: 14px; }
     }
 </style>
 </head>

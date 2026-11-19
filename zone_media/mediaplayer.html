@@ -76,7 +76,40 @@
 
         /* --- SUBTITLES --- */
         #custom-subs { position: absolute; bottom: 80px; width: 100%; text-align: center; pointer-events: none; z-index: 12; padding: 0 40px; transition: bottom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        #custom-subs span { font-size: clamp(18px, 4vw, 24px); color: #fff; font-weight: 600; line-height: 1.4; text-shadow: 0px 2px 4px rgba(0,0,0,0.8), 0px 4px 12px rgba(0,0,0,0.6); font-family: -apple-system, sans-serif; letter-spacing: 0.5px; background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 8px; backdrop-filter: blur(4px); }
+        #custom-subs span {
+            font-size: 25px;
+            color: #ffffff;
+            font-weight: 600;
+            line-height: 1.4;
+            font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: 0.01em;
+            background: rgba(0, 0, 0, 0.72) !important;
+            background-color: rgba(0, 0, 0, 0.72) !important;
+            padding: 0.22em 0.65em;
+            border-radius: 0.45em;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0 !important;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+        #custom-subs span:empty { display: none !important; }
+        @media (max-width: 950px) {
+            #custom-subs span { font-size: 9px; }
+        }
+        @media (max-width: 950px) and (orientation: landscape),
+               (hover: none) and (pointer: coarse) and (orientation: landscape) {
+            #custom-subs span { font-size: 14px; }
+        }
+        #player-wrapper:fullscreen #custom-subs span,
+        #player-wrapper:-webkit-full-screen #custom-subs span {
+            font-size: 25px;
+        }
+        @media (max-width: 950px) {
+            #player-wrapper:fullscreen #custom-subs span,
+            #player-wrapper:-webkit-full-screen #custom-subs span {
+                font-size: 14px;
+            }
+        }
         #player-wrapper.controls-visible #custom-subs { bottom: 150px; }
 
         /* --- CONTROLS LAYER (PREMIUM GLASS) --- */

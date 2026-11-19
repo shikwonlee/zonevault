@@ -706,7 +706,15 @@
             subtitle: {
                 url: defaultSubtitle ? defaultSubtitle.url : '',
                 type: 'vtt',
-                encoding: 'utf-8'
+                encoding: 'utf-8',
+                style: {
+                    color: '#ffffff',
+                    background: 'transparent',
+                    backgroundColor: 'transparent',
+                    textShadow: 'none',
+                    fontFamily: "'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif",
+                    fontWeight: '600'
+                }
             },
             moreVideoAttr: {
                 preload: 'metadata',
@@ -1252,6 +1260,339 @@
                 if (artContainer) artContainer.classList.toggle('zv-is-fullscreen', inFs);
                 if (outerContainer) outerContainer.classList.toggle('zv-is-fullscreen', inFs);
 
+                // Ensure rounded subtitle Google Font & global style tag are injected at the end of <head> across all 2021-2026 pages
+                if (!document.getElementById('zv-subtitle-font-link')) {
+                    const fontLink = document.createElement('link');
+                    fontLink.id = 'zv-subtitle-font-link';
+                    fontLink.rel = 'stylesheet';
+                    fontLink.href = 'https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Varela+Round&display=swap';
+                    (document.head || document.documentElement).appendChild(fontLink);
+                }
+
+                let globalSubStyleEl = document.getElementById('zv-global-subtitle-override');
+                if (!globalSubStyleEl) {
+                    globalSubStyleEl = document.createElement('style');
+                    globalSubStyleEl.id = 'zv-global-subtitle-override';
+                    globalSubStyleEl.textContent = `
+                        .art-video-player {
+                            --zv-sub-auto-size: 25px;
+                            --zv-sub-size: var(--zv-sub-custom-size, var(--zv-sub-auto-size, 25px));
+                            --zv-sub-bg: rgba(0, 0, 0, 0.72);
+                            --zv-sub-color: #ffffff;
+                            --zv-sub-shadow: none;
+                            --zv-sub-radius: 0.45em;
+                            --zv-sub-padding: 0.22em 0.65em;
+                            --zv-sub-blur: none;
+                        }
+                        .art-video-player .art-subtitle,
+                        .art-subtitle {
+                            color: var(--zv-sub-color, #ffffff) !important;
+                            background: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+                            background-color: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+                            box-shadow: none !important;
+                            border: none !important;
+                            text-shadow: var(--zv-sub-shadow, none) !important;
+                            -webkit-text-stroke: 0 !important;
+                            border-radius: var(--zv-sub-radius, 0.45em) !important;
+                            padding: var(--zv-sub-padding, 0.22em 0.65em) !important;
+                            backdrop-filter: var(--zv-sub-blur, none) !important;
+                            -webkit-backdrop-filter: var(--zv-sub-blur, none) !important;
+                            font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
+                            font-weight: 600 !important;
+                            line-height: 1.4 !important;
+                            letter-spacing: 0.01em !important;
+                            display: flex !important;
+                            flex-direction: column !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            gap: 5px !important;
+                            width: fit-content !important;
+                            max-width: 92% !important;
+                            left: 50% !important;
+                            right: auto !important;
+                            transform: translateX(-50%) !important;
+                            margin: 0 auto !important;
+                            text-align: center !important;
+                            font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
+                        }
+                        .art-video-player .art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span),
+                        .art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span) {
+                            background: transparent !important;
+                            background-color: transparent !important;
+                            padding: 0 16px !important;
+                            border-radius: 0 !important;
+                            backdrop-filter: none !important;
+                            -webkit-backdrop-filter: none !important;
+                            width: 100% !important;
+                            max-width: 100% !important;
+                        }
+                        .art-video-player .art-subtitle p,
+                        .art-video-player .art-subtitle .art-subtitle-line,
+                        .art-video-player .art-subtitle .zv-sub-line,
+                        .art-video-player .art-subtitle > div,
+                        .art-video-player .art-subtitle > span,
+                        .art-subtitle p,
+                        .art-subtitle .art-subtitle-line,
+                        .art-subtitle .zv-sub-line,
+                        .art-subtitle > div,
+                        .art-subtitle > span {
+                            color: var(--zv-sub-color, #ffffff) !important;
+                            background: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+                            background-color: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+                            text-shadow: var(--zv-sub-shadow, none) !important;
+                            -webkit-text-stroke: 0 !important;
+                            border: none !important;
+                            box-shadow: none !important;
+                            border-radius: var(--zv-sub-radius, 0.45em) !important;
+                            padding: var(--zv-sub-padding, 0.22em 0.65em) !important;
+                            backdrop-filter: var(--zv-sub-blur, none) !important;
+                            -webkit-backdrop-filter: var(--zv-sub-blur, none) !important;
+                            margin: 0 auto !important;
+                            width: fit-content !important;
+                            max-width: 92% !important;
+                            display: inline-block !important;
+                            text-align: center !important;
+                            font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
+                            font-weight: 600 !important;
+                            line-height: 1.4 !important;
+                            font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
+                            box-decoration-break: clone !important;
+                            -webkit-box-decoration-break: clone !important;
+                        }
+                        .art-video-player .art-subtitle:empty,
+                        .art-subtitle:empty,
+                        .art-video-player .art-subtitle p:empty,
+                        .art-video-player .art-subtitle .art-subtitle-line:empty,
+                        .art-video-player .art-subtitle .zv-sub-line:empty,
+                        .art-video-player .art-subtitle > div:empty,
+                        .art-video-player .art-subtitle > span:empty {
+                            display: none !important;
+                            background: transparent !important;
+                            padding: 0 !important;
+                        }
+                        @media (max-width: 950px) {
+                            .art-video-player { --zv-sub-auto-size: 9px; }
+                        }
+                        @media (max-width: 950px) and (max-height: 520px) and (orientation: landscape),
+                               (hover: none) and (pointer: coarse) and (orientation: landscape) {
+                            .art-video-player { --zv-sub-auto-size: 14px; }
+                        }
+                    `;
+                    (document.head || document.documentElement).appendChild(globalSubStyleEl);
+                } else if (document.head && document.head.lastElementChild !== globalSubStyleEl) {
+                    document.head.appendChild(globalSubStyleEl);
+                }
+
+                // Local-only subtitle preferences (saved exclusively in browser localStorage, never on user's account)
+                const LOCAL_SUBTITLE_PREFS_KEY = 'zv_subtitle_prefs_local';
+
+                const SUBTITLE_DESIGN_PRESETS = {
+                    'dark-box': {
+                        label: 'Dark Box',
+                        bg: 'rgba(0, 0, 0, 0.72)',
+                        shadow: 'none',
+                        radius: '0.45em',
+                        padding: '0.22em 0.65em',
+                        blur: 'none'
+                    },
+                    'soft-box': {
+                        label: 'Soft Box',
+                        bg: 'rgba(0, 0, 0, 0.48)',
+                        shadow: 'none',
+                        radius: '0.45em',
+                        padding: '0.22em 0.65em',
+                        blur: 'none'
+                    },
+                    'solid-box': {
+                        label: 'Solid Box',
+                        bg: 'rgba(0, 0, 0, 0.92)',
+                        shadow: 'none',
+                        radius: '0.45em',
+                        padding: '0.22em 0.65em',
+                        blur: 'none'
+                    },
+                    'glass-box': {
+                        label: 'Glass Box',
+                        bg: 'rgba(18, 18, 26, 0.55)',
+                        shadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
+                        radius: '0.45em',
+                        padding: '0.22em 0.65em',
+                        blur: 'blur(8px)'
+                    },
+                    'outline': {
+                        label: 'Black Outline',
+                        bg: 'transparent',
+                        shadow: '0 1.5px 0 #000, 0 -1.5px 0 #000, 1.5px 0 0 #000, -1.5px 0 0 #000, 1.06px 1.06px 0 #000, -1.06px -1.06px 0 #000, 1.06px -1.06px 0 #000, -1.06px 1.06px 0 #000, 0 2px 6px rgba(0, 0, 0, 0.85)',
+                        radius: '0',
+                        padding: '0.1em 0.25em',
+                        blur: 'none'
+                    },
+                    'shadow': {
+                        label: 'Drop Shadow',
+                        bg: 'transparent',
+                        shadow: '0 2px 4px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.85)',
+                        radius: '0',
+                        padding: '0.1em 0.25em',
+                        blur: 'none'
+                    }
+                };
+                window.ZV_SUBTITLE_DESIGN_PRESETS = SUBTITLE_DESIGN_PRESETS;
+
+                const getUserSubtitlePrefs = () => {
+                    const defaults = { size: 'auto', design: 'dark-box', color: '#ffffff' };
+                    try {
+                        const raw = localStorage.getItem(LOCAL_SUBTITLE_PREFS_KEY);
+                        if (raw) {
+                            const parsed = JSON.parse(raw);
+                            return {
+                                size: parsed.size || defaults.size,
+                                design: SUBTITLE_DESIGN_PRESETS[parsed.design] ? parsed.design : defaults.design,
+                                color: parsed.color || defaults.color
+                            };
+                        }
+                    } catch (_) {}
+                    return defaults;
+                };
+                window.zvGetUserSubtitlePrefs = getUserSubtitlePrefs;
+
+                const saveUserSubtitlePrefs = (partialPrefs) => {
+                    const updated = { ...getUserSubtitlePrefs(), ...partialPrefs, updatedAt: Date.now() };
+                    try {
+                        localStorage.setItem(LOCAL_SUBTITLE_PREFS_KEY, JSON.stringify(updated));
+                    } catch (_) {}
+                    syncDesktopAndMobileFullscreenClass();
+                    return updated;
+                };
+                window.zvSaveUserSubtitlePrefs = saveUserSubtitlePrefs;
+
+                // Responsive auto-size:
+                // - Large screen / Desktop mode: 25px
+                // - Phone fullscreen / landscape: 14px
+                // - Smaller screen (mobile portrait / non-fullscreen small screen): 9px
+                const vw = window.innerWidth || document.documentElement.clientWidth || 1024;
+                const vh = window.innerHeight || document.documentElement.clientHeight || 768;
+                const playerRect = playerEl.getBoundingClientRect ? playerEl.getBoundingClientRect() : { width: vw, height: vh };
+                const pw = playerRect.width || vw;
+                const isCoarsePointer = Boolean(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+                const isPhoneLandscape =
+                    (isCoarsePointer && vw > vh) ||
+                    (vw <= 950 && vh <= 520 && vw > vh) ||
+                    isMobileLandscapeFullscreen;
+                const isSmallOrMobileScreen = vw <= 950 || pw <= 620 || (isCoarsePointer && Math.min(vw, vh) <= 600);
+
+                let autoSubSize = '25';
+                if (isSmallOrMobileScreen) {
+                    if (inFs || isPhoneLandscape) {
+                        autoSubSize = '14';
+                    } else {
+                        autoSubSize = '9';
+                    }
+                }
+
+                const userSubPrefs = getUserSubtitlePrefs();
+                const targetSubSize = (userSubPrefs.size && userSubPrefs.size !== 'auto')
+                    ? String(userSubPrefs.size)
+                    : autoSubSize;
+                const activeDesign = SUBTITLE_DESIGN_PRESETS[userSubPrefs.design] || SUBTITLE_DESIGN_PRESETS['dark-box'];
+                const activeColor = userSubPrefs.color || '#ffffff';
+
+                playerEl.setAttribute('data-zv-sub-size', targetSubSize);
+                playerEl.setAttribute('data-zv-sub-design', userSubPrefs.design || 'dark-box');
+                playerEl.style.setProperty('--zv-sub-auto-size', `${autoSubSize}px`);
+                if (userSubPrefs.size && userSubPrefs.size !== 'auto') {
+                    playerEl.style.setProperty('--zv-sub-custom-size', `${targetSubSize}px`);
+                } else {
+                    playerEl.style.removeProperty('--zv-sub-custom-size');
+                }
+                playerEl.style.setProperty('--zv-sub-size', `${targetSubSize}px`);
+                playerEl.style.setProperty('--zv-sub-bg', activeDesign.bg);
+                playerEl.style.setProperty('--zv-sub-color', activeColor);
+                playerEl.style.setProperty('--zv-sub-shadow', activeDesign.shadow);
+                playerEl.style.setProperty('--zv-sub-radius', activeDesign.radius);
+                playerEl.style.setProperty('--zv-sub-padding', activeDesign.padding);
+                playerEl.style.setProperty('--zv-sub-blur', activeDesign.blur);
+
+                const styleSubtitleContainerAndLines = (containerEl, sizePx, designPreset, textColor) => {
+                    if (!containerEl || !containerEl.style) return;
+
+                    // Normalize any raw text nodes, <br>-separated multi-line cues, or non-.zv-sub-line wrappers into <p class="zv-sub-line">
+                    const rawHtml = containerEl.innerHTML || '';
+                    const rawText = (containerEl.textContent || '').trim();
+                    if (!rawText) {
+                        containerEl.style.setProperty('display', 'none', 'important');
+                        return;
+                    }
+                    containerEl.style.setProperty('display', 'flex', 'important');
+
+                    const children = Array.from(containerEl.children);
+                    const allWrappedCleanly =
+                        children.length > 0 &&
+                        children.every(ch => ch.classList && ch.classList.contains('zv-sub-line') && !ch.querySelector('br')) &&
+                        !Array.from(containerEl.childNodes).some(n => n.nodeType === 3 && n.nodeValue && n.nodeValue.trim().length > 0);
+
+                    if (!allWrappedCleanly) {
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = rawHtml
+                            .replace(/<br\s*\/?>/gi, '\n')
+                            .replace(/<\/(p|div)>/gi, '\n');
+                        const lines = (tmp.textContent || '')
+                            .split(/\r?\n/)
+                            .map(l => l.trim())
+                            .filter(Boolean);
+
+                        containerEl.textContent = '';
+                        lines.forEach(lineText => {
+                            const p = document.createElement('p');
+                            p.className = 'zv-sub-line';
+                            p.textContent = lineText;
+                            containerEl.appendChild(p);
+                        });
+                    }
+
+                    containerEl.style.setProperty('font-size', `${sizePx}px`, 'important');
+                    containerEl.style.setProperty('background', 'transparent', 'important');
+                    containerEl.style.setProperty('background-color', 'transparent', 'important');
+                    containerEl.style.setProperty('text-shadow', 'none', 'important');
+                    containerEl.style.setProperty('-webkit-text-stroke', '0', 'important');
+                    containerEl.style.setProperty('padding', '0 16px', 'important');
+                    containerEl.style.setProperty('width', '100%', 'important');
+                    containerEl.style.setProperty('max-width', '100%', 'important');
+                    containerEl.style.setProperty('left', '50%', 'important');
+                    containerEl.style.setProperty('right', 'auto', 'important');
+                    containerEl.style.setProperty('transform', 'translateX(-50%)', 'important');
+
+                    Array.from(containerEl.children).forEach(child => {
+                        if (!child || !child.style) return;
+                        const hasText = Boolean((child.textContent || '').trim().length > 0);
+                        if (!hasText) {
+                            child.style.setProperty('display', 'none', 'important');
+                            return;
+                        }
+                        child.style.setProperty('display', 'inline-block', 'important');
+                        child.style.setProperty('font-size', `${sizePx}px`, 'important');
+                        child.style.setProperty('color', textColor, 'important');
+                        child.style.setProperty('background', designPreset.bg, 'important');
+                        child.style.setProperty('background-color', designPreset.bg, 'important');
+                        child.style.setProperty('text-shadow', designPreset.shadow, 'important');
+                        child.style.setProperty('-webkit-text-stroke', '0', 'important');
+                        child.style.setProperty('border-radius', designPreset.radius, 'important');
+                        child.style.setProperty('padding', designPreset.padding, 'important');
+                        child.style.setProperty('backdrop-filter', designPreset.blur, 'important');
+                        child.style.setProperty('-webkit-backdrop-filter', designPreset.blur, 'important');
+                        child.style.setProperty('margin', '0 auto', 'important');
+                        child.style.setProperty('width', 'fit-content', 'important');
+                        child.style.setProperty('max-width', '92%', 'important');
+                        child.style.setProperty('font-family', "'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif", 'important');
+                        child.style.setProperty('font-weight', '600', 'important');
+                        child.style.setProperty('line-height', '1.4', 'important');
+                    });
+                };
+
+                const subEl = (artInstance.template && artInstance.template.$subtitle) || playerEl.querySelector('.art-subtitle');
+                if (subEl) {
+                    styleSubtitleContainerAndLines(subEl, targetSubSize, activeDesign, activeColor);
+                }
+
                 if (fsCardsToggleBtn && fsCardsListEl) {
                     if (inFs) {
                         fsCardsToggleBtn.style.setProperty('display', 'flex', 'important');
@@ -1268,6 +1609,43 @@
                     setDrawerOpen(false);
                 }
             };
+            window.zvSyncSubtitleSize = () => syncDesktopAndMobileFullscreenClass();
+
+            // Observe subtitle cue updates and wrap artInstance.subtitle.switch so every cue across all 2021-2026 pages keeps the exact style
+            const subContainerEl = (artInstance.template && artInstance.template.$subtitle) || playerEl.querySelector('.art-subtitle');
+            if (subContainerEl && typeof MutationObserver !== 'undefined') {
+                let isApplyingSubStyle = false;
+                const subObserver = new MutationObserver(() => {
+                    if (isApplyingSubStyle) return;
+                    isApplyingSubStyle = true;
+                    try {
+                        syncDesktopAndMobileFullscreenClass();
+                    } finally {
+                        isApplyingSubStyle = false;
+                    }
+                });
+                subObserver.observe(subContainerEl, { childList: true, subtree: true, characterData: true });
+            }
+
+            artInstance.on('subtitleUpdate', () => {
+                syncDesktopAndMobileFullscreenClass();
+            });
+            artInstance.on('subtitleLoad', () => {
+                syncDesktopAndMobileFullscreenClass();
+            });
+
+            if (artInstance.subtitle && typeof artInstance.subtitle.switch === 'function' && !artInstance.subtitle.__zvWrapped) {
+                const origSubSwitch = artInstance.subtitle.switch.bind(artInstance.subtitle);
+                artInstance.subtitle.switch = function (...args) {
+                    const res = origSubSwitch(...args);
+                    requestAnimationFrame(() => syncDesktopAndMobileFullscreenClass());
+                    Promise.resolve(res).then(() => {
+                        requestAnimationFrame(() => syncDesktopAndMobileFullscreenClass());
+                    }).catch(() => {});
+                    return res;
+                };
+                artInstance.subtitle.__zvWrapped = true;
+            }
 
             artInstance.on('fullscreen', (state) => {
                 syncDesktopAndMobileFullscreenClass(Boolean(state));
@@ -1286,6 +1664,7 @@
             document.addEventListener('webkitfullscreenchange', onNativeFsChange);
             document.addEventListener('mozfullscreenchange', onNativeFsChange);
             window.addEventListener('resize', onNativeFsChange);
+            window.addEventListener('orientationchange', onNativeFsChange);
 
             syncDesktopAndMobileFullscreenClass();
 
@@ -1296,6 +1675,7 @@
                 document.removeEventListener('webkitfullscreenchange', onNativeFsChange);
                 document.removeEventListener('mozfullscreenchange', onNativeFsChange);
                 window.removeEventListener('resize', onNativeFsChange);
+                window.removeEventListener('orientationchange', onNativeFsChange);
             };
         };
 
@@ -1482,7 +1862,7 @@
             }
         }
 
-        // Subtitles Selector (switches between cached in-memory Blob URLs with explicit vtt type)
+        // Subtitles Track Selector (switches between cached in-memory Blob URLs with explicit vtt type)
         if (protectedSubtitles.length) {
             artInstance.setting.add({
                 html: 'Subtitles',
@@ -1490,10 +1870,115 @@
                 selector: protectedSubtitles.map(s => ({ html: s.html, url: s.url, default: s.default })),
                 onSelect(item) {
                     artInstance.subtitle.switch(item.url, { name: item.html, type: 'vtt' });
+                    if (typeof window.zvSyncSubtitleSize === 'function') {
+                        requestAnimationFrame(() => window.zvSyncSubtitleSize());
+                    }
                     return item.html;
                 }
             });
         }
+
+        // Local-Only Subtitle Size, Subtitle Design & Subtitle Color Settings (saved in browser localStorage only)
+        (function registerLocalSubtitleSettings() {
+            const currentPrefs = (typeof window.zvGetUserSubtitlePrefs === 'function')
+                ? window.zvGetUserSubtitlePrefs()
+                : { size: 'auto', design: 'dark-box', color: '#ffffff' };
+
+            const sizeChoices = [
+                { value: 'auto', html: 'Auto (25 / 14 / 9px)' },
+                { value: '9', html: '9px (Smaller Screen)' },
+                { value: '12', html: '12px (Small)' },
+                { value: '14', html: '14px (Phone FS)' },
+                { value: '16', html: '16px (Medium)' },
+                { value: '20', html: '20px (Large)' },
+                { value: '25', html: '25px (Desktop)' },
+                { value: '28', html: '28px (XL)' },
+                { value: '32', html: '32px (Max)' }
+            ];
+            const activeSizeObj = sizeChoices.find(c => c.value === String(currentPrefs.size)) || sizeChoices[0];
+
+            artInstance.setting.add({
+                name: 'zvSubtitleSize',
+                html: 'Subtitle Size',
+                tooltip: activeSizeObj.html,
+                width: 210,
+                selector: sizeChoices.map(item => ({
+                    html: item.html,
+                    value: item.value,
+                    default: item.value === activeSizeObj.value
+                })),
+                onSelect(item) {
+                    if (typeof window.zvSaveUserSubtitlePrefs === 'function') {
+                        window.zvSaveUserSubtitlePrefs({ size: item.value });
+                    }
+                    if (artInstance && artInstance.notice) {
+                        artInstance.notice.show = `Subtitle Size: ${item.html}`;
+                    }
+                    return item.html;
+                }
+            });
+
+            const designChoices = [
+                { value: 'dark-box', html: 'Dark Box (Default)' },
+                { value: 'soft-box', html: 'Soft Box (Lighter)' },
+                { value: 'solid-box', html: 'Solid Black Box' },
+                { value: 'glass-box', html: 'Glass Blur Box' },
+                { value: 'outline', html: 'Black Outline' },
+                { value: 'shadow', html: 'Drop Shadow' }
+            ];
+            const activeDesignObj = designChoices.find(c => c.value === currentPrefs.design) || designChoices[0];
+
+            artInstance.setting.add({
+                name: 'zvSubtitleDesign',
+                html: 'Subtitle Design',
+                tooltip: activeDesignObj.html,
+                width: 210,
+                selector: designChoices.map(item => ({
+                    html: item.html,
+                    value: item.value,
+                    default: item.value === activeDesignObj.value
+                })),
+                onSelect(item) {
+                    if (typeof window.zvSaveUserSubtitlePrefs === 'function') {
+                        window.zvSaveUserSubtitlePrefs({ design: item.value });
+                    }
+                    if (artInstance && artInstance.notice) {
+                        artInstance.notice.show = `Subtitle Design: ${item.html}`;
+                    }
+                    return item.html;
+                }
+            });
+
+            const colorChoices = [
+                { value: '#ffffff', html: 'White (Default)' },
+                { value: '#ffd700', html: 'Yellow' },
+                { value: '#38bdf8', html: 'Cyan' },
+                { value: '#f472b6', html: 'Pink' },
+                { value: '#4ade80', html: 'Mint Green' }
+            ];
+            const activeColorObj = colorChoices.find(c => c.value === currentPrefs.color) || colorChoices[0];
+
+            artInstance.setting.add({
+                name: 'zvSubtitleColor',
+                html: 'Subtitle Color',
+                tooltip: activeColorObj.html,
+                width: 190,
+                selector: colorChoices.map(item => ({
+                    html: item.html,
+                    value: item.value,
+                    default: item.value === activeColorObj.value
+                })),
+                onSelect(item) {
+                    if (typeof window.zvSaveUserSubtitlePrefs === 'function') {
+                        window.zvSaveUserSubtitlePrefs({ color: item.value });
+                    }
+                    if (artInstance && artInstance.notice) {
+                        artInstance.notice.show = `Subtitle Color: ${item.html}`;
+                    }
+                    return item.html;
+                }
+            });
+        })();
 
         // Active Playlist Sync
         artInstance.on('play', () => {

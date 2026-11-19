@@ -3,29 +3,182 @@
    Location: /player/video_player.css
    ========================================= */
 
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Varela+Round&display=swap');
+
 /* Artplayer sizing */
 .art-video-player {
     width: 100% !important;
     height: 100% !important;
 }
 
-/* Custom Subtitle Styling */
+/* =========================================
+   CUSTOM SUBTITLE STYLING & LOCAL PREFERENCES
+   - Default Design: Semi-transparent black box (rgba(0,0,0,0.72)) with curved ends (0.45em)
+   - Default Responsive Auto Size: Desktop 25px | Phone Fullscreen/Landscape 14px | Smaller Screen 9px
+   - Customizable locally via Player Settings (Size, Design, Text Color)
+   ========================================= */
+.art-video-player {
+    --zv-sub-auto-size: 25px;
+    --zv-sub-size: var(--zv-sub-custom-size, var(--zv-sub-auto-size, 25px));
+    --zv-sub-bg: rgba(0, 0, 0, 0.72);
+    --zv-sub-color: #ffffff;
+    --zv-sub-shadow: none;
+    --zv-sub-radius: 0.45em;
+    --zv-sub-padding: 0.22em 0.65em;
+    --zv-sub-blur: none;
+}
+
+.art-video-player .art-subtitle,
 .art-subtitle {
-    color: #ffffff !important;
-    background: transparent !important;
-    text-shadow: 
-        2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 
-        1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000, 
-        0 5px 10px rgba(0,0,0,1) !important;
-    font-weight: 700 !important;
-    line-height: 1.5 !important;
-    font-size: clamp(14px, 2vw, 22px) !important;
+    color: var(--zv-sub-color, #ffffff) !important;
+    background: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+    background-color: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+    box-shadow: none !important;
+    border: none !important;
+    text-shadow: var(--zv-sub-shadow, none) !important;
+    -webkit-text-stroke: 0 !important;
+    border-radius: var(--zv-sub-radius, 0.45em) !important;
+    padding: var(--zv-sub-padding, 0.22em 0.65em) !important;
+    backdrop-filter: var(--zv-sub-blur, none) !important;
+    -webkit-backdrop-filter: var(--zv-sub-blur, none) !important;
+    font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.01em !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    width: fit-content !important;
+    max-width: 92% !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
     transition: font-size 0.2s ease;
 }
 
-@media (max-width: 900px) {
+/* When .art-subtitle contains line wrapper elements, make outer container transparent so each line gets its own curved box */
+.art-video-player .art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span),
+.art-subtitle:has(p, .art-subtitle-line, .zv-sub-line, div, span) {
+    background: transparent !important;
+    background-color: transparent !important;
+    padding: 0 16px !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Each subtitle line gets the user's selected design & font size */
+.art-video-player .art-subtitle p,
+.art-video-player .art-subtitle .art-subtitle-line,
+.art-video-player .art-subtitle .zv-sub-line,
+.art-video-player .art-subtitle > div,
+.art-video-player .art-subtitle > span,
+.art-subtitle p,
+.art-subtitle .art-subtitle-line,
+.art-subtitle .zv-sub-line,
+.art-subtitle > div,
+.art-subtitle > span {
+    color: var(--zv-sub-color, #ffffff) !important;
+    background: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+    background-color: var(--zv-sub-bg, rgba(0, 0, 0, 0.72)) !important;
+    text-shadow: var(--zv-sub-shadow, none) !important;
+    -webkit-text-stroke: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: var(--zv-sub-radius, 0.45em) !important;
+    padding: var(--zv-sub-padding, 0.22em 0.65em) !important;
+    backdrop-filter: var(--zv-sub-blur, none) !important;
+    -webkit-backdrop-filter: var(--zv-sub-blur, none) !important;
+    margin: 0 auto !important;
+    width: fit-content !important;
+    max-width: 92% !important;
+    display: inline-block !important;
+    text-align: center !important;
+    font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    font-size: var(--zv-sub-size, var(--zv-sub-auto-size, 25px)) !important;
+    box-decoration-break: clone !important;
+    -webkit-box-decoration-break: clone !important;
+}
+
+/* Hide empty subtitle lines so no empty black box ever renders */
+.art-video-player .art-subtitle:empty,
+.art-subtitle:empty,
+.art-video-player .art-subtitle p:empty,
+.art-video-player .art-subtitle .art-subtitle-line:empty,
+.art-video-player .art-subtitle .zv-sub-line:empty,
+.art-video-player .art-subtitle > div:empty,
+.art-video-player .art-subtitle > span:empty {
+    display: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+/* Native HTML5 video::cue fallback */
+video::cue {
+    background: rgba(0, 0, 0, 0.72) !important;
+    background-color: rgba(0, 0, 0, 0.72) !important;
+    color: #ffffff !important;
+    font-family: 'Inter', 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    border-radius: 8px !important;
+}
+
+/* Smaller screen (mobile portrait / non-fullscreen small screen): Auto default 9px */
+@media (max-width: 950px) {
+    .art-video-player {
+        --zv-sub-auto-size: 9px;
+    }
+    .art-video-player .art-subtitle,
     .art-subtitle {
-        margin-bottom: 20px !important;
+        margin-bottom: 8px !important;
+        gap: 3px !important;
+    }
+}
+
+/* Mobile phone Fullscreen or Phone Landscape mode: Auto default 14px */
+@media (max-width: 950px) and (max-height: 520px) and (orientation: landscape),
+       (hover: none) and (pointer: coarse) and (orientation: landscape) {
+    .art-video-player {
+        --zv-sub-auto-size: 14px;
+    }
+    .art-video-player .art-subtitle,
+    .art-subtitle {
+        margin-bottom: 16px !important;
+        gap: 4px !important;
+    }
+}
+
+@media (max-width: 950px) {
+    .art-video-player.zv-is-fullscreen,
+    .art-video-player.art-fullscreen,
+    .art-video-player.art-fullscreen-web,
+    #player-container.zv-is-fullscreen .art-video-player {
+        --zv-sub-auto-size: 14px;
+    }
+
+    .art-video-player:fullscreen,
+    #player-container:fullscreen .art-video-player {
+        --zv-sub-auto-size: 14px;
+    }
+
+    .art-video-player:-webkit-full-screen,
+    #player-container:-webkit-full-screen .art-video-player {
+        --zv-sub-auto-size: 14px;
+    }
+
+    .art-video-player:-moz-full-screen,
+    #player-container:-moz-full-screen .art-video-player {
+        --zv-sub-auto-size: 14px;
     }
 }
 

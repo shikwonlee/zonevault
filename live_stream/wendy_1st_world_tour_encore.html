@@ -717,11 +717,16 @@ function registerAndMonitorSession(uid) {
     });
 }
 
+function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+}
+
 // --- UPDATED AUTH & SECURITY LOGIC (ADMIN/MEMBER SPLIT) ---
 auth.onAuthStateChanged(user => {
     // SCENARIO 1: NOT LOGGED IN
-    if (!user) {
-        showBlockingModal("You must be logged in to view this content.");
+    if (!user || user.isAnonymous) {
+        redirectToMainSite();
         return;
     }
 
@@ -729,10 +734,9 @@ auth.onAuthStateChanged(user => {
     const urlParams = new URLSearchParams(window.location.search);
     const linkUid = urlParams.get('uid');
     if (linkUid && linkUid !== user.uid) {
-        showBlockingModal("Access Restricted. Unauthorized link sharing detected.");
+        redirectToMainSite();
         return;
     }
-
 
     // 1. Check User Role from Database FIRST
     db.ref('users/' + user.uid).once('value').then(snapshot => {
@@ -742,6 +746,9 @@ auth.onAuthStateChanged(user => {
         // --- ADMIN (Bypass Everything) ---
         if (role === 'admin') {
             console.log("Admin access granted");
+            sessionStorage.setItem('internalAccess', 'true');
+            localStorage.setItem('internalAccess', 'true');
+            sessionStorage.setItem('isAdmin', 'true');
             globalUserVerified = true;
             isAdminUser = true; 
             
@@ -754,7 +761,6 @@ auth.onAuthStateChanged(user => {
             renderPlaylist(true); 
             
             // Auto-load video if in URL
-            const urlParams = new URLSearchParams(window.location.search);
             const videoId = urlParams.get('v');
             if (videoId && !window.currentEpData) {
                  setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
@@ -774,15 +780,14 @@ auth.onAuthStateChanged(user => {
             renderPlaylist(isAllowed === true);
             
             if (isAllowed === true) {
+                sessionStorage.setItem('internalAccess', 'true');
+                localStorage.setItem('internalAccess', 'true');
                 const videoId = urlParams.get('v'); 
                 if (videoId && !window.currentEpData) {
                       setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
                 }
             } else {
-                 // SCENARIO 3: REVOKED WHILE WATCHING
-                 if(art) {
-                     showSystemMessage(`ACCESS REVOKED. You have been removed due to violating live stream rules.<br>UID: ${user.uid}`);
-                 }
+                 redirectToMainSite();
             }
         });
     });

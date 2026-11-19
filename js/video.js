@@ -495,26 +495,16 @@ window.logout = function() {
 
 window.isKickedOut = false;
 
-function showAccessDeniedModal() {
-    if (window.isKickedOut) return;
-    window.isKickedOut = true;
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.replace('index')">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-    setTimeout(() => { window.location.replace("index"); }, 3000);
+function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
 }
 
 onAuthStateChanged(auth, user => {
-    const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', 'hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection'];
-    const currentPagePath = window.location.pathname;
-    const isIndexPagePath = currentPagePath.endsWith('index') || currentPagePath === '/';
-
-    if(user) {
+    if(user && !user.isAnonymous) {
         userId = user.uid;
+        sessionStorage.setItem('internalAccess', 'true');
+        localStorage.setItem('internalAccess', 'true');
         loadFavoritesFromFirebase();
         subscribeToPageAccess(user.uid);
         
@@ -549,15 +539,6 @@ onAuthStateChanged(auth, user => {
             
             if (isAdm) { 
                 sessionStorage.setItem('isAdmin', 'true'); 
-                sessionStorage.setItem('internalAccess', 'true'); 
-            }
-
-            const referer = document.referrer;
-            const refererPath = referer ? new URL(referer, location.origin).pathname : null;
-            const cameFromAllowedPageFlag = refererPath && allowedPaths.includes(refererPath);
-
-            if (cameFromAllowedPageFlag || isAdm) { 
-                sessionStorage.setItem('internalAccess', 'true'); 
             }
 
             get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {
@@ -566,8 +547,6 @@ onAuthStateChanged(auth, user => {
             });
         });
     } else {
-        if (!isIndexPagePath && !window.isKickedOut) {
-            showAccessDeniedModal();
-        }
+        redirectToMainSite();
     }
 });

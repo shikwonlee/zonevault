@@ -527,57 +527,22 @@
     initPlayer();
 </script>
 
-<script>
-  const allowedPaths = [
-    '/index.html', '/home.html', '/nanabnb.html', '/newtour.html',
-    '/hxwfanconcert.html', '/svtholiday.html', '/arenatour.html',
-    '/svtjapanconcert.html', '/touragain.html', '/gallery.html',
-    '/profile.html', '/soon.html'
-  ];
+<script type="module">
+  import { auth, onAuthStateChanged } from '/js/firebase-init.js';
 
-  const currentPage = window.location.pathname;
-  let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
-  const referrer = document.referrer;
-  const refPath = referrer ? new URL(referrer).pathname : null;
-  const cameFromAllowedPage = refPath && allowedPaths.includes(refPath);
+  function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+  }
 
-  if (cameFromAllowedPage) {
+  onAuthStateChanged(auth, (user) => {
+    if (!user || user.isAnonymous) {
+      redirectToMainSite();
+      return;
+    }
     sessionStorage.setItem('internalAccess', 'true');
-    hasInternalAccess = true;
-  }
-
-  const isIndexPage = currentPage.endsWith('index.html') || currentPage === '/';
-  if (!hasInternalAccess && !isIndexPage) {
-    showAccessDeniedModal();
-  }
-
-  function showAccessDeniedModal() {
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    modal.innerHTML = `
-      <strong style="font-size: 24px; margin-bottom: 10px;">🚫 Access Denied</strong>
-      <div>You cannot access this page directly.<br>
-      Please go through the homepage or allowed sections.</div>
-      <div id="redirectTimer" style="margin-top:10px;">Redirecting in 3 seconds...</div>
-      <button onclick="goBack()">Go Back</button>
-    `;
-    document.body.appendChild(modal);
-
-    let countdown = 3;
-    const timer = document.getElementById('redirectTimer');
-    const interval = setInterval(() => {
-      countdown--;
-      timer.textContent = `Redirecting in ${countdown} seconds...`;
-      if (countdown <= 0) {
-        clearInterval(interval);
-        window.location.href = "index.html";
-      }
-    }, 1000);
-  }
-
-  function goBack() {
-    window.history.back();
-  }
+    localStorage.setItem('internalAccess', 'true');
+  });
 </script>
 
 </body>

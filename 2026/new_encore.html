@@ -512,8 +512,32 @@ const db = firebase.database();
 
 const PAGE_ID = "svt_new_encore"; 
 
+let initialDeepLinkTriggered = false;
+
+function triggerDeepLinkEpisodeOnce() {
+    if (initialDeepLinkTriggered) return;
+    initialDeepLinkTriggered = true;
+    const ep = typeof window.zvResolveDeepLinkEpisode === 'function'
+        ? window.zvResolveDeepLinkEpisode(playlistData)
+        : null;
+    if (ep) {
+        setTimeout(() => loadAndPlayEpisode(ep.id, false), 300);
+    }
+}
+
+function redirectToZoneVaultMain() {
+    if (typeof window.zvRedirectToMainSite === 'function') {
+        window.zvRedirectToMainSite();
+    } else {
+        window.location.replace('/');
+    }
+}
+
 auth.onAuthStateChanged(user => {
-    if (!user) { showAccessDeniedModal("You must be logged in to view this content."); return; }
+    if (!user || user.isAnonymous) {
+        redirectToZoneVaultMain();
+        return;
+    }
     initTheme();
 
     db.ref('users/' + user.uid).once('value').then(snapshot => {
@@ -522,7 +546,8 @@ auth.onAuthStateChanged(user => {
 
         if (role === 'admin') {
             removeAccessDeniedModal();
-            console.log("Admin access granted");
+            if (typeof window.zvGrantSessionAccess === 'function') window.zvGrantSessionAccess(true);
+            triggerDeepLinkEpisodeOnce();
             
             const toast = document.getElementById('adminToast');
             if(toast) {
@@ -534,11 +559,17 @@ auth.onAuthStateChanged(user => {
                 const isAllowed = accessSnapshot.val();
                 if (isAllowed === true) { 
                     removeAccessDeniedModal(); 
+                    if (typeof window.zvGrantSessionAccess === 'function') window.zvGrantSessionAccess(false);
+                    triggerDeepLinkEpisodeOnce();
                 } else { 
-                    showAccessDeniedModal("This content is restricted. Your account does not have permission.", user, userData); 
+                    redirectToZoneVaultMain();
                 }
+            }, () => {
+                redirectToZoneVaultMain();
             });
         }
+    }).catch(() => {
+        redirectToZoneVaultMain();
     });
 });
 
@@ -746,23 +777,6 @@ playlistData.forEach(ep => {
   playlistContainer.appendChild(epDiv);
 });
 
-// Init Load
-window.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(user => {
-        if(user) {
-            const params = new URLSearchParams(window.location.search);
-            const videoId = params.get('v');
-            const titleSlug = params.get('title');
-
-            if (videoId) {
-                setTimeout(() => loadAndPlayEpisode(videoId, false), 500);
-            } else if (titleSlug) {
-                const ep = playlistData.find(e => encodeURIComponent(e.title.trim().replace(/\s+/g, '-')) === titleSlug);
-                if (ep) setTimeout(() => loadAndPlayEpisode(ep.id, false), 500);
-            }
-        }
-    });
-});
 </script>
 </body>
 </html>

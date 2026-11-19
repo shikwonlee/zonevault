@@ -717,81 +717,35 @@ playlistData.forEach(ep => {
   playlistContainer.appendChild(epDiv);
 });
 
-// Check URL on Load
-window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const videoId = urlParams.get('v');
-    if (videoId) {
-        setTimeout(() => loadAndPlayEpisode(videoId, false), 500);
+let initialDeepLinkTriggered = false;
+
+function goBack() {
+    window.location.href = '/videos';
+}
+
+auth.onAuthStateChanged(user => {
+    if (!user || user.isAnonymous) {
+        const host = (window.location.hostname || '').toLowerCase();
+        if (host === 'zonevault.live' || host === 'www.zonevault.live') {
+            window.location.replace('https://zonevault.live/');
+        } else {
+            window.location.replace('/');
+        }
+        return;
+    }
+    try {
+        sessionStorage.setItem('internalAccess', 'true');
+        localStorage.setItem('internalAccess', 'true');
+    } catch (_) {}
+    if (!initialDeepLinkTriggered) {
+        initialDeepLinkTriggered = true;
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoId = urlParams.get('v');
+        if (videoId) {
+            setTimeout(() => loadAndPlayEpisode(videoId, false), 300);
+        }
     }
 });
-</script>
-
-<script>
-  const allowedPaths = [
-    '/index.html',
-    '/home.html',
-    '/nanabnb.html',
-    '/newtour.html',
-    '/hxwfanconcert.html',
-    '/svtholiday.html',
-    '/arenatour.html',
-    '/svtjapanconcert.html',
-    '/touragain.html',
-    '/gallery.html',
-    '/profile.html',
-    '/soon.html'
-  ];
-
-  const currentPage = window.location.pathname;
-
-  // Check if user already has internalAccess flag
-  let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
-
-  // Check if user came from an allowed page
-  const referrer = document.referrer;
-  const refPath = referrer ? new URL(referrer).pathname : null;
-  const cameFromAllowedPage = refPath && allowedPaths.includes(refPath);
-
-  // Grant internalAccess if coming from allowed page
-  if (cameFromAllowedPage) {
-    sessionStorage.setItem('internalAccess', 'true');
-    hasInternalAccess = true;
-  }
-
-  // Allow access if user already has internalAccess or is on index page
-  const isIndexPage = currentPage.endsWith('index.html') || currentPage === '/';
-  if (!hasInternalAccess && !isIndexPage) {
-    showAccessDeniedModal();
-  }
-
-  function showAccessDeniedModal() {
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    modal.innerHTML = `
-      <strong style="font-size: 24px; margin-bottom: 10px;">🚫 Access Denied</strong>
-      <div>You cannot access this page directly.<br>
-      Please go through the homepage or allowed sections.</div>
-      <div id="redirectTimer" style="margin-top:10px;">Redirecting in 3 seconds...</div>
-      <button onclick="goBack()">Go Back</button>
-    `;
-    document.body.appendChild(modal);
-
-    let countdown = 3;
-    const timer = document.getElementById('redirectTimer');
-    const interval = setInterval(() => {
-      countdown--;
-      timer.textContent = `Redirecting in ${countdown} seconds...`;
-      if (countdown <= 0) {
-        clearInterval(interval);
-        window.location.href = "index.html";
-      }
-    }, 1000);
-  }
-
-  function goBack() {
-    window.history.back();
-  }
 </script>
 
 </body>

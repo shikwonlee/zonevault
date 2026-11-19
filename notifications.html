@@ -269,16 +269,28 @@
 </script>
 
 <script>
-  const allowedPaths = ['/index.html','/home.html','/nanabnb.html','/newtour.html','/hxwfanconcert.html','/svtholiday.html','/arenatour.html','/svtjapanconcert.html','/touragain.html','/gallery.html','/profile.html','/soon.html','/videos.html', '/admin.html'];
-  const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-  const currentPage = window.location.pathname;
-  let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
-  const referrer = document.referrer;
-  const refPath = referrer ? new URL(referrer, location.origin).pathname : null;
-  const cameFromAllowedPage = refPath && allowedPaths.includes(refPath);
-  if (cameFromAllowedPage || isAdmin) { sessionStorage.setItem('internalAccess', 'true'); hasInternalAccess = true; }
-  const isIndexPage = currentPage.endsWith('index.html') || currentPage === '/';
-  if (!hasInternalAccess && !isIndexPage && !isAdmin) { window.location.href = "index.html"; }
+  function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+  }
+
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user || user.isAnonymous) {
+      redirectToMainSite();
+      return;
+    }
+    db.ref('users/' + user.uid).once('value').then(snap => {
+      const data = snap.val() || {};
+      const role = (data.role || 'member').toLowerCase();
+      if (role === 'admin') {
+        sessionStorage.setItem('isAdmin', 'true');
+        sessionStorage.setItem('internalAccess', 'true');
+        localStorage.setItem('internalAccess', 'true');
+      } else {
+        redirectToMainSite();
+      }
+    }).catch(() => redirectToMainSite());
+  });
 </script>
 </body>
 </html>

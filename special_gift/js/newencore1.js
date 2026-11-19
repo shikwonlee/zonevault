@@ -81,11 +81,18 @@ window.logout = function() {
     }
 }
 
+function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+}
+
 // ==========================================
 // 4. AUTH & SECURITY LOGIC
 // ==========================================
 onAuthStateChanged(auth, user => {
-    if(user) {
+    if(user && !user.isAnonymous) {
+        sessionStorage.setItem('internalAccess', 'true');
+        localStorage.setItem('internalAccess', 'true');
         onValue(ref(db, 'users/' + user.uid), snap => {
             const data = snap.val() || {};
             const name = data.name || "Member";
@@ -105,7 +112,7 @@ onAuthStateChanged(auth, user => {
             if(document.getElementById("status-text-pc")) document.getElementById("status-text-pc").innerText = statusTxt;
             if(document.getElementById("status-text-mobile")) document.getElementById("status-text-mobile").innerText = statusTxt;
             
-            if (isAdm) { sessionStorage.setItem('isAdmin', 'true'); sessionStorage.setItem('internalAccess', 'true'); }
+            if (isAdm) { sessionStorage.setItem('isAdmin', 'true'); }
 
             get(ref(db, 'joinRequests/' + user.uid + '/status')).then(reqSnap => {
                 const reqStatus = reqSnap.val() || 'none';
@@ -113,39 +120,9 @@ onAuthStateChanged(auth, user => {
             });
         });
     } else {
-        window.location.replace("/index");
+        redirectToMainSite();
     }
 });
-
-const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', '/hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection'];
-const isAdminFlag = sessionStorage.getItem('isAdmin') === 'true';
-const currentPagePath = window.location.pathname;
-let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true';
-const referer = document.referrer;
-const refererPath = referer ? new URL(referer, location.origin).pathname : null;
-
-const cameFromAllowedPageFlag = refererPath && allowedPaths.includes(refererPath);
-if (cameFromAllowedPageFlag || isAdminFlag) { 
-    sessionStorage.setItem('internalAccess', 'true'); 
-    hasInternalAccessFlag = true; 
-}
-
-const isIndexPagePath = currentPagePath.endsWith('index') || currentPagePath === '/';
-
-if (!hasInternalAccessFlag && !isIndexPagePath && !isAdminFlag) { 
-    showAccessDeniedModal(); 
-}
-
-function showAccessDeniedModal() {
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.replace('/index')">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-    setTimeout(() => { window.location.replace("/index"); }, 3000);
-}
 
 // ==========================================
 // 6. THIS CATEGORY'S VIDEOS

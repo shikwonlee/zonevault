@@ -143,9 +143,16 @@ window.toggleNotifModal = function() {
     }
 }
 
+function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+}
+
 onAuthStateChanged(auth, user => {
-    if(user) {
+    if(user && !user.isAnonymous) {
         console.log("✅ User detected:", user.uid);
+        sessionStorage.setItem('internalAccess', 'true');
+        localStorage.setItem('internalAccess', 'true');
         const uid = user.uid;
         const uidEl = document.getElementById('user-uid');
         if(uidEl) uidEl.innerText = uid;
@@ -341,8 +348,7 @@ onAuthStateChanged(auth, user => {
         });
 
     } else {
-        console.log("❌ No user detected, redirecting to login...");
-        window.location.href = "login";
+        redirectToMainSite();
     }
 });
 
@@ -544,31 +550,4 @@ window.uploadCroppedBanner = function() {
             bannerActionBtns.style.display = 'flex'; 
         });
     }, 'image/jpeg', 0.9);
-}
-
-const allowedPaths = ['/index', '/home', '/nanabnb', '/newtour', '/hxwfanconcert', '/svtholiday', '/arenatour', '/svtjapanconcert', '/touragain', '/gallery', '/profile', '/soon', '/videos', '/admin', '/collection', '/'];
-const isAdminFlag = sessionStorage.getItem('isAdmin') === 'true';
-const currentPagePath = window.location.pathname;
-let hasInternalAccessFlag = sessionStorage.getItem('internalAccess') === 'true';
-const referer = document.referrer;
-const refererPath = referer ? new URL(referer, location.origin).pathname : null;
-
-const cameFromAllowedPageFlag = refererPath && allowedPaths.includes(refererPath);
-if (cameFromAllowedPageFlag || isAdminFlag) { 
-    sessionStorage.setItem('internalAccess', 'true'); 
-    hasInternalAccessFlag = true; 
-}
-
-const isIndexPagePath = currentPagePath.endsWith('index') || currentPagePath === '/';
-if (!hasInternalAccessFlag && !isIndexPagePath && !isAdminFlag) showAccessDeniedModal(); 
-
-function showAccessDeniedModal() {
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.href='index'">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-    setTimeout(() => { window.location.href = "index"; }, 3000);
 }

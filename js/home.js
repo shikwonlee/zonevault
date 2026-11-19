@@ -64,9 +64,14 @@ function initNotifications() {
     });
 }
 
+function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+}
+
 // Check user state on load
 onAuthStateChanged(auth, async (user) => {
-    if (user) {
+    if (user && !user.isAnonymous) {
         try {
             // --- A. VERIFY USER FROM DATABASE ---
             const userRef = ref(db, 'users/' + user.uid);
@@ -74,9 +79,8 @@ onAuthStateChanged(auth, async (user) => {
 
             if (!snapshot.exists()) {
                 clearCachedUser();
-                alert("Account not found.");
                 await signOut(auth);
-                window.location.replace("login.html");
+                redirectToMainSite();
                 return;
             }
 
@@ -85,13 +89,13 @@ onAuthStateChanged(auth, async (user) => {
             // Check approval status directly from Firebase
             if (data.status !== "approved") {
                 clearCachedUser();
-                alert("Access Denied: You are not approved to enter Zone Vault.");
                 await signOut(auth);
-                window.location.replace("login.html");
+                redirectToMainSite();
                 return;
             }
 
             // Restore local access flag for compatibility
+            sessionStorage.setItem("internalAccess", "true");
             localStorage.setItem("internalAccess", "true");
 
             initNotifications();
@@ -100,6 +104,9 @@ onAuthStateChanged(auth, async (user) => {
             const userName = data.name || data.telegramUsername || "Vault Member";
             const userPic = data.profilePicture || "https://via.placeholder.com/150";
             const userRole = (data.role || "member").toLowerCase();
+            if (userRole === 'admin') {
+                sessionStorage.setItem("isAdmin", "true");
+            }
 
             // Cache immediately to eliminate lag across subsequent page switches
             setCachedUser({
@@ -129,7 +136,7 @@ onAuthStateChanged(auth, async (user) => {
         }
     } else {
         clearCachedUser();
-        window.location.replace("login.html");
+        redirectToMainSite();
     }
 });
 

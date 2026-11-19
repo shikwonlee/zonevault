@@ -13,6 +13,65 @@
     window.art = window.art || null;
     window.currentSubtitleUrls = window.currentSubtitleUrls || [];
 
+    // Direct-link helpers: redirect unauthorized visitors to zonevault.live main page,
+    // grant session access when verified, and resolve ?v= / ?title= deep links (including double-encoded URLs)
+    window.zvRedirectToMainSite = function () {
+        const host = (window.location.hostname || '').toLowerCase();
+        if (host === 'zonevault.live' || host === 'www.zonevault.live') {
+            window.location.replace('https://zonevault.live/');
+        } else {
+            window.location.replace('/');
+        }
+    };
+
+    window.zvGrantSessionAccess = function (isAdmin) {
+        try {
+            sessionStorage.setItem('internalAccess', 'true');
+            localStorage.setItem('internalAccess', 'true');
+            if (isAdmin) {
+                sessionStorage.setItem('isAdmin', 'true');
+            }
+        } catch (_) {}
+    };
+
+    window.zvResolveDeepLinkEpisode = function (list) {
+        if (!Array.isArray(list) || list.length === 0) return null;
+        const params = new URLSearchParams(window.location.search);
+        const videoId = params.get('v');
+        if (videoId) {
+            const byId = list.find(e => e && String(e.id) === String(videoId));
+            if (byId) return byId;
+        }
+        const rawTitle = params.get('title');
+        if (rawTitle) {
+            const normalizeSlug = (str) => {
+                let s = String(str || '').trim();
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        const dec = decodeURIComponent(s);
+                        if (dec === s) break;
+                        s = dec;
+                    } catch (_) {
+                        break;
+                    }
+                }
+                return s.trim().replace(/\s+/g, '-').toLowerCase();
+            };
+            const targetSlug = normalizeSlug(rawTitle);
+            const byTitle = list.find(e => {
+                if (!e || !e.title) return false;
+                const epRawSlug = e.title.trim().replace(/\s+/g, '-');
+                return (
+                    encodeURIComponent(epRawSlug) === rawTitle ||
+                    normalizeSlug(epRawSlug) === targetSlug ||
+                    normalizeSlug(e.title) === targetSlug
+                );
+            });
+            if (byTitle) return byTitle;
+        }
+        return null;
+    };
+
     // Universal 3-second auto-hide controller for standalone Artplayer instances (e.g. /random/*, /live_stream/*, /special_gift/*)
     function attachStandaloneArtplayerAutoHide(artInst) {
         if (!artInst || artInst.__zvAutoHideManaged || artInst.__zvStandaloneAutoHideAttached) return;

@@ -789,11 +789,16 @@ function registerAndMonitorSession(uid) {
     });
 }
 
+function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+}
+
 auth.onAuthStateChanged(user => {
-    if (!user) {
+    if (!user || user.isAnonymous) {
         globalUserVerified = false;
         isAdminUser = false;
-        renderPlaylist(false);
+        redirectToMainSite();
         return;
     }
 
@@ -802,12 +807,7 @@ auth.onAuthStateChanged(user => {
     
     if (linkUid && linkUid !== user.uid) {
         globalUserVerified = false;
-        renderPlaylist(false);
-        showSystemMessage("Invalid link token. Access restricted.");
-        
-        const url = new URL(window.location);
-        url.search = ''; 
-        window.history.replaceState({}, '', url);
+        redirectToMainSite();
         return;
     }
 
@@ -816,6 +816,9 @@ auth.onAuthStateChanged(user => {
         const role = (userData.role || 'member').toLowerCase();
 
         if (role === 'admin') {
+            sessionStorage.setItem('internalAccess', 'true');
+            localStorage.setItem('internalAccess', 'true');
+            sessionStorage.setItem('isAdmin', 'true');
             globalUserVerified = true;
             isAdminUser = true; 
             
@@ -844,14 +847,14 @@ auth.onAuthStateChanged(user => {
             renderPlaylist(isAllowed === true);
             
             if (isAllowed === true) {
+                sessionStorage.setItem('internalAccess', 'true');
+                localStorage.setItem('internalAccess', 'true');
                 const videoId = urlParams.get('v'); 
                 if (videoId && !window.currentEpData) {
                       setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
                 }
             } else {
-                 if(art || document.getElementById('iframe-app').style.display === 'block') {
-                     showSystemMessage(`Access revoked by system.<br>UID: ${user.uid}`);
-                 }
+                 redirectToMainSite();
             }
         });
     });

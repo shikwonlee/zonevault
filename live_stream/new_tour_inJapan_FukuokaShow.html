@@ -1139,11 +1139,15 @@ function removeAccessDeniedModal() {
     }
 }
 
+function redirectToMainSite() {
+    const h = window.location.hostname;
+    window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+}
+
 // Check on page load AND listen for changes
 auth.onAuthStateChanged(user => {
-    if (!user) {
-        showAccessDeniedModal("You must be logged in to view this content.");
-        renderPlaylist(false); // Render playlist as Not Verified
+    if (!user || user.isAnonymous) {
+        redirectToMainSite();
         return;
     }
 
@@ -1153,11 +1157,7 @@ auth.onAuthStateChanged(user => {
 
     // If the link has a UID, but it doesn't match the current logged-in user
     if (linkUid && linkUid !== user.uid) {
-        showAccessDeniedModal(
-            "<span style='color: #ff4444'>SECURITY ALERT</span><br><br>" +
-            "This session link belongs to another user.<br>" +
-            "Please return to the main menu and generate your own link."
-        );
+        redirectToMainSite();
         return; // Stop execution
     }
     // ---------------------------------------
@@ -1169,77 +1169,89 @@ auth.onAuthStateChanged(user => {
         playerBadge.classList.add('status-uid');
     }
 
+    db.ref('users/' + user.uid).once('value').then(userSnap => {
+        const userData = userSnap.val() || {};
+        const role = (userData.role || 'member').toLowerCase();
 
-    // --- REALTIME LISTENER (.on instead of .once) ---
-    const accessRef = db.ref(`page_access/${PAGE_ID}/${user.uid}`);
-      
-    accessRef.on('value', (snapshot) => {
-        const isAllowed = snapshot.val();
-        
-        // --- 1. RENDER PLAYLIST BASED ON ACCESS ---
-        renderPlaylist(isAllowed === true);
-        
-        // --- 2. HANDLE GLOBAL PAGE ACCESS ---
-        if (isAllowed === true) {
-            console.log("Access Granted/Verified for:", user.uid);
-            removeAccessDeniedModal(); 
-
-            // ============================================================
-            // 🚀 START: ONE DEVICE POLICY ENFORCEMENT 🚀
-            // ============================================================
-            
-            // 1. Generate a unique ID for THIS specific tab/window
-            const currentSessionToken = Date.now().toString() + "_" + Math.random().toString(36).substr(2, 9);
-            const sessionRef = db.ref(`user_sessions/${user.uid}`);
-
-            // 2. Set this token as the "Active" one in the database
-            sessionRef.set({
-                token: currentSessionToken,
-                device: navigator.userAgent, // Optional: tracking device info
-                last_login: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            // 3. Listen for changes. If the token in DB changes, it means another device logged in.
-            sessionRef.on('value', (sessionSnap) => {
-                const sessionData = sessionSnap.val();
-                
-                // If data exists AND the token in DB does not match MY token
-                if (sessionData && sessionData.token !== currentSessionToken) {
-                    
-                    // Kill the player immediately
-                    if(typeof player !== 'undefined' && player) {
-                        player.stop();
-                        document.getElementById('player-container').style.display = 'none';
-                    }
-
-                    // Show blocking modal
-                    showAccessDeniedModal(
-                        "<span style='color: #ff4444; font-weight:bold;'>SESSION EXPIRED</span><br><br>" +
-                        "This account has been opened on another device.<br>" +
-                        "<small style='color:#ccc;'>Only 1 device is allowed at a time.</small><br><br>" +
-                        "<small>The other device is now the active one.</small>"
-                    );
-                }
-            });
-            // ============================================================
-            // 🚀 END: ONE DEVICE POLICY ENFORCEMENT 🚀
-            // ============================================================
-
-            // --- AUTO PLAY LOGIC MOVED HERE FOR SECURITY ---
+        if (role === 'admin') {
+            sessionStorage.setItem('internalAccess', 'true');
+            localStorage.setItem('internalAccess', 'true');
+            sessionStorage.setItem('isAdmin', 'true');
+            removeAccessDeniedModal();
+            renderPlaylist(true);
             const videoId = urlParams.get('v'); 
             if (videoId && !window.currentEpData) {
                  setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
             }
-        } else {
-            // Immediate Block
-            console.warn("Access Revoked in Realtime");
-            showAccessDeniedModal(
-                "<span style='color: red; font-weight: bold;'>You have violated Admin rules.</span><br>" +
-                "Your access to this stream has been revoked.<br><br>" +
-                "Please message us if you are sure this is an error.<br>" +
-                "Your UID: <small>" + user.uid + "</small>"
-            );
+            return;
         }
+
+        // --- REALTIME LISTENER (.on instead of .once) ---
+        const accessRef = db.ref(`page_access/${PAGE_ID}/${user.uid}`);
+          
+        accessRef.on('value', (snapshot) => {
+            const isAllowed = snapshot.val();
+            
+            // --- 1. RENDER PLAYLIST BASED ON ACCESS ---
+            renderPlaylist(isAllowed === true);
+            
+            // --- 2. HANDLE GLOBAL PAGE ACCESS ---
+            if (isAllowed === true) {
+                console.log("Access Granted/Verified for:", user.uid);
+                sessionStorage.setItem('internalAccess', 'true');
+                localStorage.setItem('internalAccess', 'true');
+                removeAccessDeniedModal(); 
+
+                // ============================================================
+                // 🚀 START: ONE DEVICE POLICY ENFORCEMENT 🚀
+                // ============================================================
+                
+                // 1. Generate a unique ID for THIS specific tab/window
+                const currentSessionToken = Date.now().toString() + "_" + Math.random().toString(36).substr(2, 9);
+                const sessionRef = db.ref(`user_sessions/${user.uid}`);
+
+                // 2. Set this token as the "Active" one in the database
+                sessionRef.set({
+                    token: currentSessionToken,
+                    device: navigator.userAgent,
+                    last_login: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                // 3. Listen for changes. If the token in DB changes, it means another device logged in.
+                sessionRef.on('value', (sessionSnap) => {
+                    const sessionData = sessionSnap.val();
+                    
+                    // If data exists AND the token in DB does not match MY token
+                    if (sessionData && sessionData.token !== currentSessionToken) {
+                        
+                        // Kill the player immediately
+                        if(typeof player !== 'undefined' && player) {
+                            player.stop();
+                            document.getElementById('player-container').style.display = 'none';
+                        }
+
+                        // Show blocking modal
+                        showAccessDeniedModal(
+                            "<span style='color: #ff4444; font-weight:bold;'>SESSION EXPIRED</span><br><br>" +
+                            "This account has been opened on another device.<br>" +
+                            "<small style='color:#ccc;'>Only 1 device is allowed at a time.</small><br><br>" +
+                            "<small>The other device is now the active one.</small>"
+                        );
+                    }
+                });
+                // ============================================================
+                // 🚀 END: ONE DEVICE POLICY ENFORCEMENT 🚀
+                // ============================================================
+
+                // --- AUTO PLAY LOGIC MOVED HERE FOR SECURITY ---
+                const videoId = urlParams.get('v'); 
+                if (videoId && !window.currentEpData) {
+                     setTimeout(() => { loadAndPlayEpisode(videoId, false); }, 500);
+                }
+            } else {
+                redirectToMainSite();
+            }
+        });
     });
 });
 // =========================================================================

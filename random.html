@@ -620,10 +620,17 @@ const auth = firebase.auth();
 const db = firebase.database();
 let userId = null;
 
+function redirectToMainSite() {
+  const h = window.location.hostname;
+  window.location.replace((h === 'zonevault.live' || h === 'www.zonevault.live') ? 'https://zonevault.live/' : '/');
+}
+
 // Auth & Profile Fetch
 auth.onAuthStateChanged(user => {
-  if (user) {
+  if (user && !user.isAnonymous) {
     userId = user.uid;
+    sessionStorage.setItem('internalAccess', 'true');
+    localStorage.setItem('internalAccess', 'true');
 
     db.ref('users/' + userId).on('value', snapshot => {
         const data = snapshot.val() || {};
@@ -670,13 +677,12 @@ auth.onAuthStateChanged(user => {
 
         if (isAdm) {
             sessionStorage.setItem('isAdmin', 'true');
-            sessionStorage.setItem('internalAccess', 'true');
         } else {
             sessionStorage.removeItem('isAdmin');
         }
     });
   } else {
-    auth.signInAnonymously().catch(console.error);
+    redirectToMainSite();
   }
 });
 
@@ -829,43 +835,6 @@ function updateThemeText(isDark) {
     if(mobileText) mobileText.innerText = text;
 }
 initTheme();
-</script>
-
-<script>
-  // --- PROTECTION LOGIC (Includes Admin Bypass) ---
-  const allowedPaths = ['/index.html','/home.html','/nanabnb.html','/newtour.html','/hxwfanconcert.html','/svtholiday.html','/arenatour.html','/svtjapanconcert.html','/touragain.html','/gallery.html','/profile.html','/soon.html','/videos.html', '/admin.html'];
-  
-  // Check Admin Status from Session
-  const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-
-  const currentPage = window.location.pathname;
-  let hasInternalAccess = sessionStorage.getItem('internalAccess') === 'true';
-  const referrer = document.referrer;
-  const refPath = referrer ? new URL(referrer, location.origin).pathname : null;
-  
-  // If coming from allowed page OR is Admin, grant access
-  if ((refPath && allowedPaths.includes(refPath)) || isAdmin) { 
-      sessionStorage.setItem('internalAccess', 'true'); 
-      hasInternalAccess = true; 
-  }
-  
-  const isIndexPage = currentPage.endsWith('index.html') || currentPage === '/';
-  
-  // If NOT internal access AND NOT index page AND NOT admin -> Block
-  if (!hasInternalAccess && !isIndexPage && !isAdmin) { 
-      showAccessDeniedModal(); 
-  }
-
-  function showAccessDeniedModal() {
-    const modal = document.createElement('div');
-    modal.className = 'access-denied-modal';
-    const card = document.createElement('div');
-    card.className = 'access-card';
-    card.innerHTML = `<div class="access-icon-box"><i class="fas fa-lock"></i></div><div class="access-title">Access Restricted</div><div class="access-desc">You are not authorized to view this page directly. Please log in or return home.</div><button class="access-btn" onclick="window.location.href='index.html'">Return to Safety</button><div style="margin-top:15px; font-size:12px; color:#555;">Redirecting automatically...</div>`;
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-    setTimeout(() => { window.location.href = "index.html"; }, 3000);
-  }
 </script>
 
 </body>

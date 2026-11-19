@@ -117,7 +117,7 @@
     pointer-events: none !important;
     user-select: none !important;
     box-sizing: border-box !important;
-    white-space: pre-wrap !important;
+    white-space: normal !important;
     word-break: break-word !important;
 }
 

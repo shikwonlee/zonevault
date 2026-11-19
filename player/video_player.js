@@ -1521,7 +1521,7 @@
                             pointer-events: none !important;
                             user-select: none !important;
                             box-sizing: border-box !important;
-                            white-space: pre-wrap !important;
+                            white-space: normal !important;
                             word-break: break-word !important;
                         }
                         .art-video-player .art-subtitle:empty,
@@ -1592,10 +1592,14 @@
                     return;
                 }
 
-                // Trim whitespace-only line nodes so no empty dark box renders
+                // Remove whitespace-only lines and trim Artplayer's template indentation around line text
                 children.forEach(ch => {
-                    if (!(ch.textContent || '').trim()) {
+                    const raw = ch.textContent || '';
+                    const trimmed = raw.trim();
+                    if (!trimmed) {
                         ch.remove();
+                    } else if (ch.children.length === 0 && raw !== trimmed) {
+                        ch.textContent = trimmed;
                     }
                 });
             };

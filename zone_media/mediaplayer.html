@@ -568,12 +568,15 @@
             resetControlsTimer();
         }
         function hideControls() {
-            if(mainVideo && mainVideo.paused) return;
-            if(isSettingsOpen) return;
+            if (isSettingsOpen) {
+                isSettingsOpen = false;
+                const menu = document.getElementById('settings-menu');
+                if (menu) menu.classList.remove('active');
+            }
             document.getElementById('player-wrapper').classList.remove('controls-visible');
         }
         function toggleControls() {
-            if (document.getElementById('player-wrapper').classList.contains('controls-visible')) hideControls();
+            if (document.getElementById('player-wrapper').classList.contains('controls-visible') || isSettingsOpen) hideControls();
             else showControls();
         }
         function resetControlsTimer() {
@@ -583,8 +586,7 @@
 
         function handleGlobalClick(e) {
             if (isSettingsOpen) {
-                isSettingsOpen = false;
-                document.getElementById('settings-menu').classList.remove('active');
+                hideControls();
                 return;
             }
             toggleControls();
@@ -592,13 +594,28 @@
 
         let lastLocalMouseX = -1;
         let lastLocalMouseY = -1;
-        document.getElementById('controls-layer').addEventListener('mousemove', (e) => {
+        let lastLocalTouchTime = 0;
+        const playerWrapperEl = document.getElementById('player-wrapper');
+        playerWrapperEl.addEventListener('touchstart', () => {
+            lastLocalTouchTime = Date.now();
+            if (playerWrapperEl.classList.contains('controls-visible') || isSettingsOpen) {
+                resetControlsTimer();
+            }
+        }, { passive: true, capture: true });
+        playerWrapperEl.addEventListener('touchend', () => {
+            lastLocalTouchTime = Date.now();
+            if (playerWrapperEl.classList.contains('controls-visible') || isSettingsOpen) {
+                resetControlsTimer();
+            }
+        }, { passive: true, capture: true });
+        playerWrapperEl.addEventListener('mousemove', (e) => {
+            if (Date.now() - lastLocalTouchTime < 1200) return;
             if (lastLocalMouseX !== -1 && lastLocalMouseY !== -1 && Math.abs(e.clientX - lastLocalMouseX) < 4 && Math.abs(e.clientY - lastLocalMouseY) < 4) {
                 return;
             }
             lastLocalMouseX = e.clientX;
             lastLocalMouseY = e.clientY;
-            resetControlsTimer();
+            showControls();
         });
 
         // --- TAP LOGIC ---
@@ -662,6 +679,7 @@
             isSettingsOpen = !isSettingsOpen;
             const menu = document.getElementById('settings-menu');
             if(isSettingsOpen) menu.classList.add('active'); else menu.classList.remove('active');
+            resetControlsTimer();
         };
 
         const btnPip = document.getElementById('btn-pip');
@@ -669,6 +687,7 @@
         
         btnPip.onclick = async (e) => {
             e.stopPropagation();
+            resetControlsTimer();
             try {
                 if (mainVideo !== document.pictureInPictureElement) {
                     await mainVideo.requestPictureInPicture();
@@ -687,6 +706,7 @@
             const s = speeds[currentSpeedIdx];
             syncAction('rate', s);
             this.innerText = s === 1.0 ? 'Normal' : s + 'x';
+            resetControlsTimer();
         };
 
         document.getElementById('set-fit').onclick = function(e) {
@@ -694,6 +714,7 @@
             isFitCover = !isFitCover;
             mainVideo.style.objectFit = isFitCover ? 'cover' : 'contain';
             this.innerText = isFitCover ? 'Zoom' : 'Fit';
+            resetControlsTimer();
         };
 
         document.getElementById('set-loop').onclick = function(e) {
@@ -701,6 +722,7 @@
             isLooping = !isLooping;
             if(mainVideo) mainVideo.loop = isLooping;
             this.innerText = isLooping ? 'On' : 'Off';
+            resetControlsTimer();
         };
 
         document.getElementById('set-sub').onclick = function(e) {
@@ -708,10 +730,11 @@
             areSubsVisible = !areSubsVisible;
             document.getElementById('custom-subs').style.display = areSubsVisible ? 'block' : 'none';
             this.innerText = areSubsVisible ? 'On' : 'Off';
+            resetControlsTimer();
         };
         document.getElementById('set-quality').onclick = (e) => {
             e.stopPropagation();
-            alert("Local source detected. Quality adjustment disabled.");
+            resetControlsTimer();
         };
 
         window.addEventListener('keydown', (e) => {

@@ -8,12 +8,202 @@
 (function () {
     'use strict';
 
-    // Global artplayer reference & 4-second control auto-hide default
+    // Global artplayer reference & 4-second control + setting panel auto-hide default
     const CONTROL_HIDE_DELAY_MS = 4000;
     window.art = window.art || null;
     window.currentSubtitleUrls = window.currentSubtitleUrls || [];
-    if (typeof window.Artplayer !== 'undefined') {
-        window.Artplayer.CONTROL_HIDE_TIME = CONTROL_HIDE_DELAY_MS;
+
+    // Universal auto-hide controller for standalone Artplayer instances (e.g. /random/*, /live_stream/*, /special_gift/*)
+    function attachStandaloneArtplayerAutoHide(artInst) {
+        if (!artInst || artInst.__zvAutoHideManaged || artInst.__zvStandaloneAutoHideAttached) return;
+        artInst.__zvStandaloneAutoHideAttached = true;
+
+        let hideTimer = null;
+        let lastTouchAt = 0;
+        let lastAutoHideAt = 0;
+        let lastMouseX = -1;
+        let lastMouseY = -1;
+        let hasMousePos = false;
+        let isDragging = false;
+
+        const clearTimer = () => {
+            if (hideTimer) {
+                clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+        };
+
+        const hideBothPanels = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) return;
+            if (artInst.isInput || isDragging) return;
+            lastAutoHideAt = Date.now();
+            try {
+                if (artInst.setting && artInst.setting.show) {
+                    artInst.setting.show = false;
+                    if (typeof artInst.setting.render === 'function') {
+                        artInst.setting.render();
+                    }
+                }
+            } catch (_) {}
+            try {
+                if (artInst.controls) {
+                    artInst.controls.isHover = false;
+                    artInst.controls.show = false;
+                }
+            } catch (_) {}
+            try {
+                const playerNode = artInst.template && artInst.template.$player;
+                if (playerNode) {
+                    playerNode.classList.remove('art-control-show', 'art-setting-show', 'art-hover');
+                    playerNode.classList.add('art-hide-cursor');
+                }
+            } catch (_) {}
+        };
+
+        const scheduleHide = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) {
+                clearTimer();
+                return;
+            }
+            clearTimer();
+            if (artInst.controls) {
+                artInst.controls.timer = Date.now();
+                artInst.controls.isHover = false;
+            }
+            hideTimer = setTimeout(() => {
+                hideTimer = null;
+                hideBothPanels();
+            }, CONTROL_HIDE_DELAY_MS);
+        };
+
+        const bindDom = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) return;
+            const playerNode = artInst.template && artInst.template.$player;
+            if (!playerNode || playerNode.__zvStandaloneBound) return;
+            playerNode.__zvStandaloneBound = true;
+
+            if (!document.getElementById('zv-autohide-core-style')) {
+                const st = document.createElement('style');
+                st.id = 'zv-autohide-core-style';
+                st.textContent = `
+                    .art-video-player:not(.art-control-show) .art-bottom {
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                    }
+                    .art-video-player:not(.art-control-show) .art-bottom .art-controls,
+                    .art-video-player:not(.art-control-show) .art-bottom .art-progress {
+                        transform: translateY(var(--art-bottom-offset, 20px)) !important;
+                        pointer-events: none !important;
+                    }
+                    .art-video-player:not(.art-setting-show) .art-settings,
+                    .art-video-player:not(.art-control-show) .art-settings {
+                        display: none !important;
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                    }
+                `;
+                (document.head || document.documentElement).appendChild(st);
+            }
+
+            playerNode.addEventListener('mousemove', (ev) => {
+                if (artInst.__zvAutoHideManaged) return;
+                if ((Date.now() - lastTouchAt) < 1200) {
+                    ev.stopImmediatePropagation();
+                    return;
+                }
+                if (ev.buttons > 0) {
+                    scheduleHide();
+                    return;
+                }
+                const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
+                const cy = typeof ev.clientY === 'number' ? ev.clientY : -1;
+                const dx = hasMousePos ? Math.abs(cx - lastMouseX) : 999;
+                const dy = hasMousePos ? Math.abs(cy - lastMouseY) : 999;
+                if (hasMousePos && dx < 4 && dy < 4) {
+                    ev.stopImmediatePropagation();
+                    return;
+                }
+                if ((Date.now() - lastAutoHideAt) < 350 && (!hasMousePos || (dx < 8 && dy < 8))) {
+                    ev.stopImmediatePropagation();
+                    return;
+                }
+                lastMouseX = cx;
+                lastMouseY = cy;
+                hasMousePos = true;
+                try { artInst.controls.show = true; } catch (_) {}
+                scheduleHide();
+            }, true);
+
+            const onTouchOrPointer = (ev) => {
+                if (artInst.__zvAutoHideManaged) return;
+                if (ev.type.startsWith('touch') || ev.pointerType === 'touch') {
+                    lastTouchAt = Date.now();
+                }
+                if (ev.type === 'touchstart' || ev.type === 'pointerdown') {
+                    isDragging = Boolean(ev.target && ev.target.closest && (ev.target.closest('.art-progress') || ev.target.closest('.art-setting-range')));
+                } else if (ev.type === 'touchend' || ev.type === 'touchcancel' || ev.type === 'pointerup' || ev.type === 'pointercancel') {
+                    isDragging = false;
+                }
+                scheduleHide();
+            };
+
+            ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
+                playerNode.addEventListener(evt, onTouchOrPointer, { passive: true, capture: true });
+            });
+
+            scheduleHide();
+        };
+
+        artInst.on('control', (state) => {
+            if (artInst.__zvAutoHideManaged) return;
+            if (state) {
+                scheduleHide();
+            } else {
+                clearTimer();
+                try {
+                    if (artInst.setting && artInst.setting.show) {
+                        artInst.setting.show = false;
+                        if (typeof artInst.setting.render === 'function') artInst.setting.render();
+                    }
+                    const playerNode = artInst.template && artInst.template.$player;
+                    if (playerNode) playerNode.classList.remove('art-setting-show', 'art-hover');
+                } catch (_) {}
+            }
+        });
+        artInst.on('setting', (state) => {
+            if (artInst.__zvAutoHideManaged) return;
+            if (state) {
+                try { artInst.controls.show = true; } catch (_) {}
+            }
+            scheduleHide();
+        });
+        artInst.on('play', scheduleHide);
+        artInst.on('pause', scheduleHide);
+        artInst.on('ready', bindDom);
+        artInst.on('destroy', clearTimer);
+        setTimeout(bindDom, 0);
+    }
+    window.attachStandaloneArtplayerAutoHide = attachStandaloneArtplayerAutoHide;
+
+    if (typeof window.Artplayer === 'function' && !window.Artplayer.__zvWrappedConstructor) {
+        const OriginalArtplayer = window.Artplayer;
+        OriginalArtplayer.CONTROL_HIDE_TIME = CONTROL_HIDE_DELAY_MS;
+        const WrappedArtplayer = function (option, readyCallback) {
+            OriginalArtplayer.CONTROL_HIDE_TIME = CONTROL_HIDE_DELAY_MS;
+            const instance = new OriginalArtplayer(option, readyCallback);
+            setTimeout(() => attachStandaloneArtplayerAutoHide(instance), 0);
+            return instance;
+        };
+        Object.setPrototypeOf(WrappedArtplayer, OriginalArtplayer);
+        WrappedArtplayer.prototype = OriginalArtplayer.prototype;
+        Object.keys(OriginalArtplayer).forEach(k => {
+            try { WrappedArtplayer[k] = OriginalArtplayer[k]; } catch (_) {}
+        });
+        WrappedArtplayer.CONTROL_HIDE_TIME = CONTROL_HIDE_DELAY_MS;
+        WrappedArtplayer.__zvWrappedConstructor = true;
+        window.Artplayer = WrappedArtplayer;
     }
 
     // Ensure default "Play Stream" / "Play Episode" / "Select an Episode" text is stripped on all video pages
@@ -892,6 +1082,7 @@
             Artplayer.CONTROL_HIDE_TIME = CONTROL_HIDE_DELAY_MS;
         }
         const artInstance = new Artplayer(artOptions);
+        artInstance.__zvAutoHideManaged = true;
         if (artInstance && artInstance.constructor) {
             artInstance.constructor.CONTROL_HIDE_TIME = CONTROL_HIDE_DELAY_MS;
         }
@@ -905,12 +1096,17 @@
         let lastRealMouseY = -1;
         let hasRealMousePos = false;
         let lastSubtitleMutationAt = 0;
+        let lastAutoHideAt = 0;
+        let lastTouchActivityAt = 0;
+        let isPointerDragging = false;
 
-        // Sync progress slider visibility with Artplayer control show/hide state
-        // so the slider never drops to the bottom or gets accidentally tapped when controls hide
+        // Sync progress slider, bottom control bar, and setting panel visibility with Artplayer control show/hide state
+        // so neither the control bar nor the setting panel ever stays stuck on mobile phone or desktop
         const syncProgressVisibility = (isControlShown) => {
             const shown = Boolean(isControlShown);
             const progressEl = artInstance.template && artInstance.template.$progress;
+            const bottomEl = artInstance.template && artInstance.template.$bottom;
+            const settingEl = artInstance.template && artInstance.template.$setting;
             if (progressEl) {
                 if (shown && !artInstance.lock) {
                     progressEl.style.opacity = '1';
@@ -920,6 +1116,27 @@
                     progressEl.style.opacity = '0';
                     progressEl.style.visibility = 'hidden';
                     progressEl.style.pointerEvents = 'none';
+                }
+            }
+            if (bottomEl) {
+                if (shown && !artInstance.lock) {
+                    bottomEl.style.removeProperty('opacity');
+                    bottomEl.style.removeProperty('visibility');
+                    bottomEl.style.removeProperty('pointer-events');
+                } else {
+                    bottomEl.style.opacity = '0';
+                    bottomEl.style.visibility = 'hidden';
+                    bottomEl.style.pointerEvents = 'none';
+                }
+            }
+            if (settingEl && (!shown || artInstance.lock)) {
+                if (artInstance.setting && artInstance.setting.show) {
+                    try {
+                        artInstance.setting.show = false;
+                        if (typeof artInstance.setting.render === 'function') {
+                            artInstance.setting.render();
+                        }
+                    } catch (_) {}
                 }
             }
             if (fsCardsToggleBtn) {
@@ -939,39 +1156,65 @@
         };
 
         const canAutoHideControlsNow = () => {
-            if (!artInstance || !artInstance.playing) return false;
-            if (artInstance.setting && artInstance.setting.show) return false;
-            if (artInstance.isInput) return false;
-            if (artInstance.controls && artInstance.controls.isHover) return false;
+            if (!artInstance) return false;
+            if (artInstance.isInput || isPointerDragging) return false;
             const isDrawerOpen = Boolean(fsCardsListEl && fsCardsListEl.classList.contains('is-open'));
             if (isDrawerOpen) return false;
+            return true;
+        };
+
+        const hideControlsAndSettings = () => {
+            lastAutoHideAt = Date.now();
+            isControlsVisible = false;
             try {
-                const bottomEl = artInstance.template && artInstance.template.$bottom;
-                const settingsEl = artInstance.template && artInstance.template.$setting;
-                if (
-                    (fsCardsToggleBtn && fsCardsToggleBtn.matches(':hover')) ||
-                    (fsCardsListEl && fsCardsListEl.matches(':hover')) ||
-                    (bottomEl && bottomEl.matches(':hover')) ||
-                    (settingsEl && settingsEl.matches(':hover'))
-                ) {
-                    return false;
+                if (artInstance.setting && artInstance.setting.show) {
+                    artInstance.setting.show = false;
+                    if (typeof artInstance.setting.render === 'function') {
+                        artInstance.setting.render();
+                    }
                 }
             } catch (_) {}
-            return true;
+            try {
+                if (artInstance.contextmenu && artInstance.contextmenu.show) {
+                    artInstance.contextmenu.show = false;
+                }
+            } catch (_) {}
+            try {
+                if (artInstance.controls) {
+                    artInstance.controls.isHover = false;
+                    artInstance.controls.show = false;
+                }
+            } catch (_) {}
+            try {
+                const playerNode = artInstance.template && artInstance.template.$player;
+                if (playerNode) {
+                    playerNode.classList.remove('art-control-show', 'art-setting-show', 'art-hover');
+                    playerNode.classList.add('art-hide-cursor');
+                }
+            } catch (_) {}
+            syncProgressVisibility(false);
         };
 
         const scheduleControlsAutoHide = () => {
             clearControlsAutoHideTimer();
             if (artInstance && artInstance.controls) {
                 artInstance.controls.timer = Date.now();
+                artInstance.controls.isHover = false;
             }
-            if (!artInstance || !artInstance.playing) return;
+            if (!artInstance) return;
             controlsAutoHideTimer = setTimeout(() => {
                 controlsAutoHideTimer = null;
-                if (isControlsVisible && canAutoHideControlsNow()) {
-                    isControlsVisible = false;
-                    try { artInstance.controls.show = false; } catch (_) {}
-                    syncProgressVisibility(false);
+                const isSettingOpen = Boolean(artInstance.setting && artInstance.setting.show);
+                const playerNode = artInstance.template && artInstance.template.$player;
+                const domControlsOrSettingsShown = Boolean(
+                    playerNode && (
+                        playerNode.classList.contains('art-control-show') ||
+                        playerNode.classList.contains('art-setting-show') ||
+                        playerNode.classList.contains('art-hover')
+                    )
+                );
+                if ((isControlsVisible || isSettingOpen || domControlsOrSettingsShown) && canAutoHideControlsNow()) {
+                    hideControlsAndSettings();
                 }
             }, CONTROL_HIDE_DELAY_MS);
         };
@@ -983,10 +1226,38 @@
                 scheduleControlsAutoHide();
             } else {
                 clearControlsAutoHideTimer();
+                try {
+                    if (artInstance.setting && artInstance.setting.show) {
+                        artInstance.setting.show = false;
+                        if (typeof artInstance.setting.render === 'function') {
+                            artInstance.setting.render();
+                        }
+                    }
+                    const playerNode = artInstance.template && artInstance.template.$player;
+                    if (playerNode) {
+                        playerNode.classList.remove('art-setting-show', 'art-hover');
+                    }
+                } catch (_) {}
+            }
+        });
+
+        artInstance.on('setting', (state) => {
+            if (state) {
+                if (!isControlsVisible) {
+                    isControlsVisible = true;
+                    try { artInstance.controls.show = true; } catch (_) {}
+                    syncProgressVisibility(true);
+                }
+                scheduleControlsAutoHide();
+            } else if (isControlsVisible) {
+                scheduleControlsAutoHide();
             }
         });
 
         artInstance.on('lock', (isLocked) => {
+            if (isLocked && artInstance.setting && artInstance.setting.show) {
+                try { artInstance.setting.show = false; } catch (_) {}
+            }
             syncProgressVisibility(!isLocked && isControlsVisible);
         });
 
@@ -1001,6 +1272,9 @@
         let renderFullscreenCards = () => {};
 
         const onDesktopPointerWakeUp = (ev) => {
+            if ((Date.now() - lastTouchActivityAt) < 1200) {
+                return;
+            }
             if (ev) {
                 if (ev.pointerType && ev.pointerType !== 'mouse') {
                     return;
@@ -1014,12 +1288,13 @@
                     const dx = hasRealMousePos ? Math.abs(cx - lastRealMouseX) : 999;
                     const dy = hasRealMousePos ? Math.abs(cy - lastRealMouseY) : 999;
                     const recentlyMutatedSub = (Date.now() - lastSubtitleMutationAt) < 260;
+                    const recentlyAutoHid = (Date.now() - lastAutoHideAt) < 350;
 
                     if (ev.buttons === 0) {
                         if (hasRealMousePos && dx < 4 && dy < 4) {
                             return;
                         }
-                        if (recentlyMutatedSub && (!hasRealMousePos || (dx < 8 && dy < 8))) {
+                        if ((recentlyMutatedSub || recentlyAutoHid) && (!hasRealMousePos || (dx < 8 && dy < 8))) {
                             return;
                         }
                     }
@@ -1028,7 +1303,8 @@
                     hasRealMousePos = true;
                 }
             }
-            if (!isControlsVisible) {
+            const playerNode = artInstance.template && artInstance.template.$player;
+            if (!isControlsVisible || (playerNode && !playerNode.classList.contains('art-control-show'))) {
                 isControlsVisible = true;
                 try { artInstance.controls.show = true; } catch (_) {}
                 syncProgressVisibility(true);
@@ -1282,14 +1558,19 @@
             renderFullscreenCards();
 
             // Capture-phase mousemove filter: blocks synthetic 0px mousemove events triggered
-            // when subtitle cues appear/disappear so Artplayer's internal mousemove listener NEVER wakes up controls
+            // when subtitle cues appear/disappear, when touch taps fire synthetic mousemove on mobile,
+            // or when controls/settings auto-hide underneath a stationary desktop cursor
             const onCaptureMouseMove = (ev) => {
+                if ((Date.now() - lastTouchActivityAt) < 1200) {
+                    ev.stopImmediatePropagation();
+                    return;
+                }
                 if (ev.target && ev.target.closest && ev.target.closest('.art-subtitle')) {
                     ev.stopImmediatePropagation();
                     return;
                 }
                 if (ev.buttons > 0) {
-                    if (isControlsVisible) scheduleControlsAutoHide();
+                    scheduleControlsAutoHide();
                     return;
                 }
                 const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
@@ -1297,12 +1578,13 @@
                 const dx = hasRealMousePos ? Math.abs(cx - lastRealMouseX) : 999;
                 const dy = hasRealMousePos ? Math.abs(cy - lastRealMouseY) : 999;
                 const recentlyMutatedSub = (Date.now() - lastSubtitleMutationAt) < 260;
+                const recentlyAutoHid = (Date.now() - lastAutoHideAt) < 350;
 
                 if (hasRealMousePos && dx < 4 && dy < 4) {
                     ev.stopImmediatePropagation();
                     return;
                 }
-                if (recentlyMutatedSub && (!hasRealMousePos || (dx < 8 && dy < 8))) {
+                if ((recentlyMutatedSub || recentlyAutoHid) && (!hasRealMousePos || (dx < 8 && dy < 8))) {
                     ev.stopImmediatePropagation();
                     return;
                 }
@@ -1313,11 +1595,28 @@
             };
 
             const onControlInteractionReset = (ev) => {
+                if (ev && (ev.type.startsWith('touch') || ev.pointerType === 'touch')) {
+                    lastTouchActivityAt = Date.now();
+                }
+                if (ev && (ev.type === 'pointerdown' || ev.type === 'touchstart')) {
+                    isPointerDragging = Boolean(
+                        ev.target && ev.target.closest && (
+                            ev.target.closest('.art-progress') ||
+                            ev.target.closest('.art-setting-range') ||
+                            ev.target.closest('.art-volume')
+                        )
+                    );
+                } else if (ev && (ev.type === 'pointerup' || ev.type === 'pointercancel' || ev.type === 'touchend' || ev.type === 'touchcancel')) {
+                    isPointerDragging = false;
+                }
                 if (
                     ev.target && ev.target.closest && (
+                        ev.target.closest('.art-bottom') ||
                         ev.target.closest('.art-controls') ||
                         ev.target.closest('.art-progress') ||
                         ev.target.closest('.art-settings') ||
+                        ev.target.closest('.art-setting') ||
+                        ev.target.closest('.art-setting-panel') ||
                         ev.target.closest('.zv-fs-cards-toggle') ||
                         ev.target.closest('.zv-fs-cards-list')
                     )
@@ -1326,9 +1625,21 @@
                 }
             };
 
+            const onSettingScrollOrWheel = () => {
+                scheduleControlsAutoHide();
+            };
+
             playerEl.addEventListener('mousemove', onCaptureMouseMove, true);
-            playerEl.addEventListener('pointerdown', onControlInteractionReset, { passive: true });
-            playerEl.addEventListener('touchstart', onControlInteractionReset, { passive: true });
+            playerEl.addEventListener('pointerdown', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('pointerup', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('pointercancel', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('touchstart', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('touchmove', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('touchend', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('touchcancel', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('click', onControlInteractionReset, { passive: true, capture: true });
+            playerEl.addEventListener('wheel', onSettingScrollOrWheel, { passive: true, capture: true });
+            playerEl.addEventListener('scroll', onSettingScrollOrWheel, { passive: true, capture: true });
 
             // Observe #playlist-items so dynamic active-card updates (like nanatour.html auto-switching) sync automatically
             const domPlaylistContainer = document.getElementById('playlist-items');
@@ -1548,6 +1859,29 @@
                                (hover: none) and (pointer: coarse) and (orientation: landscape) {
                             .art-video-player { --zv-sub-auto-size: 14px; --art-subtitle-bottom: 16px; }
                             .art-video-player .art-subtitle, .art-subtitle { gap: 4px !important; }
+                        }
+                        .art-video-player:not(.art-control-show) .art-bottom {
+                            opacity: 0 !important;
+                            visibility: hidden !important;
+                            pointer-events: none !important;
+                        }
+                        .art-video-player:not(.art-control-show) .art-bottom .art-controls,
+                        .art-video-player:not(.art-control-show) .art-bottom .art-progress {
+                            transform: translateY(var(--art-bottom-offset, 20px)) !important;
+                            pointer-events: none !important;
+                        }
+                        .art-video-player:not(.art-setting-show) .art-settings,
+                        .art-video-player:not(.art-control-show) .art-settings {
+                            display: none !important;
+                            opacity: 0 !important;
+                            visibility: hidden !important;
+                            pointer-events: none !important;
+                        }
+                        .art-video-player:not(.art-control-show) .art-layer-lock {
+                            display: none !important;
+                            opacity: 0 !important;
+                            visibility: hidden !important;
+                            pointer-events: none !important;
                         }
                     `;
                     (document.head || document.documentElement).appendChild(globalSubStyleEl);
@@ -1803,6 +2137,7 @@
             window.addEventListener('orientationchange', onNativeFsChange);
 
             syncDesktopAndMobileFullscreenClass();
+            scheduleControlsAutoHide();
 
             window.zvFsSyncCleanup = () => {
                 clearControlsAutoHideTimer();
@@ -1812,8 +2147,16 @@
                     subObserver = null;
                 }
                 playerEl.removeEventListener('mousemove', onCaptureMouseMove, true);
-                playerEl.removeEventListener('pointerdown', onControlInteractionReset);
-                playerEl.removeEventListener('touchstart', onControlInteractionReset);
+                playerEl.removeEventListener('pointerdown', onControlInteractionReset, true);
+                playerEl.removeEventListener('pointerup', onControlInteractionReset, true);
+                playerEl.removeEventListener('pointercancel', onControlInteractionReset, true);
+                playerEl.removeEventListener('touchstart', onControlInteractionReset, true);
+                playerEl.removeEventListener('touchmove', onControlInteractionReset, true);
+                playerEl.removeEventListener('touchend', onControlInteractionReset, true);
+                playerEl.removeEventListener('touchcancel', onControlInteractionReset, true);
+                playerEl.removeEventListener('click', onControlInteractionReset, true);
+                playerEl.removeEventListener('wheel', onSettingScrollOrWheel, true);
+                playerEl.removeEventListener('scroll', onSettingScrollOrWheel, true);
                 document.removeEventListener('fullscreenchange', onNativeFsChange);
                 document.removeEventListener('webkitfullscreenchange', onNativeFsChange);
                 document.removeEventListener('mozfullscreenchange', onNativeFsChange);
@@ -1837,6 +2180,7 @@
 
             mountFullscreenCardsOverlay();
             renderFullscreenCards();
+            scheduleControlsAutoHide();
 
             // Restore fullscreenWeb or native fullscreen class if episode was switched while in fullscreen
             if (prevWasFullscreenWeb) {
@@ -1870,6 +2214,7 @@
 
             // Prevent screen touch-sliding gestures on video, while allowing touch scrolling inside Settings/Quality and Fullscreen Video Cards
             playerEl.addEventListener('touchmove', (e) => {
+                lastTouchActivityAt = Date.now();
                 if (
                     e.target.closest('.art-settings') ||
                     e.target.closest('.art-setting') ||
@@ -1877,12 +2222,15 @@
                     e.target.closest('.zv-fs-cards-list') ||
                     e.target.closest('.zv-fs-cards-toggle')
                 ) {
+                    scheduleControlsAutoHide();
                     return;
                 }
-                if (!e.target.closest('.art-control-progress') || !isControlsVisible) {
-                    e.preventDefault();
-                    e.stopPropagation();
+                if (isControlsVisible && e.target.closest('.art-control-progress')) {
+                    scheduleControlsAutoHide();
+                    return;
                 }
+                e.preventDefault();
+                e.stopPropagation();
             }, { passive: false });
 
             let lastTapTime = 0;
@@ -1917,10 +2265,27 @@
                         artInstance.toggle();
                         triggerCustomAnimation(artInstance.playing ? 'play' : 'pause', 'center');
                     }
+                    if (isControlsVisible) {
+                        scheduleControlsAutoHide();
+                    }
                 } else {
-                    // SINGLE TAP DETECTED: Toggle controls
+                    // SINGLE TAP DETECTED: Toggle controls & setting panel
                     singleTapTimer = setTimeout(() => {
-                        artInstance.controls.toggle();
+                        const isSettingOpen = Boolean(artInstance.setting && artInstance.setting.show);
+                        const isControlCurrentlyShown = Boolean(
+                            isControlsVisible ||
+                            isSettingOpen ||
+                            playerEl.classList.contains('art-control-show') ||
+                            playerEl.classList.contains('art-setting-show')
+                        );
+                        if (isControlCurrentlyShown) {
+                            hideControlsAndSettings();
+                        } else {
+                            isControlsVisible = true;
+                            try { artInstance.controls.show = true; } catch (_) {}
+                            syncProgressVisibility(true);
+                            scheduleControlsAutoHide();
+                        }
                     }, 300);
                 }
                 lastTapTime = now;
@@ -1928,6 +2293,8 @@
 
             playerEl.addEventListener('touchend', (e) => {
                 lastTouchEndTime = Date.now();
+                lastTouchActivityAt = Date.now();
+                isPointerDragging = false;
                 if (
                     e.target.closest('.art-controls') ||
                     e.target.closest('.art-settings') ||
@@ -1938,6 +2305,7 @@
                     e.target.closest('.zv-fs-cards-toggle') ||
                     (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
+                    scheduleControlsAutoHide();
                     return;
                 }
                 e.preventDefault();
@@ -1958,6 +2326,7 @@
                     e.target.closest('.zv-fs-cards-toggle') ||
                     (isControlsVisible && e.target.closest('.art-control-progress'))
                 ) {
+                    scheduleControlsAutoHide();
                     return;
                 }
                 if (Date.now() - lastTouchEndTime < 450) return;
@@ -2123,16 +2492,14 @@
             });
         })();
 
-        // Active Playlist Sync & 4-second control hide lifecycle on play/pause
+        // Active Playlist Sync & 4-second control + setting panel auto-hide lifecycle on play/pause
         artInstance.on('play', () => {
             document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.remove('is-paused'));
-            if (isControlsVisible) {
-                scheduleControlsAutoHide();
-            }
+            scheduleControlsAutoHide();
         });
         artInstance.on('pause', () => {
             document.querySelectorAll('.playlist-item.active').forEach(item => item.classList.add('is-paused'));
-            clearControlsAutoHideTimer();
+            scheduleControlsAutoHide();
         });
 
         // Timeupdate handler for Next Ep / Skip Intro / Watch History

@@ -496,5 +496,198 @@
         shieldModule.initGlobalHooks();
         window.ZoneVaultCaptureShield = shieldModule;
     }
+
+    // =========================================
+    // CONTROL & SETTING PANEL AUTO-HIDE (MOBILE & DESKTOP)
+    // =========================================
+    const LIVE_CONTROL_HIDE_DELAY_MS = 4000;
+    function attachLiveArtplayerAutoHide(artInst) {
+        if (!artInst || artInst.__zvAutoHideManaged || artInst.__zvStandaloneAutoHideAttached) return;
+        artInst.__zvStandaloneAutoHideAttached = true;
+
+        let hideTimer = null;
+        let lastTouchAt = 0;
+        let lastAutoHideAt = 0;
+        let lastMouseX = -1;
+        let lastMouseY = -1;
+        let hasMousePos = false;
+        let isDragging = false;
+
+        const clearTimer = () => {
+            if (hideTimer) {
+                clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+        };
+
+        const hideBothPanels = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) return;
+            if (artInst.isInput || isDragging) return;
+            lastAutoHideAt = Date.now();
+            try {
+                if (artInst.setting && artInst.setting.show) {
+                    artInst.setting.show = false;
+                    if (typeof artInst.setting.render === 'function') artInst.setting.render();
+                }
+            } catch (_) {}
+            try {
+                if (artInst.controls) {
+                    artInst.controls.isHover = false;
+                    artInst.controls.show = false;
+                }
+            } catch (_) {}
+            try {
+                const playerNode = artInst.template && artInst.template.$player;
+                if (playerNode) {
+                    playerNode.classList.remove('art-control-show', 'art-setting-show', 'art-hover');
+                    playerNode.classList.add('art-hide-cursor');
+                }
+            } catch (_) {}
+        };
+
+        const scheduleHide = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) {
+                clearTimer();
+                return;
+            }
+            clearTimer();
+            if (artInst.controls) {
+                artInst.controls.timer = Date.now();
+                artInst.controls.isHover = false;
+            }
+            hideTimer = setTimeout(() => {
+                hideTimer = null;
+                hideBothPanels();
+            }, LIVE_CONTROL_HIDE_DELAY_MS);
+        };
+
+        const bindDom = () => {
+            if (!artInst || artInst.__zvAutoHideManaged) return;
+            const playerNode = artInst.template && artInst.template.$player;
+            if (!playerNode || playerNode.__zvStandaloneBound) return;
+            playerNode.__zvStandaloneBound = true;
+
+            if (!document.getElementById('zv-autohide-core-style')) {
+                const st = document.createElement('style');
+                st.id = 'zv-autohide-core-style';
+                st.textContent = `
+                    .art-video-player:not(.art-control-show) .art-bottom {
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                    }
+                    .art-video-player:not(.art-control-show) .art-bottom .art-controls,
+                    .art-video-player:not(.art-control-show) .art-bottom .art-progress {
+                        transform: translateY(var(--art-bottom-offset, 20px)) !important;
+                        pointer-events: none !important;
+                    }
+                    .art-video-player:not(.art-setting-show) .art-settings,
+                    .art-video-player:not(.art-control-show) .art-settings {
+                        display: none !important;
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                    }
+                `;
+                (document.head || document.documentElement).appendChild(st);
+            }
+
+            playerNode.addEventListener('mousemove', (ev) => {
+                if (artInst.__zvAutoHideManaged) return;
+                if ((Date.now() - lastTouchAt) < 1200) {
+                    ev.stopImmediatePropagation();
+                    return;
+                }
+                if (ev.buttons > 0) {
+                    scheduleHide();
+                    return;
+                }
+                const cx = typeof ev.clientX === 'number' ? ev.clientX : -1;
+                const cy = typeof ev.clientY === 'number' ? ev.clientY : -1;
+                const dx = hasMousePos ? Math.abs(cx - lastMouseX) : 999;
+                const dy = hasMousePos ? Math.abs(cy - lastMouseY) : 999;
+                if (hasMousePos && dx < 4 && dy < 4) {
+                    ev.stopImmediatePropagation();
+                    return;
+                }
+                if ((Date.now() - lastAutoHideAt) < 350 && (!hasMousePos || (dx < 8 && dy < 8))) {
+                    ev.stopImmediatePropagation();
+                    return;
+                }
+                lastMouseX = cx;
+                lastMouseY = cy;
+                hasMousePos = true;
+                try { artInst.controls.show = true; } catch (_) {}
+                scheduleHide();
+            }, true);
+
+            const onTouchOrPointer = (ev) => {
+                if (artInst.__zvAutoHideManaged) return;
+                if (ev.type.startsWith('touch') || ev.pointerType === 'touch') {
+                    lastTouchAt = Date.now();
+                }
+                if (ev.type === 'touchstart' || ev.type === 'pointerdown') {
+                    isDragging = Boolean(ev.target && ev.target.closest && (ev.target.closest('.art-progress') || ev.target.closest('.art-setting-range')));
+                } else if (ev.type === 'touchend' || ev.type === 'touchcancel' || ev.type === 'pointerup' || ev.type === 'pointercancel') {
+                    isDragging = false;
+                }
+                scheduleHide();
+            };
+
+            ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
+                playerNode.addEventListener(evt, onTouchOrPointer, { passive: true, capture: true });
+            });
+
+            scheduleHide();
+        };
+
+        artInst.on('control', (state) => {
+            if (artInst.__zvAutoHideManaged) return;
+            if (state) {
+                scheduleHide();
+            } else {
+                clearTimer();
+                try {
+                    if (artInst.setting && artInst.setting.show) {
+                        artInst.setting.show = false;
+                        if (typeof artInst.setting.render === 'function') artInst.setting.render();
+                    }
+                    const playerNode = artInst.template && artInst.template.$player;
+                    if (playerNode) playerNode.classList.remove('art-setting-show', 'art-hover');
+                } catch (_) {}
+            }
+        });
+        artInst.on('setting', (state) => {
+            if (artInst.__zvAutoHideManaged) return;
+            if (state) {
+                try { artInst.controls.show = true; } catch (_) {}
+            }
+            scheduleHide();
+        });
+        artInst.on('play', scheduleHide);
+        artInst.on('pause', scheduleHide);
+        artInst.on('ready', bindDom);
+        artInst.on('destroy', clearTimer);
+        setTimeout(bindDom, 0);
+    }
+
+    if (typeof window.Artplayer === 'function' && !window.Artplayer.__zvWrappedConstructor) {
+        const OriginalArtplayer = window.Artplayer;
+        OriginalArtplayer.CONTROL_HIDE_TIME = LIVE_CONTROL_HIDE_DELAY_MS;
+        const WrappedArtplayer = function (option, readyCallback) {
+            OriginalArtplayer.CONTROL_HIDE_TIME = LIVE_CONTROL_HIDE_DELAY_MS;
+            const instance = new OriginalArtplayer(option, readyCallback);
+            setTimeout(() => attachLiveArtplayerAutoHide(instance), 0);
+            return instance;
+        };
+        Object.setPrototypeOf(WrappedArtplayer, OriginalArtplayer);
+        WrappedArtplayer.prototype = OriginalArtplayer.prototype;
+        Object.keys(OriginalArtplayer).forEach(k => {
+            try { WrappedArtplayer[k] = OriginalArtplayer[k]; } catch (_) {}
+        });
+        WrappedArtplayer.CONTROL_HIDE_TIME = LIVE_CONTROL_HIDE_DELAY_MS;
+        WrappedArtplayer.__zvWrappedConstructor = true;
+        window.Artplayer = WrappedArtplayer;
+    }
 })();
 

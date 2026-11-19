@@ -343,6 +343,34 @@ video.zv-video-frame-blackout {
     pointer-events: none !important;
 }
 
+/* Force control panel and setting panel to auto-hide cleanly on both mobile phone and desktop (override sticky .art-hover) */
+.art-video-player:not(.art-control-show) .art-bottom {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.art-video-player:not(.art-control-show) .art-bottom .art-controls,
+.art-video-player:not(.art-control-show) .art-bottom .art-progress {
+    transform: translateY(var(--art-bottom-offset, 20px)) !important;
+    pointer-events: none !important;
+}
+
+.art-video-player:not(.art-setting-show) .art-settings,
+.art-video-player:not(.art-control-show) .art-settings {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.art-video-player:not(.art-control-show) .art-layer-lock {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 /* Move Lock button to top-right inside the player */
 .art-video-player .art-layer-lock {
     top: 16px !important;

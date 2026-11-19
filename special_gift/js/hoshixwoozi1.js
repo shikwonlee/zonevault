@@ -281,6 +281,66 @@ function loadPlayer(index) {
                 },
             },
         });
+        (function attachAutoHide(artInst) {
+            if (!artInst) return;
+            let hideTimer = null;
+            let lastTouchAt = 0;
+            const hideBoth = () => {
+                if (!artInst || artInst.isInput) return;
+                try {
+                    if (artInst.setting && artInst.setting.show) {
+                        artInst.setting.show = false;
+                        if (typeof artInst.setting.render === 'function') artInst.setting.render();
+                    }
+                } catch (_) {}
+                try {
+                    if (artInst.controls) {
+                        artInst.controls.isHover = false;
+                        artInst.controls.show = false;
+                    }
+                } catch (_) {}
+                try {
+                    const p = artInst.template && artInst.template.$player;
+                    if (p) p.classList.remove('art-control-show', 'art-setting-show', 'art-hover');
+                } catch (_) {}
+            };
+            const schedule = () => {
+                if (hideTimer) clearTimeout(hideTimer);
+                if (artInst.controls) {
+                    artInst.controls.timer = Date.now();
+                    artInst.controls.isHover = false;
+                }
+                hideTimer = setTimeout(hideBoth, 4000);
+            };
+            artInst.on('control', (st) => {
+                if (st) schedule();
+                else {
+                    if (hideTimer) clearTimeout(hideTimer);
+                    try {
+                        if (artInst.setting && artInst.setting.show) artInst.setting.show = false;
+                    } catch (_) {}
+                }
+            });
+            artInst.on('setting', schedule);
+            artInst.on('play', schedule);
+            artInst.on('pause', schedule);
+            artInst.on('ready', () => {
+                const p = artInst.template && artInst.template.$player;
+                if (!p) return;
+                ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup', 'click', 'wheel', 'scroll'].forEach(evt => {
+                    p.addEventListener(evt, (e) => {
+                        if (evt.startsWith('touch')) lastTouchAt = Date.now();
+                        schedule();
+                    }, { passive: true, capture: true });
+                });
+                p.addEventListener('mousemove', (e) => {
+                    if (Date.now() - lastTouchAt < 1200) { e.stopImmediatePropagation(); return; }
+                    schedule();
+                }, true);
+                schedule();
+            });
+            artInst.on('destroy', () => { if (hideTimer) clearTimeout(hideTimer); });
+        })(art);
     } catch (err) {
         console.error('ArtPlayer failed to initialize:', err);
         container.innerHTML = `<div style="color:#fff; padding:20px; text-align:center;">Video failed to load. Please try again.</div>`;

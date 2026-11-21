@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"><script id="zv-fetch-guard">(function(){if(window.__zvFetchGuardInstalled)return;window.__zvFetchGuardInstalled=true;try{var d=Object.defineProperty,isExtFetchErr=function(e){if(!e)return false;var m=String(e.message||(e.reason&&e.reason.message)||e.reason||""),s=String(e.filename||(e.error&&e.error.stack)||"");return s.indexOf("chrome-extension://")!==-1||s.indexOf("moz-extension://")!==-1||m.indexOf("Cannot set property fetch")!==-1},p=function(t){if(!t)return;try{var c=Object.getOwnPropertyDescriptor(t,"fetch");if(c&&c.get&&!c.set&&c.configurable!==false){var g=c.get;d.call(Object,t,"fetch",{configurable:true,enumerable:c.enumerable!==false,get:function(){return g.call(this)},set:function(f){if(typeof f==="function")g=function(){return f}}})}}catch(_){}};p(window);if(typeof Window!=="undefined"&&Window.prototype)p(Window.prototype);if(!d.__zvFetchGuarded){var w=function(t,k,c){if((t===window||(typeof Window!=="undefined"&&t===Window.prototype))&&k==="fetch"&&c&&c.get&&!c.set){var g=c.get;c=Object.assign({},c,{configurable:true,get:function(){return g.call(this)},set:function(f){if(typeof f==="function")g=function(){return f}}})}return d.call(Object,t,k,c)};w.__zvFetchGuarded=true;Object.defineProperty=w}var origAdd=window.addEventListener;if(origAdd&&!origAdd.__zvWrapped){var wrappedAdd=function(type,listener,options){if((type==="error"||type==="unhandledrejection")&&typeof listener==="function"){var origListener=listener;listener=function(ev){if(isExtFetchErr(ev)){p(window);return}return origListener.apply(this,arguments)}}return origAdd.call(this,type,listener,options)};wrappedAdd.__zvWrapped=true;window.addEventListener=wrappedAdd}origAdd.call(window,"error",function(e){if(isExtFetchErr(e)){p(window);e.stopImmediatePropagation();e.preventDefault();return true}},true)}catch(_){}})();</script>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -250,14 +250,21 @@
 
   </div>
 
-  <!-- Offline & Slow-Network Resilience + Service Worker Registration -->
+  <!-- Offline & Slow-Network Resilience -->
   <script>
     (function () {
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
-        });
-      }
+      try {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (r) { r.unregister(); });
+          }).catch(function () {});
+        }
+        if (window.caches && window.caches.keys) {
+          window.caches.keys().then(function (keys) {
+            keys.forEach(function (k) { window.caches.delete(k); });
+          }).catch(function () {});
+        }
+      } catch (_) {}
       // Guarantee landing page reveals smoothly even if offline or CDN module script is delayed
       var revealFallback = function () {
         var loader = document.getElementById('auth-loading-screen');

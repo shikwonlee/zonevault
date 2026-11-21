@@ -36,25 +36,8 @@ function revealLandingPage() {
   }
 }
 
-// Register Service Worker for offline landing page capability & faster loads on slow networks
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js", { scope: "/" })
-      .then((registration) => {
-        registration.addEventListener("updatefound", () => {
-          const newWorker = registration.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              newWorker.postMessage({ type: "SKIP_WAITING" });
-            }
-          });
-        });
-      })
-      .catch(() => {});
-  });
-}
+// Ensure any legacy Service Worker caches are cleared so latest HTML & security guards always load from network
+cleanStaleCaches();
 
 // --- 1. INSTANT CACHE CHECK (0ms Instant Redirect) ---
 const cached = getCachedUser();

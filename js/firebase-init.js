@@ -101,20 +101,25 @@ export function clearCachedUser() {
   }
 }
 
-// Auto-cleanup obsolete caches while preserving the active Zone Vault Service Worker (/sw.js)
+// Auto-cleanup obsolete caches and service workers so latest HTML guards always run
 export function cleanStaleCaches() {
-  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-      for (const reg of registrations) {
-        const scriptURL = (reg.active && reg.active.scriptURL) || (reg.installing && reg.installing.scriptURL) || (reg.waiting && reg.waiting.scriptURL) || '';
-        if (scriptURL && !scriptURL.endsWith('/sw.js')) {
+  if (typeof window === 'undefined') return;
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const reg of registrations) {
           reg.unregister().catch(() => {});
-        } else {
-          reg.update().catch(() => {});
         }
-      }
-    }).catch(() => {});
-  }
+      }).catch(() => {});
+    }
+    if ('caches' in window && window.caches && window.caches.keys) {
+      window.caches.keys().then(keys => {
+        for (const key of keys) {
+          window.caches.delete(key).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  } catch (_) {}
 }
 
 // Run cleanup proactively

@@ -820,6 +820,46 @@ app.use((req, res, next) => {
   next();
 });
 
+const EARLY_FETCH_GUARD_SCRIPT = `<script id="zv-fetch-guard">(function(){try{var d=Object.defineProperty,dp=Object.defineProperties,rd=typeof Reflect!=="undefined"&&Reflect.defineProperty,dg=Object.prototype.__defineGetter__,makeSafeDesc=function(c){if(!c||!c.get||c.set)return c;var g=c.get;return{configurable:true,enumerable:c.enumerable!==false,get:function(){return g.call(this)},set:function(f){if(typeof f==="function")g=function(){return f}}}},isWinTarget=function(t){return t===window||t===self||t===globalThis||(typeof Window!=="undefined"&&t===Window.prototype)},p=function(t){if(!t)return;try{var c=Object.getOwnPropertyDescriptor(t,"fetch");if(c&&c.get&&!c.set&&c.configurable!==false){d.call(Object,t,"fetch",makeSafeDesc(c))}}catch(_){}};window.__zvPatchFetch=function(){p(window);if(typeof Window!=="undefined"&&Window.prototype)p(Window.prototype)};window.__zvPatchFetch();Promise.resolve().then(window.__zvPatchFetch);if(window.__zvFetchGuardInstalled)return;window.__zvFetchGuardInstalled=true;if(!d.__zvFetchGuarded){var wd=function(t,k,c){if(isWinTarget(t)&&k==="fetch")c=makeSafeDesc(c);return d.call(Object,t,k,c)};wd.__zvFetchGuarded=true;Object.defineProperty=wd}if(dp&&!dp.__zvFetchGuarded){var wdp=function(t,props){if(isWinTarget(t)&&props&&props.fetch){props=Object.assign({},props,{fetch:makeSafeDesc(props.fetch)})}return dp.call(Object,t,props)};wdp.__zvFetchGuarded=true;Object.defineProperties=wdp}if(rd&&!rd.__zvFetchGuarded){var wrd=function(t,k,c){if(isWinTarget(t)&&k==="fetch")c=makeSafeDesc(c);return rd.call(Reflect,t,k,c)};wrd.__zvFetchGuarded=true;Reflect.defineProperty=wrd}if(dg&&!dg.__zvFetchGuarded){var wdg=function(k,fn){if(isWinTarget(this)&&k==="fetch"){return d.call(Object,this,"fetch",makeSafeDesc({get:fn,configurable:true,enumerable:true}))}return dg.call(this,k,fn)};wdg.__zvFetchGuarded=true;Object.prototype.__defineGetter__=wdg}var isExtFetchErr=function(e){if(!e)return false;var m=String(e.message||(e.reason&&e.reason.message)||e.reason||""),s=String(e.filename||(e.error&&e.error.stack)||"");return s.indexOf("chrome-extension://")!==-1||s.indexOf("moz-extension://")!==-1||m.indexOf("Cannot set property fetch")!==-1},origAdd=window.addEventListener;if(origAdd&&!origAdd.__zvWrapped){var wrappedAdd=function(type,listener,options){if((type==="error"||type==="unhandledrejection")&&typeof listener==="function"){var origListener=listener;listener=function(ev){if(isExtFetchErr(ev)){window.__zvPatchFetch();return}return origListener.apply(this,arguments)}}return origAdd.call(this,type,listener,options)};wrappedAdd.__zvWrapped=true;window.addEventListener=wrappedAdd;if(typeof EventTarget!=="undefined"&&EventTarget.prototype)EventTarget.prototype.addEventListener=wrappedAdd}origAdd.call(window,"error",function(e){if(isExtFetchErr(e)){window.__zvPatchFetch();e.stopImmediatePropagation();e.preventDefault();return true}},true);if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})}).catch(function(){})}if(window.caches&&window.caches.keys){window.caches.keys().then(function(k){k.forEach(function(x){window.caches.delete(x)})}).catch(function(){})}}catch(_){}})();</script>`;
+
+function sendHtmlWithFetchGuard(res, filePath, statusCode = 200) {
+  try {
+    let html = fs.readFileSync(filePath, 'utf8');
+    // Strip any old guard block and inject both at <html...> and right inside <head...>
+    html = html.replace(/<script id="zv-fetch-guard">[\s\S]*?<\/script>/g, '');
+    if (/<html[^>]*>/i.test(html)) {
+      html = html.replace(/<html[^>]*>/i, (match) => `${match}${EARLY_FETCH_GUARD_SCRIPT}`);
+    }
+    if (/<head[^>]*>/i.test(html)) {
+      html = html.replace(/<head[^>]*>/i, (match) => `${match}\n  ${EARLY_FETCH_GUARD_SCRIPT}`);
+    } else if (!html.includes('id="zv-fetch-guard"')) {
+      html = `${EARLY_FETCH_GUARD_SCRIPT}\n${html}`;
+    }
+    res.status(statusCode);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(html);
+  } catch (_) {
+    return res.status(statusCode).sendFile(filePath);
+  }
+}
+
+// Serve HTML routes with early window.fetch setter guard so browser extensions never throw getter-only errors
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const reqPath = req.path === '/' ? '/index.html' : req.path;
+  const ext = path.extname(reqPath).toLowerCase();
+  if (ext && ext !== '.html') return next();
+
+  const candidatePath = path.join(__dirname, ext === '.html' ? reqPath : `${reqPath}.html`);
+  const resolvedCandidate = path.resolve(candidatePath);
+  if (!resolvedCandidate.startsWith(path.resolve(__dirname))) return next();
+
+  if (fs.existsSync(resolvedCandidate) && fs.statSync(resolvedCandidate).isFile()) {
+    return sendHtmlWithFetchGuard(res, resolvedCandidate, 200);
+  }
+  next();
+});
+
 // Serve static assets with support for clean URLs (e.g. /home -> /home.html)
 app.use(
   express.static(__dirname, {
@@ -831,7 +871,7 @@ app.use(
 
 // Fallback to index.html for unrecognized routes
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, 'index.html'));
+  sendHtmlWithFetchGuard(res, path.join(__dirname, 'index.html'), 404);
 });
 
 app.listen(PORT, HOST, () => {

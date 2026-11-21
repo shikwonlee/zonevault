@@ -8,6 +8,73 @@
 (function () {
     'use strict';
 
+    // Ensure window.fetch always has a setter so browser extensions (e.g. request interceptors)
+    // do not throw "TypeError: Cannot set property fetch of #<Window> which has only a getter"
+    (function guardWindowFetchProperty() {
+        try {
+            const origDefProp = Object.defineProperty;
+            const patchFetchDesc = (target) => {
+                if (!target) return;
+                const desc = Object.getOwnPropertyDescriptor(target, 'fetch');
+                if (desc && desc.get && !desc.set && desc.configurable !== false) {
+                    let currentGetter = desc.get;
+                    origDefProp.call(Object, target, 'fetch', {
+                        configurable: true,
+                        enumerable: desc.enumerable !== false,
+                        get: function () { return currentGetter.call(this); },
+                        set: function (fn) {
+                            if (typeof fn === 'function') {
+                                currentGetter = function () { return fn; };
+                            }
+                        }
+                    });
+                }
+            };
+            patchFetchDesc(window);
+            if (typeof Window !== 'undefined' && Window.prototype) {
+                patchFetchDesc(Window.prototype);
+            }
+            if (!Object.defineProperty.__zvFetchGuarded) {
+                const wrappedDefineProperty = function (target, prop, descriptor) {
+                    if (
+                        (target === window || (typeof Window !== 'undefined' && target === Window.prototype)) &&
+                        prop === 'fetch' &&
+                        descriptor &&
+                        descriptor.get &&
+                        !descriptor.set
+                    ) {
+                        let getter = descriptor.get;
+                        descriptor = Object.assign({}, descriptor, {
+                            configurable: true,
+                            get: function () { return getter.call(this); },
+                            set: function (fn) {
+                                if (typeof fn === 'function') {
+                                    getter = function () { return fn; };
+                                }
+                            }
+                        });
+                    }
+                    return origDefProp.call(Object, target, prop, descriptor);
+                };
+                wrappedDefineProperty.__zvFetchGuarded = true;
+                Object.defineProperty = wrappedDefineProperty;
+            }
+            window.addEventListener('error', (e) => {
+                const msg = String((e && e.message) || '');
+                const src = String((e && e.filename) || '');
+                if (
+                    src.startsWith('chrome-extension://') ||
+                    src.startsWith('moz-extension://') ||
+                    msg.includes('Cannot set property fetch')
+                ) {
+                    patchFetchDesc(window);
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                }
+            }, true);
+        } catch (_) {}
+    })();
+
     // Global artplayer reference & 3-second control + setting panel auto-hide default
     const CONTROL_HIDE_DELAY_MS = 3000;
     window.art = window.art || null;

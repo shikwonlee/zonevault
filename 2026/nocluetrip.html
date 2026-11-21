@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"><script id="zv-fetch-guard">(function(){if(window.__zvFetchGuardInstalled)return;window.__zvFetchGuardInstalled=true;try{var d=Object.defineProperty,isExtFetchErr=function(e){if(!e)return false;var m=String(e.message||(e.reason&&e.reason.message)||e.reason||""),s=String(e.filename||(e.error&&e.error.stack)||"");return s.indexOf("chrome-extension://")!==-1||s.indexOf("moz-extension://")!==-1||m.indexOf("Cannot set property fetch")!==-1},p=function(t){if(!t)return;try{var c=Object.getOwnPropertyDescriptor(t,"fetch");if(c&&c.get&&!c.set&&c.configurable!==false){var g=c.get;d.call(Object,t,"fetch",{configurable:true,enumerable:c.enumerable!==false,get:function(){return g.call(this)},set:function(f){if(typeof f==="function")g=function(){return f}}})}}catch(_){}};p(window);if(typeof Window!=="undefined"&&Window.prototype)p(Window.prototype);if(!d.__zvFetchGuarded){var w=function(t,k,c){if((t===window||(typeof Window!=="undefined"&&t===Window.prototype))&&k==="fetch"&&c&&c.get&&!c.set){var g=c.get;c=Object.assign({},c,{configurable:true,get:function(){return g.call(this)},set:function(f){if(typeof f==="function")g=function(){return f}}})}return d.call(Object,t,k,c)};w.__zvFetchGuarded=true;Object.defineProperty=w}var origAdd=window.addEventListener;if(origAdd&&!origAdd.__zvWrapped){var wrappedAdd=function(type,listener,options){if((type==="error"||type==="unhandledrejection")&&typeof listener==="function"){var origListener=listener;listener=function(ev){if(isExtFetchErr(ev)){p(window);return}return origListener.apply(this,arguments)}}return origAdd.call(this,type,listener,options)};wrappedAdd.__zvWrapped=true;window.addEventListener=wrappedAdd}origAdd.call(window,"error",function(e){if(isExtFetchErr(e)){p(window);e.stopImmediatePropagation();e.preventDefault();return true}},true)}catch(_){}})();</script>
 <head>
   <meta charset="UTF-8">
   <title>Video | Zone Vault</title>
@@ -264,6 +264,115 @@
     .playing-indicator { display: none; align-items: center; gap: 3px; margin-left: auto; padding-left: 8px; }
     .playlist-item.active .playing-indicator { display: flex; }
 
+    /* Collapsible Playlist Folders */
+    .playlist-folder {
+        border: var(--glass-border);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.015);
+        overflow: hidden;
+        transition: border-color 0.25s ease, background 0.25s ease;
+    }
+    body.light-mode .playlist-folder {
+        background: rgba(0, 0, 0, 0.015);
+    }
+    .playlist-folder.has-active {
+        border-color: var(--active-border);
+    }
+    .playlist-folder-header {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        background: transparent;
+        border: none;
+        color: var(--text-main);
+        font-family: inherit;
+        cursor: pointer;
+        text-align: left;
+        transition: background 0.2s ease;
+    }
+    .playlist-folder-header:hover {
+        background: var(--playlist-hover);
+    }
+    .playlist-folder-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+    .playlist-folder-icon {
+        color: var(--accent);
+        font-size: 15px;
+        width: 18px;
+        text-align: center;
+        flex-shrink: 0;
+        transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .playlist-folder.is-open .playlist-folder-icon,
+    .playlist-folder.has-active .playlist-folder-icon {
+        color: var(--text-main);
+    }
+    .playlist-folder-title {
+        font-size: clamp(13px, 1.35vw, 14.5px);
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .playlist-folder-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .playlist-folder-count {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+    }
+    .playlist-folder-chevron {
+        font-size: 11px;
+        color: var(--text-muted);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+    }
+    .playlist-folder.is-open .playlist-folder-chevron {
+        transform: rotate(180deg);
+        color: var(--text-main);
+    }
+    .playlist-folder-items {
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 12px 12px;
+        border-top: var(--glass-border);
+        background: rgba(0, 0, 0, 0.14);
+        max-height: clamp(220px, 38vh, 340px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .playlist-folder-items::-webkit-scrollbar { width: 5px; }
+    .playlist-folder-items::-webkit-scrollbar-track { background: transparent; margin: 6px 0; }
+    .playlist-folder-items::-webkit-scrollbar-thumb { background: rgba(142, 142, 153, 0.35); border-radius: 10px; }
+    .playlist-folder-items::-webkit-scrollbar-thumb:hover { background: rgba(142, 142, 153, 0.65); }
+    body.light-mode .playlist-folder-items {
+        background: rgba(0, 0, 0, 0.02);
+    }
+    .playlist-folder.is-open .playlist-folder-items {
+        display: flex;
+    }
+    .playlist-folder-empty {
+        padding: 12px 8px;
+        font-size: 12px;
+        color: var(--text-muted);
+        text-align: center;
+    }
+
     .bar {
         width: 3px; height: 12px; background: var(--accent); border-radius: 2px;
         animation: sound 1s ease-in-out infinite;
@@ -283,7 +392,8 @@
     @media (max-width: 1099px) {
         #poster-container, #player-container { border-radius: 16px; }
         .playlist-card { max-height: none; } 
-        #playlist-items { max-height: 400px; } 
+        #playlist-items { max-height: 460px; } 
+        .playlist-folder-items { max-height: 250px; }
         .title-box { padding: 16px 18px; }
     }
 
@@ -463,24 +573,73 @@ window.skipIntroGlobal = function() {
     if (art.layers.skipIntroLayer) art.layers.skipIntroLayer.style.display = 'none';
 };
 
-// --- 1. PLAYLIST DATA ---
+// --- 1. PLAYLIST DATA & FOLDERS ---
 // Add more episode cards to this array anytime.
-// Every card shows its own thumbnail in the player when clicked, and if it has no video URL yet
-// (either in ep.url or Firebase members_access/nocluetrip/<id>), it displays "Coming soon November 18, 2026".
+// Each card is placed into one of the 3 collapsible folders ("preview", "ep", or "focus")
+// either via an explicit `folder` property or automatically based on its title.
 const DEFAULT_THUMBNAIL = "https://res.cloudinary.com/sanuqblh/image/upload/v1794147667/4b6235c1b197562dd1089def4be17a76_rxdh27.png";
 const DEFAULT_COMING_SOON_TEXT = "Coming soon November 18, 2026";
+
+const PLAYLIST_FOLDERS = [
+  { id: "preview", title: "Preview Clip" },
+  { id: "ep", title: "EP" },
+  { id: "focus", title: "Focus Cam" }
+];
+
+function getEpisodeFolderId(ep) {
+  if (ep && ep.folder) {
+    const normalized = String(ep.folder).toLowerCase().trim();
+    if (normalized === "preview" || normalized === "preview clip") return "preview";
+    if (normalized === "focus" || normalized === "focus cam") return "focus";
+    if (normalized === "ep" || normalized === "episode" || normalized === "episodes") return "ep";
+  }
+  const title = String((ep && ep.title) || "");
+  if (/preview\s*clip/i.test(title)) return "preview";
+  if (/focus\s*cam/i.test(title)) return "focus";
+  return "ep";
+}
+
+function setFolderOpenState(folderEl, isOpen) {
+  if (!folderEl) return;
+  if (isOpen) {
+    document.querySelectorAll('.playlist-folder').forEach(otherFolder => {
+      if (otherFolder !== folderEl) {
+        otherFolder.classList.remove('is-open');
+        const otherBtn = otherFolder.querySelector('.playlist-folder-header');
+        if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+        const otherIcon = otherFolder.querySelector('.playlist-folder-icon');
+        if (otherIcon) {
+          otherIcon.classList.remove('fa-folder-open');
+          otherIcon.classList.add('fa-folder');
+        }
+      }
+    });
+  }
+  folderEl.classList.toggle('is-open', Boolean(isOpen));
+  const headerBtn = folderEl.querySelector('.playlist-folder-header');
+  if (headerBtn) {
+    headerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  const iconEl = folderEl.querySelector('.playlist-folder-icon');
+  if (iconEl) {
+    iconEl.classList.toggle('fa-folder-open', Boolean(isOpen));
+    iconEl.classList.toggle('fa-folder', !isOpen);
+  }
+}
 
 const playlistData = [
   {
     id: "1",
+    folder: "preview",
     title: "DK & JEONGHAN'S NO-CLUE TRIP EP.1 - Preview Clip",
     image: "https://res.cloudinary.com/rabnzafj/image/upload/v1794545921/1319479469291009814c1c92d9-0ba6-4972-a9fb-a173e1decac1_ld7vbc.jpg",
     url: "",
     comingSoonText: "Coming soon November 18, 2026",
     introEnd: 0
   },
-    {
+  {
     id: "2",
+    folder: "ep",
     title: "DK & JEONGHAN'S NO-CLUE TRIP EP.1",
     image: "https://res.cloudinary.com/rabnzafj/image/upload/v1795093228/1319494749623920224146b125-e08c-4f5e-947c-b3876cdf7146_lpnywt.jpg",
     url: "",
@@ -489,6 +648,7 @@ const playlistData = [
   },
   {
     id: "3",
+    folder: "focus",
     title: "DK & JEONGHAN'S NO-CLUE TRIP EP.1 - JEONGHAN FOCUS CAM",
     image: "https://res.cloudinary.com/rabnzafj/image/upload/v1795235807/1866327234858795042f5bfe75-9819-4fce-9091-267dea56ba32_ilbfts.jpg",
     url: "",
@@ -497,13 +657,13 @@ const playlistData = [
   },
   {
     id: "4",
+    folder: "focus",
     title: "DK & JEONGHAN'S NO-CLUE TRIP EP.1 - DK FOCUS CAM",
     image: "https://res.cloudinary.com/rabnzafj/image/upload/v1795235806/1319554334501301879a654a3d-2b93-43fd-91ae-b829d247f995_udeoxk.jpg",
     url: "",
     comingSoonText: "Coming soon November 18, 2026",
     introEnd: 0
   }
-
 ];
 
 const playlistContainer = document.getElementById('playlist-items');
@@ -677,10 +837,18 @@ async function loadAndPlayEpisode(epId, updateUrl = true) {
     currentHistoryKey = historyKey;
     lastSavedHistory = null;
 
-    // Update active state on playlist cards and update Now Playing title
+    // Update active state on playlist cards, expand containing folder, and update Now Playing title
+    const activeFolderId = getEpisodeFolderId(ep);
     document.querySelectorAll('.playlist-item').forEach(item => {
         item.classList.toggle('active', item.dataset.id === epId);
         item.classList.remove('is-paused');
+    });
+    document.querySelectorAll('.playlist-folder').forEach(folderEl => {
+        const isCurrentFolder = folderEl.dataset.folderId === activeFolderId;
+        folderEl.classList.toggle('has-active', isCurrentFolder);
+        if (isCurrentFolder) {
+            setFolderOpenState(folderEl, true);
+        }
     });
     mainTitle.textContent = ep.title;
 
@@ -773,12 +941,13 @@ window.addEventListener('popstate', (event) => {
         playerContainer.style.display = "none"; 
         mainTitle.textContent = '';
         document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('active', 'is-paused'));
+        document.querySelectorAll('.playlist-folder').forEach(folderEl => folderEl.classList.remove('has-active'));
         episodeLoadToken++;
         cleanupPlayer();
     }
 });
 
-playlistData.forEach(ep => {
+function createEpisodeCardElement(ep) {
   const epDiv = document.createElement('div');
   epDiv.className = 'playlist-item';
   epDiv.dataset.id = ep.id;
@@ -817,8 +986,77 @@ playlistData.forEach(ep => {
   epDiv.appendChild(indicator);
   
   epDiv.addEventListener('click', () => loadAndPlayEpisode(ep.id, true));
-  playlistContainer.appendChild(epDiv);
-});
+  return epDiv;
+}
+
+function renderPlaylistFolders() {
+  playlistContainer.innerHTML = '';
+
+  PLAYLIST_FOLDERS.forEach(folder => {
+    const folderEpisodes = playlistData.filter(ep => getEpisodeFolderId(ep) === folder.id);
+
+    const folderEl = document.createElement('div');
+    folderEl.className = 'playlist-folder';
+    folderEl.dataset.folderId = folder.id;
+
+    const headerBtn = document.createElement('button');
+    headerBtn.type = 'button';
+    headerBtn.className = 'playlist-folder-header';
+    headerBtn.setAttribute('aria-expanded', 'false');
+
+    const leftDiv = document.createElement('div');
+    leftDiv.className = 'playlist-folder-left';
+
+    const folderIcon = document.createElement('i');
+    folderIcon.className = 'fas fa-folder playlist-folder-icon';
+    leftDiv.appendChild(folderIcon);
+
+    const folderTitle = document.createElement('span');
+    folderTitle.className = 'playlist-folder-title';
+    folderTitle.textContent = folder.title;
+    leftDiv.appendChild(folderTitle);
+
+    const rightDiv = document.createElement('div');
+    rightDiv.className = 'playlist-folder-right';
+
+    const countSpan = document.createElement('span');
+    countSpan.className = 'playlist-folder-count';
+    countSpan.textContent = `${folderEpisodes.length}`;
+    rightDiv.appendChild(countSpan);
+
+    const chevronIcon = document.createElement('i');
+    chevronIcon.className = 'fas fa-chevron-down playlist-folder-chevron';
+    rightDiv.appendChild(chevronIcon);
+
+    headerBtn.appendChild(leftDiv);
+    headerBtn.appendChild(rightDiv);
+
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'playlist-folder-items';
+
+    if (folderEpisodes.length === 0) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'playlist-folder-empty';
+      emptyMsg.textContent = 'No videos in this folder yet';
+      itemsContainer.appendChild(emptyMsg);
+    } else {
+      folderEpisodes.forEach(ep => {
+        itemsContainer.appendChild(createEpisodeCardElement(ep));
+      });
+    }
+
+    headerBtn.addEventListener('click', () => {
+      const willOpen = !folderEl.classList.contains('is-open');
+      setFolderOpenState(folderEl, willOpen);
+    });
+
+    folderEl.appendChild(headerBtn);
+    folderEl.appendChild(itemsContainer);
+    playlistContainer.appendChild(folderEl);
+  });
+}
+
+renderPlaylistFolders();
 
 // Deep-link episode loading is triggered automatically once auth & page_access verify in auth.onAuthStateChanged
 </script>
